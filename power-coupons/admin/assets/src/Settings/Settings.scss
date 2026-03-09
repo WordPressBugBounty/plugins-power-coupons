@@ -1,0 +1,218 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+	--heading-font-family: "Figtree";
+	--heading-font-style: normal;
+}
+
+.power-coupons-coupon-code {
+	text-transform: uppercase;
+	font-size: 12px;
+	text-overflow: ellipsis;
+	overflow: hidden;
+	white-space: nowrap;
+	font-weight: 600;
+	padding: 5.5px 8px;
+}
+
+@layer components {
+	#wpwrap {
+
+		@apply bg-background-secondary;
+	}
+
+	#wpbody-content > .notice,
+	#wpbody-content > .error {
+		display: none !important;
+	}
+
+	#wpbody-content {
+		padding-bottom: 0;
+	}
+
+	#power-coupons-settings {
+		font-family: var( --heading-font-family );
+	}
+
+	.power_coupons-toggle-field {
+		input {
+			box-shadow: none;
+			border: 0 !important;
+		}
+		input:focus {
+			--tw-ring-opacity: 0 !important;
+		}
+	}
+
+	.power_coupons-color-field {
+		align-items: center;
+		line-height: 1;
+	}
+
+	.power_coupons-color-field .power_coupons-colorpicker-swatch-wrap {
+		display: flex;
+		align-items: center;
+		cursor: pointer;
+	}
+
+	.power_coupons-color-field .power_coupons-colorpicker-swatch {
+		padding: 0;
+		background: #fafafa;
+		display: inline-block;
+		margin: 0;
+		border-right: 1px solid #ddd;
+		box-shadow: inset 0 0 0 3px #fff;
+	}
+
+	.power_coupons-color-field .power_coupons-color-picker-popover {
+		position: absolute;
+		z-index: 9999;
+		margin: 8px 0;
+		right: 30px;
+	}
+
+	.power_coupons-color-field .power_coupons-color-picker-cover {
+		position: fixed;
+		top: 0;
+		right: 0;
+		bottom: 0;
+		left: 0;
+	}
+
+	.power_coupons-color-field {
+		.components-input-control__input,
+		.components-select-control__input {
+			font-family: var( --heading-font-family ) !important;
+		}
+	}
+
+	.power_coupons-color-field .power_coupons-field-data-content .power_coupons-colorpicker-selector {
+		display: flex;
+		align-items: center;
+	}
+
+	.power_coupons-color-field .power_coupons-field-data-content .power_coupons-colorpicker-swatch-wrap {
+		border: 1px solid #ddd;
+		border-radius: 2px;
+		background: #fff;
+		color: #444;
+	}
+
+	.power_coupons-color-field .power_coupons-field-data-content .power_coupons-colorpicker-label {
+		font-weight: 400;
+		padding: 5px 7px;
+	}
+
+	.power_coupons-color-field .power_coupons-field-data-content .power_coupons-colorpicker-reset {
+		padding: 6px;
+		cursor: pointer;
+		background: none;
+		border: none;
+	}
+
+	.power_coupons-color-field .power_coupons-color-picker {
+		position: relative;
+	}
+
+	.power_coupons-color-field .power_coupons-color-picker input {
+		margin: 0;
+	}
+
+	.power_coupons-color-field .power_coupons-color-picker input[id^="rc-editable-input-"] {
+		width: 100% !important;
+	}
+
+	.power_coupons-input-field-wrapper input.w-28 {
+		@apply rounded-md;
+	}
+
+	.power_coupons-input-field-wrapper input {
+		border-top-right-radius: 0;
+		border-bottom-right-radius: 0;
+		border: 1px solid;
+		outline: none;
+
+		@apply border-gray-300;
+	}
+
+	.power_coupons-input-field-wrapper input:focus {
+		@apply border-gray-300;
+		box-shadow: none;
+	}
+
+	.power_coupons-animate-spin-reverse {
+		animation: power_coupons-reverse-spin 1s ease infinite;
+
+		@keyframes power_coupons-reverse-spin {
+			from {
+				transform: rotate( 360deg );
+			}
+			to {
+				transform: rotate( 0deg );
+			}
+		}
+	}
+
+	.power_coupons-settings {
+		a.power_coupons-settings--article-link,
+		a:hover,
+		a:active {
+			color: #f06335;
+			border-color: #f06335;
+		}
+	}
+
+	.power_coupons-license-key {
+		input {
+			height: 40px;
+		}
+	}
+}
+
+:is(#power-coupons-settings) .bg-border-interactive {
+	background-color: #f06434;
+}
+
+.power-coupons-coupon-style-btn > label {
+	left: 0;
+	min-width: 0 !important;
+	margin: 0;
+	margin-top: 15px;
+}
+
+:is(#power-coupons-settings) .checked\:border-border-interactive:checked {
+	border-color: rgb(240 99 53 / var(--tw-bg-opacity, 1)) !important;
+}
+
+// START: Fix for the admin app sidebar height styling issue.
+#power_coupons-settings .mcw-sidebar::after {
+	content: "";
+	position: fixed;
+	left: 0;
+	top: 0;
+	width: 420px;
+	height: 100vh;
+	background: #fff;
+	z-index: -1;
+}
+
+@media ( max-width: 1024px ) {
+	#power_coupons-settings .mcw-sidebar::after {
+		width: 225px;
+	}
+}
+
+@media ( max-width: 960px ) {
+	#power_coupons-settings .mcw-sidebar::after {
+		width: 100px;
+	}
+}
+
+@media ( max-width: 782px ) {
+	#power_coupons-settings .mcw-sidebar::after {
+		width: 75px;
+	}
+}
+// END: Fix for the admin app sidebar height styling issue.
