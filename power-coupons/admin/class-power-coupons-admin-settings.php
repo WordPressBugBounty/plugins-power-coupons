@@ -49,6 +49,7 @@ class Power_Coupons_Admin_Settings {
 		add_action( 'admin_menu', array( $this, 'add_admin_menu' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_settings_assets' ) );
 		add_action( 'wp_ajax_power_coupons_update_settings', array( $this, 'ajax_update_settings' ) );
+		add_action( 'wp_ajax_power_coupons_activate_pro', array( $this, 'ajax_activate_pro' ) );
 	}
 
 	/**
@@ -80,6 +81,7 @@ class Power_Coupons_Admin_Settings {
 						'capability' => 'edit_shop_coupons',
 						'menu_slug'  => 'edit.php?post_type=shop_coupon',
 						'callback'   => null,
+						'position'   => 5,
 					),
 					'add_coupon'  => array(
 						'parent'     => 'power_coupons_settings',
@@ -88,21 +90,56 @@ class Power_Coupons_Admin_Settings {
 						'capability' => 'edit_shop_coupons',
 						'menu_slug'  => 'post-new.php?post_type=shop_coupon',
 						'callback'   => null,
+						'position'   => 10,
 					),
+					'bogo'        => ! defined( 'POWER_COUPONS_PRO_VERSION' ) ? array(
+						'parent'     => 'power_coupons_settings',
+						'page_title' => __( 'BOGO Offers', 'power-coupons' ),
+						'menu_title' => __( 'BOGO Offers', 'power-coupons' ),
+						'capability' => 'manage_options',
+						'menu_slug'  => 'power_coupons_settings&path=bogo',
+						'callback'   => array( $this, 'render_settings_page' ),
+						'position'   => 12,
+					) : null,
 					'settings'    => array(
 						'parent'     => 'power_coupons_settings',
 						'page_title' => __( 'Settings', 'power-coupons' ),
 						'menu_title' => __( 'Settings', 'power-coupons' ),
 						'capability' => 'manage_options',
-						'menu_slug'  => 'power_coupons_settings',
+						'menu_slug'  => 'power_coupons_settings&path=settings',
 						'callback'   => array( $this, 'render_settings_page' ),
+						'position'   => 15,
 					),
 				),
-			)
+			),
+			self::get_instance(),
+		);
+
+		$menus    = $menu_items['menu'];
+		$submenus = array_filter( $menu_items['submenu'] );
+
+		/**
+		 * Sort menus by position
+		 */
+		uasort(
+			$menus,
+			function( $a, $b ) {
+				return ( $a['position'] ?? 0 ) <=> ( $b['position'] ?? 0 );
+			}
+		);
+
+		/**
+		 * Sort submenus by position
+		 */
+		uasort(
+			$submenus,
+			function( $a, $b ) {
+				return ( $a['position'] ?? 0 ) <=> ( $b['position'] ?? 0 );
+			}
 		);
 
 		// Add main menu.
-		foreach ( $menu_items['menu'] as $menu ) {
+		foreach ( $menus as $menu ) {
 			add_menu_page(
 				$menu['page_title'],
 				$menu['menu_title'],
@@ -115,14 +152,15 @@ class Power_Coupons_Admin_Settings {
 		}
 
 		// Add submenu items.
-		foreach ( $menu_items['submenu'] as $submenu ) {
+		foreach ( $submenus as $submenu ) {
 			add_submenu_page(
 				$submenu['parent'],
 				$submenu['page_title'],
 				$submenu['menu_title'],
 				$submenu['capability'],
 				$submenu['menu_slug'],
-				$submenu['callback']
+				$submenu['callback'],
+				$submenu['position']
 			);
 		}
 
@@ -174,21 +212,79 @@ class Power_Coupons_Admin_Settings {
 		$settings = $this->get_settings();
 
 		// Localize script with settings data.
-		wp_localize_script(
-			'power-coupons-settings',
-			'powerCouponsSettings',
-			array(
-				'ajax_url'               => admin_url( 'admin-ajax.php' ),
-				'update_nonce'           => wp_create_nonce( 'power_coupons_update_settings' ),
-				'version'                => POWER_COUPONS_VERSION,
-				'settings_tabs'          => $this->get_settings_tabs(),
-				'settings_fields'        => $this->get_settings_fields(),
-				'settings_icons'         => $this->get_settings_icons(),
-				'power_coupons_settings' => $settings,
-				'coupon_templates'       => Power_Coupons_Utilities::get_coupon_card_templates_array(),
-			)
+		$localize_data = array(
+			'ajax_url'               => admin_url( 'admin-ajax.php' ),
+			'update_nonce'           => wp_create_nonce( 'power_coupons_update_settings' ),
+			'version'                => POWER_COUPONS_VERSION,
+			'settings_tabs'          => $this->get_settings_tabs(),
+			'settings_fields'        => $this->get_settings_fields(),
+			'settings_icons'         => $this->get_settings_icons(),
+			'power_coupons_settings' => $settings,
+			'coupon_templates'       => Power_Coupons_Utilities::get_coupon_card_templates_array(),
+			'admin_header_menus'     => $this->get_admin_header_menus(),
+			'is_pro_active'          => defined( 'POWER_COUPONS_PRO_VERSION' ),
+			'is_pro_installed'       => file_exists( WP_PLUGIN_DIR . '/power-coupons-pro/power-coupons-pro.php' ),
+			'activate_pro_nonce'     => wp_create_nonce( 'power_coupons_activate_pro' ),
 		);
+
+		$localize_data = apply_filters( 'power_coupons_filter_admin_localize_data', $localize_data );
+
+		// Inject PRO data into settings state so React components can access via useStateValue().
+		if ( ! empty( $localize_data['pro_version'] ) ) {
+			$localize_data['power_coupons_settings']['pro_version']    = $localize_data['pro_version'];
+			$localize_data['power_coupons_settings']['license_status'] = $localize_data['license_status'] ?? '';
+		}
+
+		wp_localize_script( 'power-coupons-settings', 'powerCouponsSettings', $localize_data );
 	}
+
+	/**
+	 * Get admin header menus.
+	 *
+	 * @return array
+	 */
+	private function get_admin_header_menus() {
+
+		$menus = [
+			[
+				'name'     => __( 'Settings', 'power-coupons' ),
+				'path'     => 'settings',
+				'position' => 10,
+			],
+		];
+
+		// Show BOGO tab as upsell when PRO is not active.
+		if ( ! defined( 'POWER_COUPONS_PRO_VERSION' ) ) {
+			$menus[] = [
+				'name'     => __( 'BOGO Offers', 'power-coupons' ),
+				'path'     => 'bogo',
+				'position' => 5,
+			];
+		}
+
+		/**
+		 * Filter admin header menus.
+		 */
+		$menus = apply_filters(
+			'power_coupons_filter_admin_header_menus',
+			$menus
+		);
+
+		// Sort menus by position (default to 999 if not set).
+		usort(
+			$menus,
+			function( $a, $b ) {
+
+				$pos_a = isset( $a['position'] ) ? (int) $a['position'] : 999;
+				$pos_b = isset( $b['position'] ) ? (int) $b['position'] : 999;
+
+				return $pos_a <=> $pos_b;
+			}
+		);
+
+		return $menus;
+	}
+
 
 	/**
 	 * Render settings page
@@ -231,7 +327,7 @@ class Power_Coupons_Admin_Settings {
 	 * @return array
 	 */
 	private function get_settings_tabs() {
-		return array(
+		$tabs = array(
 			'power_coupons_general'        => array(
 				'name'     => __( 'General', 'power-coupons' ),
 				'label'    => __( 'General', 'power-coupons' ),
@@ -251,6 +347,8 @@ class Power_Coupons_Admin_Settings {
 				'priority' => 40,
 			),
 		);
+
+		return apply_filters( 'power_coupons_filter_settings_tabs', $tabs );
 	}
 
 	/**
@@ -457,6 +555,38 @@ class Power_Coupons_Admin_Settings {
 		update_option( self::OPTION_KEY, $sanitized );
 
 		wp_send_json_success( array( 'message' => __( 'Settings saved successfully', 'power-coupons' ) ) );
+	}
+
+	/**
+	 * AJAX handler for activating Power Coupons Pro plugin.
+	 *
+	 * @since 1.0.0
+	 * @return void
+	 */
+	public function ajax_activate_pro() {
+		check_ajax_referer( 'power_coupons_activate_pro', 'security' );
+
+		if ( ! current_user_can( 'activate_plugins' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'power-coupons' ) ) );
+		}
+
+		$plugin = 'power-coupons-pro/power-coupons-pro.php';
+
+		if ( ! file_exists( WP_PLUGIN_DIR . '/' . $plugin ) ) {
+			wp_send_json_error( array( 'message' => __( 'Power Coupons Pro is not installed.', 'power-coupons' ) ) );
+		}
+
+		if ( is_plugin_active( $plugin ) ) {
+			wp_send_json_success( array( 'message' => __( 'Power Coupons Pro is already active.', 'power-coupons' ) ) );
+		}
+
+		$result = activate_plugin( $plugin );
+
+		if ( is_wp_error( $result ) ) {
+			wp_send_json_error( array( 'message' => $result->get_error_message() ) );
+		}
+
+		wp_send_json_success( array( 'message' => __( 'Power Coupons Pro activated successfully.', 'power-coupons' ) ) );
 	}
 
 	/**

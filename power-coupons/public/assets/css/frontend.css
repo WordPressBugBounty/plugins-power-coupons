@@ -13,7 +13,7 @@
 	--pc-accent: #e91e63;
 	--pc-bg: #fff;
 	--pc-text: #4b5563;
-	--pc-muted: #999;
+	--pc-muted: #6b7280;
 	--pc-border: var( --pc-primary );
 	--pc-radius: 8px;
 	--pc-space: 15px;
@@ -270,5 +270,16 @@
 	}
 	.power-coupons-list .power-coupon-card {
 		max-width: 100%;
+	}
+}
+
+/* Reduced motion */
+@media ( prefers-reduced-motion: reduce ) {
+	.power-coupons-list .power-coupon-card,
+	.power-coupons-list .power-coupons-apply-coupon-btn {
+		transition: none;
+	}
+	.power-coupons-list .power-coupon-card:hover {
+		transform: none;
 	}
 }

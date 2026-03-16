@@ -9,6 +9,7 @@ function FieldWrapper( props ) {
 		badge,
 		content,
 		type = 'inline',
+		disabled = false,
 	} = props;
 
 	// Generate a unique ID if not provided
@@ -18,7 +19,9 @@ function FieldWrapper( props ) {
 		<section
 			className={ `flex ${
 				type === 'block' ? 'flex-col' : 'flex-col sm:flex-row'
-			} py-6 justify-between gap-2 lg:gap-5 border-0 border-b border-solid border-border-subtle last:border-b-0` }
+			} py-6 justify-between gap-2 lg:gap-5 border-0 border-b border-solid border-border-subtle last:border-b-0${
+				disabled ? ' opacity-50 pointer-events-none' : ''
+			}` }
 			aria-labelledby={ title ? `${ fieldId }-title` : undefined }
 		>
 			{ ( title || description ) && (

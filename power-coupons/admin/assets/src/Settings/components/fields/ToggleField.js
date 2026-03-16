@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { __ } from '@wordpress/i18n';
 import { Switch } from '@bsf/force-ui';
 import { useStateValue } from '../Data';
 import { debounce } from 'lodash';
@@ -6,7 +7,7 @@ import FieldWrapper from '../wrappers/FieldWrapper';
 import { parseFieldName, getNestedValue, setNestedValue } from './fieldUtils';
 
 function ToggleField( props ) {
-	const { title, description, name } = props;
+	const { title, description, name, disabled = false } = props;
 	const [ data, dispatch ] = useStateValue();
 	const parts = parseFieldName( name );
 	const initialValue = getNestedValue( data, parts );
@@ -43,16 +44,23 @@ function ToggleField( props ) {
 	const toggleId = `toggle-${ name.replace( /[\[\]]/g, '-' ) }`;
 
 	return (
-		<FieldWrapper title={ title } description={ description }>
+		<FieldWrapper
+			title={ title }
+			description={ description }
+			disabled={ disabled }
+		>
 			<div>
 				<Switch
 					id={ toggleId }
 					aria-label={ `${ title } - ${
-						enable ? 'Enabled' : 'Disabled'
+						enable
+							? __( 'Enabled', 'power-coupons' )
+							: __( 'Disabled', 'power-coupons' )
 					}` }
 					aria-checked={ enable }
 					value={ enable }
 					name={ name }
+					disabled={ disabled }
 					onChange={ () => {
 						handleOnChange( enable );
 					} }

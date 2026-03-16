@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { __, sprintf } from '@wordpress/i18n';
 import parse from 'html-react-parser';
 
 import { useStateValue } from '../Data';
@@ -58,8 +59,16 @@ const IconPicker = ( props ) => {
 					} }
 					role="button"
 					tabIndex="0"
-					aria-label={ `Cart icon ${ index + 1 }` }
-					title={ `Cart icon ${ index + 1 }` }
+					aria-label={ sprintf(
+						/* translators: %d: icon number */
+						__( 'Cart icon %d', 'power-coupons' ),
+						index + 1
+					) }
+					title={ sprintf(
+						/* translators: %d: icon number */
+						__( 'Cart icon %d', 'power-coupons' ),
+						index + 1
+					) }
 				>
 					{ parse( option ) }
 				</div>

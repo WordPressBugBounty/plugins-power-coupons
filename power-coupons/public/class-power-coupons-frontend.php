@@ -28,6 +28,14 @@ class Power_Coupons_Frontend {
 	use Power_Coupons_Singleton;
 
 	/**
+	 * Cart Controller instance
+	 *
+	 * @phpstan-ignore-next-line
+	 * @var Cart_Controller
+	 */
+	private $cart_controller;
+
+	/**
 	 * Constructor
 	 *
 	 * @since 1.0.0

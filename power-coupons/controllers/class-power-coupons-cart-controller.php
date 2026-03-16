@@ -90,7 +90,8 @@ class Cart_Controller {
 			wp_send_json_error( array( 'message' => __( 'Invalid coupon code.', 'power-coupons' ) ) );
 		}
 
-		if ( ! WC()->cart ) {
+		$wc_cart = WC()->cart;
+		if ( ! $wc_cart instanceof \WC_Cart ) {
 			wp_send_json_error( array( 'message' => __( 'Cart not found.', 'power-coupons' ) ) );
 		}
 
@@ -98,10 +99,10 @@ class Cart_Controller {
 
 		if ( ! empty( $billing_email ) ) {
 			// Set billing email.
-			WC()->cart->get_customer()->set_billing_email( $billing_email );
+			$wc_cart->get_customer()->set_billing_email( $billing_email );
 		}
 
-		$result = WC()->cart->apply_coupon( $coupon_code );
+		$result = $wc_cart->apply_coupon( $coupon_code );
 
 		if ( $result ) {
 			wp_send_json_success( array( 'message' => __( 'Coupon applied successfully.', 'power-coupons' ) ) );
@@ -127,7 +128,8 @@ class Cart_Controller {
 			wp_send_json_error( array( 'message' => __( 'Invalid coupon code.', 'power-coupons' ) ) );
 		}
 
-		if ( ! WC()->cart ) {
+		$wc_cart = WC()->cart;
+		if ( ! $wc_cart instanceof \WC_Cart ) {
 			wp_send_json_error( array( 'message' => __( 'Cart not found.', 'power-coupons' ) ) );
 		}
 
@@ -137,7 +139,7 @@ class Cart_Controller {
 			wp_send_json_error( array( 'message' => __( 'This coupon is auto-applied and cannot be removed.', 'power-coupons' ) ) );
 		}
 
-		$result = WC()->cart->remove_coupon( $coupon_code );
+		$result = $wc_cart->remove_coupon( $coupon_code );
 
 		if ( $result ) {
 			wp_send_json_success( array( 'message' => __( 'Coupon removed successfully.', 'power-coupons' ) ) );

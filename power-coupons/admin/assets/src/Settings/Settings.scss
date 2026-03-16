@@ -17,6 +17,68 @@
 	padding: 5.5px 8px;
 }
 
+html.wp-toolbar.power-coupon-modal-open {
+	padding: 0;
+
+	#wpcontent {
+		margin: 0;
+		padding: 0;
+	}
+
+	#wpadminbar,
+	#adminmenumain {
+		display:none;
+	}
+
+	.bogo-radio-button-wrapper {
+		label.cursor-pointer {
+			> div {
+				margin-left: 24px !important;
+			}
+
+			+ label {
+				left: 12px !important;
+			}
+		}
+	}
+}
+
+.power-coupons-bogo-form-tab {
+	span {
+		&.flex.items-center.gap-1 {
+			font-weight: 500;
+			font-size: 16px;
+			line-height: 24px;
+			text-align: center;
+			vertical-align: middle;
+		}
+		&:nth-child(2) {
+			font-weight: 600;
+			font-size: 16px;
+			line-height: 24px;
+			text-align: center;
+			vertical-align: middle;
+		}
+	}
+
+	// Hide framer-motion's animated underline — its layoutId animation jitters
+	// when panel content changes simultaneously with the active tab switch.
+	> span.absolute {
+		display: none !important;
+	}
+
+	// Static underline for the active tab (replaces the framer-motion one).
+	&.text-text-primary::after {
+		content: '';
+		position: absolute;
+		right: 0;
+		left: 0;
+		bottom: -1px;
+		height: 1px;
+		background-color: #f06434;
+	}
+}
+
 @layer components {
 	#wpwrap {
 
@@ -125,6 +187,7 @@
 	}
 
 	.power_coupons-input-field-wrapper input.w-28 {
+
 		@apply rounded-md;
 	}
 
@@ -134,10 +197,12 @@
 		border: 1px solid;
 		outline: none;
 
+
 		@apply border-gray-300;
 	}
 
 	.power_coupons-input-field-wrapper input:focus {
+
 		@apply border-gray-300;
 		box-shadow: none;
 	}
@@ -171,7 +236,7 @@
 	}
 }
 
-:is(#power-coupons-settings) .bg-border-interactive {
+:is( #power-coupons-settings ) .bg-border-interactive {
 	background-color: #f06434;
 }
 
@@ -182,11 +247,11 @@
 	margin-top: 15px;
 }
 
-:is(#power-coupons-settings) .checked\:border-border-interactive:checked {
-	border-color: rgb(240 99 53 / var(--tw-bg-opacity, 1)) !important;
+:is( #power-coupons-settings ) .checked\:border-border-interactive:checked {
+	border-color: rgb( 240 99 53 / var( --tw-bg-opacity, 1 ) ) !important;
 }
 
-// START: Fix for the admin app sidebar height styling issue.
+/* START: Fix for the admin app sidebar height styling issue. */
 #power_coupons-settings .mcw-sidebar::after {
 	content: "";
 	position: fixed;
@@ -215,4 +280,18 @@
 		width: 75px;
 	}
 }
-// END: Fix for the admin app sidebar height styling issue.
+/* END: Fix for the admin app sidebar height styling issue. */
+
+// Fix checkbox unchecked border: force-ui uses border-border-strong which is #f06434 (orange)
+// in our theme, but Figma specifies gray for unchecked checkboxes.
+// :not(:checked) ensures the override only applies in unchecked state so the theme
+// orange color (checked:border-border-interactive) still shows when checked.
+:is(#power-coupons-settings) input[type="checkbox"].border-border-strong:not(:checked) {
+	border-color: #6B7280 !important;
+}
+
+// Match Figma: reduce table data cell vertical padding from py-3.5 (14px) to 10px per side.
+:is(#power-coupons-settings) table td {
+	padding-top: 10px !important;
+	padding-bottom: 10px !important;
+}

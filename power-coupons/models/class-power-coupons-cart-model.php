@@ -75,7 +75,7 @@ class Power_Coupons_Cart_Model {
 		$category_ids = array();
 		foreach ( WC()->cart->get_cart() as $cart_item ) {
 			$terms = wp_get_post_terms( $cart_item['product_id'], 'product_cat', array( 'fields' => 'ids' ) );
-			if ( is_array( $terms ) ) {
+			if ( ! is_wp_error( $terms ) ) {
 				$category_ids = array_merge( $category_ids, $terms );
 			}
 		}

@@ -489,11 +489,20 @@
 		 * @since 1.0.0
 		 */
 		triggerWooCommerceUpdates() {
-			// Check if we're on cart page
+			const isBlockCart =
+				document.querySelector( '.wc-block-cart' ) !== null;
+			const isBlockCheckout =
+				document.querySelector( '.wc-block-checkout' ) !== null;
+
+			if ( isBlockCart || isBlockCheckout ) {
+				// Block pages: reload to get fresh server-rendered notifications.
+				window.location.reload();
+				return;
+			}
+
+			// Classic cart/checkout pages.
 			const isCartPage = $( '.woocommerce-cart-form' ).length > 0;
-			const isCheckoutPage =
-				$( 'form.checkout' ).length > 0 ||
-				$( '.wc-block-checkout' ).length > 0;
+			const isCheckoutPage = $( 'form.checkout' ).length > 0;
 
 			if ( isCartPage ) {
 				// Cart page: Trigger cart totals update
@@ -527,6 +536,10 @@
 		showNotice( message, type ) {
 			type = type || 'notice';
 
+			// Use role="status" (polite) for success, role="alert" (assertive) for errors.
+			const noticeRole = type === 'error' ? 'alert' : 'status';
+			const ariaLive = type === 'error' ? 'assertive' : 'polite';
+
 			// Try to use WooCommerce notices if available
 			const noticeContainer = $( '.woocommerce-notices-wrapper' ).first();
 
@@ -536,10 +549,9 @@
 					type === 'error'
 						? 'woocommerce-error'
 						: 'woocommerce-message';
-				const ariaLive = type === 'error' ? 'assertive' : 'polite';
 				const notice = $( '<div>' )
 					.addClass( noticeClass )
-					.attr( 'role', 'alert' )
+					.attr( 'role', noticeRole )
 					.attr( 'aria-live', ariaLive )
 					.attr( 'aria-atomic', 'true' )
 					.html( message );
@@ -564,8 +576,37 @@
 					}, 10000 );
 				}
 			} else {
-				// Fallback to browser alert
-				alert( message );
+				// Fallback: create a temporary inline notice instead of disruptive alert().
+				const fallbackNotice = $( '<div>' )
+					.addClass( 'power-coupons-inline-notice' )
+					.attr( 'role', noticeRole )
+					.attr( 'aria-atomic', 'true' )
+					.text( message )
+					.css( {
+						position: 'fixed',
+						top: '20px',
+						right: '20px',
+						zIndex: 999999,
+						padding: '12px 20px',
+						borderRadius: '4px',
+						maxWidth: '400px',
+						background: type === 'error' ? '#fee2e2' : '#f0fdf4',
+						color: type === 'error' ? '#991b1b' : '#166534',
+						border:
+							'1px solid ' +
+							( type === 'error' ? '#fecaca' : '#86efac' ),
+						boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+						fontSize: '14px',
+						lineHeight: '1.5',
+					} );
+
+				$( 'body' ).append( fallbackNotice );
+
+				setTimeout( function () {
+					fallbackNotice.fadeOut( function () {
+						$( this ).remove();
+					} );
+				}, 5000 );
 			}
 		},
 	};

@@ -12,12 +12,22 @@ function sortFieldsByPriority( fields ) {
 	return fieldsArray;
 }
 
-function SectionRenderer( { fields } ) {
+function SectionRenderer( {
+	fields,
+	masterDisabled = false,
+	masterFieldName = '',
+} ) {
 	if ( ! fields?.sections ) {
 		return (
 			<div className="h-auto px-6 bg-background-primary rounded-xl shadow-sm">
 				{ sortFieldsByPriority( fields ).map( ( field ) => (
-					<FieldRenderer key={ field.name } field={ field } />
+					<FieldRenderer
+						key={ field.name }
+						field={ field }
+						disabled={
+							masterDisabled && field.name !== masterFieldName
+						}
+					/>
 				) ) }
 			</div>
 		);
@@ -65,6 +75,10 @@ function SectionRenderer( { fields } ) {
 								<FieldRenderer
 									key={ field.name }
 									field={ field }
+									disabled={
+										masterDisabled &&
+										field.name !== masterFieldName
+									}
 								/>
 							)
 						) }

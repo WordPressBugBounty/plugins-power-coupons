@@ -46,7 +46,7 @@ const evaluateConditions = ( conditions, data ) => {
 	} );
 };
 
-function FieldRenderer( { field } ) {
+function FieldRenderer( { field, disabled = false } ) {
 	const stateValue = useStateValue();
 	const [ data ] = stateValue;
 	const FieldComponent = componentMap[ field.type ];
@@ -66,6 +66,7 @@ function FieldRenderer( { field } ) {
 		badge: field.badge,
 		min: field.min,
 		max: field.max,
+		disabled,
 	};
 
 	props.value = getValueFromName( field.name, data );

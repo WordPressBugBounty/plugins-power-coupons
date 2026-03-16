@@ -52,6 +52,3 @@ parameters:
 		# WP-CLI accepts a class as callable
 		# - '/^Parameter #2 \$callable of static method WP_CLI::add_command\(\) expects callable\(\): mixed, \S+ given\.$/'
 		# Please consider commenting ignores: issue URL or reason of ignore
-		- '#Call to static method get_instance\(\) on an unknown class Power_Coupons\\Admin\\Power_Coupons_Admin#'
-		- '#Method Power_Coupons\\Controllers\\Display_Controller::register_cart_hook\(\) is unused#'
-		- '#Method Power_Coupons\\Controllers\\Display_Controller::register_checkout_hook\(\) is unused#'

@@ -25,7 +25,7 @@ trait Power_Coupons_Singleton {
 	/**
 	 * Instance storage
 	 *
-	 * @var array<string, object>
+	 * @var array<string, static>
 	 */
 	private static $instances = array();
 
@@ -42,7 +42,11 @@ trait Power_Coupons_Singleton {
 			self::$instances[ $class ] = new static();
 		}
 
-		// @phpstan-ignore-next-line
+		/**
+		 * Return type assertion.
+		 *
+		 * @var static
+		 */
 		return self::$instances[ $class ];
 	}
 

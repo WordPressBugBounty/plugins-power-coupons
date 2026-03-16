@@ -28,13 +28,20 @@ class Rule_Controller {
 	private $rule_model;
 
 	/**
+	 * Cart Model instance
+	 *
+	 * @var Power_Coupons_Cart_Model
+	 */
+	private $cart_model;
+
+	/**
 	 * Constructor
 	 *
 	 * @since 1.0.0
 	 */
 	public function __construct() {
 		$this->rule_model = new Power_Coupons_Rule_Model();
-		new Power_Coupons_Cart_Model();
+		$this->cart_model = new Power_Coupons_Cart_Model();
 	}
 
 	/**
@@ -51,16 +58,20 @@ class Rule_Controller {
 			return true; // No conditions means always valid.
 		}
 
-		$cart_model = new Power_Coupons_Cart_Model();
-		$cart_data  = $cart_model->get_cart_data();
-		$logic      = ! empty( $rules['logic'] ) ? $rules['logic'] : 'AND';
+		$cart_data  = $this->cart_model->get_cart_data();
+		$logic      = ! empty( $rules['logic'] ) && is_string( $rules['logic'] ) ? $rules['logic'] : 'AND';
+		$conditions = $rules['conditions'];
 		$results    = array();
 
-		$conditions = isset( $rules['conditions'] ) && is_array( $rules['conditions'] ) ? $rules['conditions'] : array();
+		if ( ! is_array( $conditions ) ) {
+			return true;
+		}
+
 		foreach ( $conditions as $condition ) {
-			if ( is_array( $condition ) ) {
-				$results[] = $this->evaluate_condition( $condition, $cart_data );
+			if ( ! is_array( $condition ) ) {
+				continue;
 			}
+			$results[] = $this->evaluate_condition( $condition, $cart_data );
 		}
 
 		// Apply logic (AND/OR).
@@ -81,20 +92,20 @@ class Rule_Controller {
 	 */
 	private function evaluate_condition( $condition, $cart_data ) {
 		$type     = isset( $condition['type'] ) && is_string( $condition['type'] ) ? $condition['type'] : '';
-		$operator = isset( $condition['operator'] ) && is_scalar( $condition['operator'] ) ? (string) $condition['operator'] : 'equals';
+		$operator = isset( $condition['operator'] ) && is_string( $condition['operator'] ) ? $condition['operator'] : 'equals';
 		$value    = isset( $condition['value'] ) ? $condition['value'] : '';
 
 		switch ( $type ) {
 			case 'cart_total':
-				return $this->compare_values( $cart_data['total'], $operator, $value );
+				return $this->compare_values( $cart_data['total'] ?? 0, $operator, $value );
 
 			case 'product_count':
-				return $this->compare_values( $cart_data['item_count'], $operator, $value );
+				return $this->compare_values( $cart_data['item_count'] ?? 0, $operator, $value );
 
 			case 'product_category':
-				$category_ids      = isset( $condition['category_ids'] ) && is_array( $condition['category_ids'] ) ? $condition['category_ids'] : array();
-				$cart_category_ids = isset( $cart_data['category_ids'] ) && is_array( $cart_data['category_ids'] ) ? $cart_data['category_ids'] : array();
-				return ! empty( array_intersect( $category_ids, $cart_category_ids ) );
+				$category_ids    = isset( $condition['category_ids'] ) && is_array( $condition['category_ids'] ) ? $condition['category_ids'] : array();
+				$cart_categories = isset( $cart_data['category_ids'] ) && is_array( $cart_data['category_ids'] ) ? $cart_data['category_ids'] : array();
+				return ! empty( array_intersect( $category_ids, $cart_categories ) );
 
 			case 'coupon_not_applied':
 				return empty( $cart_data['applied_coupons'] );

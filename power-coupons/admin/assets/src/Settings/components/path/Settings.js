@@ -2,11 +2,20 @@ import { Container, Label, Menu, Sidebar } from '@bsf/force-ui';
 import { __ } from '@wordpress/i18n';
 
 import FieldContainer from '../wrappers/FieldContainer';
+import LicenseNotice from '../tabs/LicenseNotice';
+import LicenseSettings from '../tabs/LicenseSettings';
+import { useStateValue } from '../Data';
 
 import parse from 'html-react-parser';
 
 function Settings( props ) {
 	const { navigation, tab, navigate } = props;
+	const [ data ] = useStateValue();
+
+	const showLicenseNotice =
+		!! data?.pro_version &&
+		'Activated' !== data.license_status &&
+		'power_coupons_license' !== tab;
 	return (
 		<>
 			<div className="mcw-sidebar h-full min-h-screen flex flex-col w-auto -ml-2.5 md:-ml-5 sticky top-0 lg:top-4">
@@ -20,7 +29,7 @@ function Settings( props ) {
 								<Menu.List open>
 									{ navigation.map( ( item ) => (
 										<Menu.Item
-											key={ item.name }
+											key={ item.slug }
 											active={ tab === item.slug }
 											onClick={ () => {
 												navigate( item.slug );
@@ -117,7 +126,15 @@ function Settings( props ) {
 				className="w-full max-w-[43.5rem] mx-auto mt-8 pr-4 pb-5 gap-0"
 				direction="column"
 			>
-				<FieldContainer tabKey={ tab } />
+				{ /* eslint-disable no-nested-ternary */ }
+				{ 'power_coupons_license' === tab ? (
+					<LicenseSettings />
+				) : showLicenseNotice ? (
+					<LicenseNotice navigate={ navigate } />
+				) : (
+					<FieldContainer tabKey={ tab } />
+				) }
+				{ /* eslint-enable no-nested-ternary */ }
 			</Container>
 		</>
 	);

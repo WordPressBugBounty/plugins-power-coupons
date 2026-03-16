@@ -63,9 +63,14 @@ class Auto_Apply_Controller {
 
 		// Generate css selectors for auto-applied coupons.
 		foreach ( $auto_coupons as $coupon_code ) {
+			// Sanitize for CSS context — esc_attr() only escapes HTML entities, not CSS-special chars like ] { }.
+			$safe_code = preg_replace( '/[^a-zA-Z0-9_\-]/', '', $coupon_code );
+			if ( empty( $safe_code ) ) {
+				continue;
+			}
 			$selectors[] = sprintf(
 				'.woocommerce-remove-coupon[data-coupon="%1$s"], button.wc-block-components-chip__remove[aria-label*="%1$s"]',
-				esc_attr( $coupon_code )
+				$safe_code
 			);
 		}
 
@@ -87,7 +92,8 @@ class Auto_Apply_Controller {
 			return;
 		}
 
-		if ( ! WC()->cart || WC()->cart->is_empty() ) {
+		$cart = WC()->cart;
+		if ( ! $cart instanceof \WC_Cart || $cart->is_empty() ) {
 			return;
 		}
 
@@ -97,9 +103,9 @@ class Auto_Apply_Controller {
 		$auto_coupons = $this->get_auto_apply_coupons();
 
 		foreach ( $auto_coupons as $coupon_code ) {
-			if ( ! WC()->cart->has_discount( $coupon_code ) ) {
+			if ( ! $cart->has_discount( $coupon_code ) ) {
 				if ( $this->can_apply_coupon( $coupon_code ) ) {
-					WC()->cart->apply_coupon( $coupon_code );
+					$cart->apply_coupon( $coupon_code );
 				}
 			}
 		}
@@ -114,7 +120,7 @@ class Auto_Apply_Controller {
 		$args = array(
 			'post_type'      => 'shop_coupon',
 			'post_status'    => 'publish',
-			'posts_per_page' => -1,
+			'posts_per_page' => 50,
 			'meta_query'     => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
 				array(
 					'key'   => '_power_coupon_auto_apply',

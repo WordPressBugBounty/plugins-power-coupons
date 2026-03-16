@@ -139,8 +139,8 @@ class Power_Coupons_Frontend_Rules {
 			return true;
 		}
 
-		$type     = isset( $rule['type'] ) ? $rule['type'] : '';
-		$operator = isset( $rule['operator'] ) ? $rule['operator'] : '';
+		$type     = isset( $rule['type'] ) && is_string( $rule['type'] ) ? $rule['type'] : '';
+		$operator = isset( $rule['operator'] ) && is_string( $rule['operator'] ) ? $rule['operator'] : '';
 		$value    = $rule['value'];
 
 		// Validate based on rule type.
@@ -175,11 +175,11 @@ class Power_Coupons_Frontend_Rules {
 	 * @return bool True if valid, false otherwise.
 	 */
 	private function validate_cart_total_rule( $operator, $value ) {
-		$cart = WC()->cart;
-		if ( ! $cart ) {
+		if ( ! WC()->cart ) {
 			return false;
 		}
 
+		$cart       = WC()->cart;
 		$cart_total = $cart->get_subtotal();
 		$value      = is_numeric( $value ) ? floatval( $value ) : 0.0;
 
@@ -195,12 +195,12 @@ class Power_Coupons_Frontend_Rules {
 	 * @return bool True if valid, false otherwise.
 	 */
 	private function validate_cart_items_rule( $operator, $value ) {
-		$cart = WC()->cart;
-		if ( ! $cart ) {
+		if ( ! WC()->cart ) {
 			return false;
 		}
 
-		$cart_items_count = count( WC()->cart->get_cart() );
+		$cart             = WC()->cart;
+		$cart_items_count = count( $cart->get_cart() );
 		$value            = is_numeric( $value ) ? intval( $value ) : 0;
 
 		return Power_Coupons_Utilities::compare_numeric( $cart_items_count, $operator, $value );
@@ -219,10 +219,11 @@ class Power_Coupons_Frontend_Rules {
 			return true; // Empty list always passes.
 		}
 
-		$cart = WC()->cart;
-		if ( ! $cart ) {
+		if ( ! WC()->cart ) {
 			return false;
 		}
+
+		$cart = WC()->cart;
 
 		// Get product IDs in cart (including variations).
 		$cart_product_ids = array();
@@ -263,10 +264,11 @@ class Power_Coupons_Frontend_Rules {
 			return true; // Empty list always passes.
 		}
 
-		$cart = WC()->cart;
-		if ( ! $cart ) {
+		if ( ! WC()->cart ) {
 			return false;
 		}
+
+		$cart = WC()->cart;
 
 		// Get all categories from cart products.
 		$cart_categories = array();

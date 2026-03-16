@@ -5,7 +5,7 @@ Tags: discount rules, dynamic discounts, woocommerce discounts, woocommerce coup
 Requires at least: 6.0
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.0.0
+Stable tag: 1.0.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -168,6 +168,14 @@ React / JavaScript source code:
 The files in `admin/assets/build/` are generated from the corresponding source files in `admin/assets/src/` using standard JavaScript build tools such as `wp-scripts`.
 
 == Changelog ==
+
+= 1.0.1 - Monday, 16th March 2026 =
+* New: Added integration with the WordPress Abilities API.
+* New: Added a "Hide from Slideout" option for individual coupons.
+* New: Added `power_coupons_available_coupons` filter to control which coupons are displayed.
+* Fix: Fixed untranslated strings.
+* Fix: Addressed accessibility issues identified in the WCAG 2.2 audit.
+* Fix: Fixed alignment issues with the drawer trigger button.
 
 = 1.0.0 - Monday, 2nd February 2026 =
 * Initial release of Power Coupons.

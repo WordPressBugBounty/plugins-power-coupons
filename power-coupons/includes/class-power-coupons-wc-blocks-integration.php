@@ -61,10 +61,12 @@ class Power_Coupons_WC_Blocks_Integration {
 	 */
 	public function render_coupons_in_blocks( $block_content, $block ) {
 		// Early exit for non-WooCommerce blocks.
-		$block_name = isset( $block['blockName'] ) && is_string( $block['blockName'] ) ? $block['blockName'] : '';
-		if ( empty( $block_name ) || strpos( $block_name, 'woocommerce/' ) !== 0 ) {
+		$block_name_val = isset( $block['blockName'] ) && is_string( $block['blockName'] ) ? $block['blockName'] : '';
+		if ( empty( $block_name_val ) || strpos( $block_name_val, 'woocommerce/' ) !== 0 ) {
 			return $block_content;
 		}
+
+		$block_name = $block_name_val;
 
 		// Handle cart block.
 		if ( 'woocommerce/cart' === $block_name && $this->settings_helper->should_show_on_cart() ) {

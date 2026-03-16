@@ -70,8 +70,10 @@ class Display_Controller {
 	 * Register cart display hook based on position
 	 * Used dynamically by init_hooks method
 	 *
+	 * @phpstan-ignore-next-line
 	 * @param string $position Cart display position.
 	 * @return void
+	 * @phpstan-ignore method.unused
 	 */
 	private function register_cart_hook( $position ) {
 		$hook_map = array(
@@ -91,8 +93,10 @@ class Display_Controller {
 	 * Register checkout display hook based on position
 	 * Used dynamically by init_hooks method
 	 *
+	 * @phpstan-ignore-next-line
 	 * @param string $position Checkout display position.
 	 * @return void
+	 * @phpstan-ignore method.unused
 	 */
 	private function register_checkout_hook( $position ) {
 		$hook_map = array(
@@ -117,12 +121,13 @@ class Display_Controller {
 	 * @return string
 	 */
 	public function shortcode_display_coupons( $attrs ) {
-		$coupon_id = isset( $attrs['id'] ) && is_scalar( $attrs['id'] ) ? absint( $attrs['id'] ) : 0;
+		$raw_id    = isset( $attrs['id'] ) ? $attrs['id'] : 0;
+		$coupon_id = is_numeric( $raw_id ) ? absint( $raw_id ) : 0;
 
 		ob_start();
 		$this->render_coupon_list( 'shortcode', $coupon_id );
 		$output = ob_get_clean();
-		return is_string( $output ) ? $output : '';
+		return false !== $output ? $output : '';
 	}
 
 	/**
@@ -198,6 +203,9 @@ class Display_Controller {
 		$all_coupons = array();
 
 		foreach ( $coupons as $coupon ) {
+			if ( ! is_array( $coupon ) ) {
+				continue;
+			}
 			if ( Power_Coupons_Utilities::is_coupon_not_started( $coupon ) || Power_Coupons_Utilities::is_coupon_expired( $coupon ) ) {
 				continue; // Skip coupons that haven't started yet.
 			}
@@ -235,6 +243,13 @@ class Display_Controller {
 			'post_status'    => 'publish',
 			'posts_per_page' => 50,
 			'fields'         => 'ids',
+			'meta_query'     => array(
+				array(
+					'key'     => 'discount_type',
+					'value'   => 'power_coupons_bogo',
+					'compare' => '!=',
+				),
+			),
 		);
 
 		if ( $coupon_id ) {
@@ -272,6 +287,11 @@ class Display_Controller {
 				continue;
 			}
 
+			// Skip coupons hidden from slideout display.
+			if ( 'yes' === get_post_meta( $id, '_power_coupon_hide_in_slideout', true ) ) {
+				continue;
+			}
+
 			// Check if coupon meets conditional rules (if enabled).
 			// Invalid coupons are hidden from display.
 			if ( ! $rules_validator->is_coupon_valid( $id ) ) {
@@ -296,6 +316,16 @@ class Display_Controller {
 			);
 		}
 
+		/**
+		 * Filter the available coupons before display.
+		 *
+		 * @since 1.0.1
+		 *
+		 * @param array  $coupons Array of coupon data arrays.
+		 * @param string $context Display context — 'coupon_list'.
+		 */
+		$coupons = apply_filters( 'power_coupons_available_coupons', $coupons, 'coupon_list' );
+
 		$caches[ $cache_key ] = $coupons;
 
 		return $coupons;
@@ -308,7 +338,8 @@ class Display_Controller {
 	 * @return bool
 	 */
 	private function is_coupon_applied( $coupon_code ) {
-		return WC()->cart && WC()->cart->has_discount( $coupon_code );
+		$cart = WC()->cart;
+		return $cart instanceof \WC_Cart && $cart->has_discount( $coupon_code );
 	}
 
 	/**

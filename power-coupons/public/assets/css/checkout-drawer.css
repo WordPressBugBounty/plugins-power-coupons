@@ -49,37 +49,39 @@
 	border: none;
 }
 
-div.power-coupons-drawer-trigger-wrapper a.power-coupons-view-coupons-btn {
+div.power-coupons-drawer-trigger-wrapper .power-coupons-view-coupons-btn {
 	display: block;
+	width: 100%;
 	padding: 12px 24px;
 	background: #fff;
 	color: #111827;
 	border: 1px solid #d1d5db;
-	font-weight: 600;
 	line-height: 16px;
 	border-radius: 4px;
 	font-size: 14px;
 	cursor: pointer;
 	transition: all 0.3s ease;
 	text-decoration: none;
+	text-align: center;
+	box-sizing: border-box;
 }
 
-div.power-coupons-drawer-trigger-wrapper a.power-coupons-view-coupons-btn:hover {
+div.power-coupons-drawer-trigger-wrapper .power-coupons-view-coupons-btn:hover {
 	opacity: 0.9;
 	transform: translateY( -1px );
 	box-shadow: 0 4px 8px rgba( 0, 0, 0, 0.1 );
 }
 
-div.power-coupons-drawer-trigger-wrapper a.power-coupons-view-coupons-btn:focus {
+div.power-coupons-drawer-trigger-wrapper .power-coupons-view-coupons-btn:focus {
 	outline: 2px solid #2196f3;
 	outline-offset: 2px;
 }
 
-div.power-coupons-drawer-trigger-wrapper a.power-coupons-view-coupons-btn:focus:not( :focus-visible ) {
+div.power-coupons-drawer-trigger-wrapper .power-coupons-view-coupons-btn:focus:not( :focus-visible ) {
 	outline: none;
 }
 
-div.power-coupons-drawer-trigger-wrapper a.power-coupons-view-coupons-btn svg {
+div.power-coupons-drawer-trigger-wrapper .power-coupons-view-coupons-btn svg {
 	flex-shrink: 0;
 }
 
@@ -325,7 +327,7 @@ div.power-coupons-drawer-trigger-wrapper a.power-coupons-view-coupons-btn svg {
 
 /* Coupon Expiry */
 .power-coupon-drawer-item-expiry {
-	color: #9ca3af;
+	color: #6b7280;
 	font-size: 12px;
 	margin-bottom: 12px;
 }
@@ -456,4 +458,25 @@ div.power-coupons-drawer-trigger-wrapper a.power-coupons-view-coupons-btn svg {
 
 .power-coupons-drawer-body::-webkit-scrollbar-thumb:hover {
 	background: #9ca3af;
+}
+
+/* Reduced motion */
+@media ( prefers-reduced-motion: reduce ) {
+	.power-coupons-drawer,
+	.power-coupons-drawer-content,
+	.power-coupons-drawer-overlay,
+	.power-coupon-apply-btn,
+	.power-coupon-remove-btn,
+	div.power-coupons-drawer-trigger-wrapper .power-coupons-view-coupons-btn {
+		transition: none;
+	}
+	div.power-coupons-drawer-trigger-wrapper .power-coupons-view-coupons-btn:hover {
+		transform: none;
+	}
+	.power-coupon-apply-btn:hover {
+		transform: none;
+	}
+	.power-coupons-spinner {
+		animation: none;
+	}
 }

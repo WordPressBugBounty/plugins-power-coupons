@@ -119,7 +119,12 @@ class Power_Coupons_Settings_Helper {
 	 */
 	public function get_general_settings(): array {
 		$settings = $this->get_all_settings();
-		$general  = $settings['general'] ?? array();
+		/**
+		 * Type assertion for settings value.
+		 *
+		 * @var mixed $general
+		 */
+		$general = $settings['general'] ?? array();
 		return is_array( $general ) ? $general : array();
 	}
 
@@ -130,7 +135,12 @@ class Power_Coupons_Settings_Helper {
 	 */
 	public function get_coupon_styling_settings(): array {
 		$settings = $this->get_all_settings();
-		$styling  = $settings['coupon_styling'] ?? array();
+		/**
+		 * Type assertion for settings value.
+		 *
+		 * @var mixed $styling
+		 */
+		$styling = $settings['coupon_styling'] ?? array();
 		return is_array( $styling ) ? $styling : array();
 	}
 
@@ -141,7 +151,12 @@ class Power_Coupons_Settings_Helper {
 	 */
 	public function get_text_settings(): array {
 		$settings = $this->get_all_settings();
-		$text     = $settings['text'] ?? array();
+		/**
+		 * Type assertion for settings value.
+		 *
+		 * @var mixed $text
+		 */
+		$text = $settings['text'] ?? array();
 		return is_array( $text ) ? $text : array();
 	}
 
@@ -155,7 +170,7 @@ class Power_Coupons_Settings_Helper {
 	 */
 	public function get( $section, $key, $default = '' ) {
 		$settings = $this->get_all_settings();
-		if ( ! is_array( $settings ) || ! isset( $settings[ $section ] ) || ! is_array( $settings[ $section ] ) ) {
+		if ( ! isset( $settings[ $section ] ) || ! is_array( $settings[ $section ] ) ) {
 			return $default;
 		}
 		return $settings[ $section ][ $key ] ?? $default;
@@ -167,8 +182,7 @@ class Power_Coupons_Settings_Helper {
 	 * @return bool
 	 */
 	public function is_enabled() {
-		$value = $this->get( 'general', 'enable_plugin', true );
-		return is_bool( $value ) ? $value : (bool) $value;
+		return (bool) $this->get( 'general', 'enable_plugin', true );
 	}
 
 	/**
@@ -177,8 +191,7 @@ class Power_Coupons_Settings_Helper {
 	 * @return bool
 	 */
 	public function should_show_on_cart() {
-		$value = $this->get( 'general', 'show_on_cart', true );
-		return is_bool( $value ) ? $value : (bool) $value;
+		return (bool) $this->get( 'general', 'show_on_cart', true );
 	}
 
 	/**
@@ -187,8 +200,7 @@ class Power_Coupons_Settings_Helper {
 	 * @return bool
 	 */
 	public function should_show_on_checkout() {
-		$value = $this->get( 'general', 'show_on_checkout', true );
-		return is_bool( $value ) ? $value : (bool) $value;
+		return (bool) $this->get( 'general', 'show_on_checkout', true );
 	}
 
 	/**
@@ -197,8 +209,7 @@ class Power_Coupons_Settings_Helper {
 	 * @return bool
 	 */
 	public function enable_for_guests() {
-		$value = $this->get( 'general', 'enable_for_guests', true );
-		return is_bool( $value ) ? $value : (bool) $value;
+		return (bool) $this->get( 'general', 'enable_for_guests', true );
 	}
 
 	/**
@@ -214,10 +225,13 @@ class Power_Coupons_Settings_Helper {
 		}
 
 		// Get from database.
-		$settings = get_option( 'power_coupons_settings', array() );
-		if ( ! is_array( $settings ) ) {
-			$settings = array();
-		}
+		$raw_settings = get_option( 'power_coupons_settings', array() );
+		/**
+		 * Type assertion for settings value.
+		 *
+		 * @var array<string, mixed> $settings
+		 */
+		$settings = is_array( $raw_settings ) ? $raw_settings : array();
 
 		// Merge with defaults (with translations if available).
 		$defaults = self::get_default_settings( true );

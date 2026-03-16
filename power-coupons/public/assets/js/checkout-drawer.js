@@ -79,13 +79,21 @@
 								return defaultValue;
 							}
 
-							const targetElement = document.querySelector(
+							const couponFormBlock = document.querySelector(
 								`.wp-block-woocommerce-${ wcPageType }-order-summary-coupon-form-block`
 							);
 
-							if ( ! targetElement ) {
+							if ( ! couponFormBlock ) {
 								return defaultValue;
 							}
+
+							// Insert after BOGO notifications if present, otherwise after coupon form.
+							const bogoNotifications =
+								couponFormBlock.parentElement.querySelector(
+									'.power-coupons-bogo-notifications'
+								);
+							const targetElement =
+								bogoNotifications || couponFormBlock;
 
 							const tempDiv = document.createElement( 'div' );
 							tempDiv.classList =
@@ -483,7 +491,7 @@
 			this.loadingEl.hide();
 			this.couponsListEl
 				.html(
-					'<div class="power-coupons-no-coupons"><p>' +
+					'<div class="power-coupons-no-coupons" role="alert"><p>' +
 						message +
 						'</p></div>'
 				)
@@ -498,6 +506,10 @@
 		 * @param {string} type    Notice type (success or error)
 		 */
 		showNotice( message, type ) {
+			// Use role="status" (polite) for success, role="alert" (assertive) for errors.
+			const noticeRole = type === 'error' ? 'alert' : 'status';
+			const ariaLive = type === 'error' ? 'assertive' : 'polite';
+
 			// Use WooCommerce notices if available
 			const noticeWrapper = $( '.woocommerce-notices-wrapper' ).first();
 
@@ -506,11 +518,12 @@
 					type === 'success'
 						? 'woocommerce-message'
 						: 'woocommerce-error';
-				const ariaLive = type === 'error' ? 'assertive' : 'polite';
 				const notice = $(
 					'<div class="' +
 						noticeClass +
-						'" role="alert" aria-live="' +
+						'" role="' +
+						noticeRole +
+						'" aria-live="' +
 						ariaLive +
 						'" aria-atomic="true">' +
 						message +
@@ -527,8 +540,37 @@
 					500
 				);
 			} else {
-				// Fallback: show alert
-				alert( message );
+				// Fallback: create a temporary inline notice instead of disruptive alert().
+				const fallbackNotice = $( '<div>' )
+					.addClass( 'power-coupons-inline-notice' )
+					.attr( 'role', noticeRole )
+					.attr( 'aria-atomic', 'true' )
+					.text( message )
+					.css( {
+						position: 'fixed',
+						top: '20px',
+						right: '20px',
+						zIndex: 999999,
+						padding: '12px 20px',
+						borderRadius: '4px',
+						maxWidth: '400px',
+						background: type === 'error' ? '#fee2e2' : '#f0fdf4',
+						color: type === 'error' ? '#991b1b' : '#166534',
+						border:
+							'1px solid ' +
+							( type === 'error' ? '#fecaca' : '#86efac' ),
+						boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+						fontSize: '14px',
+						lineHeight: '1.5',
+					} );
+
+				$( 'body' ).append( fallbackNotice );
+
+				setTimeout( function () {
+					fallbackNotice.fadeOut( function () {
+						$( this ).remove();
+					} );
+				}, 5000 );
 			}
 		},
 	};

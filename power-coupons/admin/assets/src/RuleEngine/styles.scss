@@ -84,8 +84,8 @@
 				background-color: $separatorColor;
 			}
 
-			// Optional: style the center text
-            > *:not(span) {
+			/* Optional: style the center text */
+			> *:not( span ) {
 				font-weight: 600;
 				color: $separatorColor;
 				white-space: nowrap;

@@ -38,7 +38,7 @@ class Power_Coupons_Utilities {
 		$expiry_date = $coupon['expiry_date'];
 
 		// Handle WC_DateTime objects.
-		if ( is_object( $expiry_date ) && is_a( $expiry_date, 'WC_DateTime' ) ) {
+		if ( is_object( $expiry_date ) && $expiry_date instanceof \WC_DateTime ) {
 			return $expiry_date->getTimestamp() < time();
 		}
 
@@ -123,7 +123,7 @@ class Power_Coupons_Utilities {
 	 * @return bool True if cart exists and has items.
 	 */
 	public static function is_cart_available() {
-		return self::is_woocommerce_active() && WC()->cart && ! WC()->cart->is_empty();
+		return self::is_woocommerce_active() && null !== WC()->cart && ! WC()->cart->is_empty();
 	}
 
 	/**
@@ -244,28 +244,28 @@ class Power_Coupons_Utilities {
 	 * @return mixed Rendered template string if $echo is false, original args if template not found.
 	 */
 	public static function render_coupon_card_template( $template_args, $echo = true ) {
-		$path = isset( $template_args['path'] ) && is_string( $template_args['path'] ) ? $template_args['path'] : '';
-		if ( empty( $path ) || ! file_exists( $path ) ) {
+		$template_path = isset( $template_args['path'] ) && is_string( $template_args['path'] ) ? $template_args['path'] : '';
+		if ( empty( $template_path ) || ! file_exists( $template_path ) ) {
 			return $template_args;
 		}
 
 		ob_start();
-		include $path;
+		include $template_path;
 		$content = ob_get_clean();
 
-		if ( is_string( $content ) ) {
-			$tags         = isset( $template_args['tags'] ) && is_array( $template_args['tags'] ) ? $template_args['tags'] : array();
-			$escaped_tags = array_map( 'esc_html', $tags );
-			$content      = str_replace( array_keys( $tags ), array_values( $escaped_tags ), $content );
-
-			if ( $echo ) {
-				echo wp_kses( $content, self::get_wp_kses_allowed_html_for_svg() );
-			}
-
-			return $content;
+		if ( false === $content ) {
+			$content = '';
 		}
 
-		return '';
+		$tags         = isset( $template_args['tags'] ) && is_array( $template_args['tags'] ) ? $template_args['tags'] : array();
+		$escaped_tags = array_map( 'esc_html', $tags );
+		$content      = str_replace( array_keys( $tags ), array_values( $escaped_tags ), $content );
+
+		if ( $echo ) {
+			echo wp_kses( $content, self::get_wp_kses_allowed_html_for_svg() );
+		}
+
+		return $content;
 	}
 
 	/**

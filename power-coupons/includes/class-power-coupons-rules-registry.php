@@ -93,7 +93,7 @@ class Power_Coupons_Rules_Registry {
 		}
 
 		// Type cast based on field type.
-		$field_type = is_array( $field ) && isset( $field['type'] ) && is_scalar( $field['type'] ) ? (string) $field['type'] : 'text';
+		$field_type = is_string( $field['type'] ) ? $field['type'] : '';
 		return self::cast_value( $value, $field_type );
 	}
 
@@ -218,21 +218,15 @@ class Power_Coupons_Rules_Registry {
 				return is_array( $value ) ? $value : array();
 
 			default:
-				if ( is_string( $value ) ) {
-					return sanitize_text_field( $value );
-				} elseif ( is_scalar( $value ) ) {
-					return sanitize_text_field( (string) $value );
-				} else {
-					return '';
-				}
+				return sanitize_text_field( is_string( $value ) ? $value : '' );
 		}
 	}
 
 	/**
 	 * Sanitize rule groups array
 	 *
-	 * @param array<int, mixed> $groups Rule groups array.
-	 * @return array<int, array<string, mixed>> Sanitized rule groups.
+	 * @param array<string, mixed> $groups Rule groups array.
+	 * @return array<int|string, mixed> Sanitized rule groups.
 	 */
 	private static function sanitize_rule_groups( $groups ) {
 		if ( ! is_array( $groups ) ) {
@@ -285,9 +279,9 @@ class Power_Coupons_Rules_Registry {
 		$operator = isset( $rule['operator'] ) && is_scalar( $rule['operator'] ) ? sanitize_text_field( (string) $rule['operator'] ) : '';
 
 		$sanitized_rule = array(
-			'rule_id'  => $rule_id,
-			'type'     => $type,
-			'operator' => $operator,
+			'rule_id'  => sanitize_text_field( is_string( $rule['rule_id'] ) ? $rule['rule_id'] : '' ),
+			'type'     => sanitize_text_field( is_string( $rule['type'] ) ? $rule['type'] : '' ),
+			'operator' => sanitize_text_field( is_string( $rule['operator'] ) ? $rule['operator'] : '' ),
 			'value'    => '',
 		);
 
@@ -300,13 +294,15 @@ class Power_Coupons_Rules_Registry {
 		// Sanitize value based on rule type.
 		switch ( $sanitized_rule['type'] ) {
 			case 'cart_total':
-				$sanitized_rule['value'] = isset( $rule['value'] ) && is_numeric( $rule['value'] ) ? floatval( $rule['value'] ) : '';
+				$raw_value               = isset( $rule['value'] ) ? $rule['value'] : '';
+				$sanitized_rule['value'] = is_numeric( $raw_value ) ? floatval( $raw_value ) : '';
 				break;
 
 			case 'products':
 			case 'cart_items':
 			case 'product_categories':
-				$sanitized_rule['value'] = isset( $rule['value'] ) && is_scalar( $rule['value'] ) ? absint( $rule['value'] ) : '';
+				$raw_value               = isset( $rule['value'] ) ? $rule['value'] : '';
+				$sanitized_rule['value'] = is_numeric( $raw_value ) ? absint( $raw_value ) : '';
 				break;
 		}
 
@@ -345,7 +341,7 @@ class Power_Coupons_Rules_Registry {
 	/**
 	 * Get all meta fields
 	 *
-	 * @return array<string, array<string, mixed>> Meta fields.
+	 * @return array<string, mixed> Meta fields.
 	 */
 	public static function get_all_fields() {
 		return self::$meta_fields;

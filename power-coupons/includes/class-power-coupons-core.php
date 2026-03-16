@@ -44,7 +44,7 @@ class Power_Coupons_Core {
 		Power_Coupons_WC_Blocks_Integration::get_instance();
 
 		// Initialize admin.
-		if ( is_admin() ) {
+		if ( is_admin() && class_exists( '\Power_Coupons\Admin\Power_Coupons_Admin' ) ) {
 			\Power_Coupons\Admin\Power_Coupons_Admin::get_instance();
 		}
 

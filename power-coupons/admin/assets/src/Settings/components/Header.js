@@ -6,12 +6,7 @@ import Logo from '../../../images/logo.svg';
 
 import { useStateValue } from './Data';
 
-const menus = [
-	{
-		name: __( 'Settings', 'power-coupons' ),
-		path: 'settings',
-	},
-];
+const menus = powerCouponsSettings.admin_header_menus;
 
 function Header( props ) {
 	const { activePath } = props;
@@ -41,7 +36,7 @@ function Header( props ) {
 				>
 					{ menus.map( ( menu ) => (
 						<Topbar.Item
-							className="h-full hidden"
+							className="h-full"
 							key={ `?page=power_coupons_settings&path=${ menu.path }` }
 							role="menuitem"
 						>
@@ -66,6 +61,16 @@ function Header( props ) {
 								}
 							>
 								{ menu.name }
+								{ ! window.powerCouponsSettings.is_pro_active &&
+									'bogo' === menu.path && (
+										<Badge
+											label="PRO"
+											size="xxs"
+											type="pill"
+											variant="inverse"
+											className="ml-1.5"
+										/>
+									) }
 							</Link>
 						</Topbar.Item>
 					) ) }

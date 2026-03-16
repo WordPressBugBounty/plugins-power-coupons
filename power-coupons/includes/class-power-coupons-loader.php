@@ -148,6 +148,8 @@ class Power_Coupons_Loader {
 		// Load utility classes.
 		require_once POWER_COUPONS_DIR . 'includes/class-power-coupons-utilities.php';
 		require_once POWER_COUPONS_DIR . 'includes/class-power-coupons-settings-helper.php';
+
+		// Load controllers.
 		require_once POWER_COUPONS_DIR . 'includes/class-power-coupons-wc-blocks-integration.php';
 
 		// Load rules registry (conditional rules metadata schema).
@@ -172,5 +174,38 @@ class Power_Coupons_Loader {
 
 		require_once POWER_COUPONS_DIR . 'public/class-power-coupons-frontend.php';
 		require_once POWER_COUPONS_DIR . 'public/class-power-coupons-frontend-rules.php';
+
+		// Load Abilities API (WordPress 6.9+).
+		$this->load_abilities_api();
+	}
+
+	/**
+	 * Load WordPress Abilities API integration.
+	 *
+	 * Gracefully degrades: if WordPress < 6.9 or class WP_Ability
+	 * does not exist, the plugin functions normally without abilities.
+	 *
+	 * @since 1.1.0
+	 * @return void
+	 */
+	private function load_abilities_api() {
+		if ( ! class_exists( 'WP_Ability' ) ) {
+			return;
+		}
+
+		if ( ! defined( 'POWER_COUPONS_ABILITY_API' ) ) {
+			define( 'POWER_COUPONS_ABILITY_API', true );
+		}
+
+		if ( ! defined( 'POWER_COUPONS_ABILITY_API_NAMESPACE' ) ) {
+			define( 'POWER_COUPONS_ABILITY_API_NAMESPACE', 'power-coupons/' );
+		}
+
+		require_once POWER_COUPONS_DIR . 'includes/class-power-coupons-config-ability.php';
+		require_once POWER_COUPONS_DIR . 'includes/class-power-coupons-ability.php';
+
+		$pc_ability = new \Power_Coupons\Includes\Power_Coupons_Ability();
+		add_action( 'wp_abilities_api_categories_init', array( $pc_ability, 'register_categories' ) );
+		add_action( 'wp_abilities_api_init', array( $pc_ability, 'register' ) );
 	}
 }

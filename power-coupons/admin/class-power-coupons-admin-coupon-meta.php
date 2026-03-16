@@ -80,6 +80,15 @@ class Admin_Coupon_Meta {
 				'value'       => get_post_meta( $coupon_id, '_power_coupon_auto_apply', true ),
 			)
 		);
+
+		woocommerce_wp_checkbox(
+			array(
+				'id'          => '_power_coupon_hide_in_slideout',
+				'label'       => __( 'Hide from slideout', 'power-coupons' ),
+				'description' => __( 'Hide this coupon from the Power Coupons slideout. The coupon can still be applied using its code.', 'power-coupons' ),
+				'value'       => get_post_meta( $coupon_id, '_power_coupon_hide_in_slideout', true ),
+			)
+		);
 	}
 
 	/**
@@ -102,6 +111,9 @@ class Admin_Coupon_Meta {
 
 		$auto_apply = isset( $_POST['_power_coupon_auto_apply'] ) ? 'yes' : 'no';
 		update_post_meta( $coupon_id, '_power_coupon_auto_apply', $auto_apply );
+
+		$hide_in_slideout = isset( $_POST['_power_coupon_hide_in_slideout'] ) ? 'yes' : 'no';
+		update_post_meta( $coupon_id, '_power_coupon_hide_in_slideout', $hide_in_slideout );
 
 		if ( isset( $_POST['_power_coupon_start_date'] ) ) {
 			$start_date = sanitize_text_field( wp_unslash( $_POST['_power_coupon_start_date'] ) );

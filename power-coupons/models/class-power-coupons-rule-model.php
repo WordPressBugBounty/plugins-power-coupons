@@ -22,7 +22,7 @@ class Power_Coupons_Rule_Model {
 	 *
 	 * @param int $coupon_id Coupon ID.
 	 * @since 1.0.0
-	 * @return array<string, mixed> Array of rule data.
+	 * @return array<string, mixed> Array of rules.
 	 */
 	public function get_by_coupon( $coupon_id ) {
 		$conditions_json = get_post_meta( $coupon_id, '_pc_rule_conditions', true );
@@ -31,8 +31,7 @@ class Power_Coupons_Rule_Model {
 			return array();
 		}
 
-		$conditions_string = is_string( $conditions_json ) ? $conditions_json : '';
-		$conditions        = json_decode( $conditions_string, true );
+		$conditions = json_decode( is_string( $conditions_json ) ? $conditions_json : '', true );
 
 		return array(
 			'coupon_id'  => $coupon_id,
@@ -55,8 +54,8 @@ class Power_Coupons_Rule_Model {
 		}
 
 		if ( isset( $rules['logic'] ) ) {
-			$logic = is_string( $rules['logic'] ) ? $rules['logic'] : '';
-			update_post_meta( $coupon_id, '_pc_rule_logic', sanitize_text_field( $logic ) );
+			$logic_val = is_string( $rules['logic'] ) ? $rules['logic'] : '';
+			update_post_meta( $coupon_id, '_pc_rule_logic', sanitize_text_field( $logic_val ) );
 		}
 
 		return true;

@@ -82,9 +82,9 @@ class Checkout_Drawer_Controller {
 	public function render_drawer_button() {
 		?>
 		<div class="power-coupons-drawer-trigger-wrapper">
-			<a href="javascript:void(0)" class="power-coupons-view-coupons-btn" id="power-coupons-view-coupons-btn" aria-label="<?php esc_attr_e( 'View available discount coupons', 'power-coupons' ); ?>" aria-expanded="false" aria-controls="power-coupons-drawer">
+			<button type="button" class="power-coupons-view-coupons-btn" id="power-coupons-view-coupons-btn" aria-label="<?php esc_attr_e( 'View available discount coupons', 'power-coupons' ); ?>" aria-expanded="false" aria-controls="power-coupons-drawer">
 				<?php echo esc_html( $this->get_text_labels( 'trigger_button_label' ) ); ?>
-			</a>
+			</button>
 		</div>
 		<?php
 	}
@@ -96,9 +96,9 @@ class Checkout_Drawer_Controller {
 	 * @return string
 	 */
 	private function get_text_labels( $text_key ) {
-		$texts      = $this->settings_helper->get_text_settings();
-		$text_value = ! empty( $texts[ $text_key ] ) ? $texts[ $text_key ] : '';
-		return is_string( $text_value ) ? esc_html( $text_value ) : '';
+		$texts = $this->settings_helper->get_text_settings();
+		$text  = isset( $texts[ $text_key ] ) && is_string( $texts[ $text_key ] ) ? $texts[ $text_key ] : '';
+		return ! empty( $text ) ? esc_html( $text ) : '';
 	}
 
 	/**
@@ -116,7 +116,13 @@ class Checkout_Drawer_Controller {
 			<div class="power-coupons-drawer-overlay" aria-hidden="true"></div>
 			<div class="power-coupons-drawer-content">
 				<div class="power-coupons-drawer-header">
-					<h3 id="power-coupons-drawer-heading"><?php echo esc_html( $this->get_text_labels( 'drawer_heading' ) ); ?></h3>
+					<?php
+					$drawer_heading = $this->get_text_labels( 'drawer_heading' );
+					if ( empty( $drawer_heading ) ) {
+						$drawer_heading = esc_html__( 'Available Coupons', 'power-coupons' );
+					}
+					?>
+					<h3 id="power-coupons-drawer-heading"><?php echo esc_html( $drawer_heading ); ?></h3>
 					<button type="button" class="power-coupons-drawer-close" aria-label="<?php esc_attr_e( 'Close coupon drawer', 'power-coupons' ); ?>">
 						<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
 							<path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -211,6 +217,13 @@ class Checkout_Drawer_Controller {
 			'post_type'      => 'shop_coupon',
 			'post_status'    => 'publish',
 			'posts_per_page' => -1,
+			'meta_query'     => array(
+				array(
+					'key'     => 'discount_type',
+					'value'   => 'power_coupons_bogo',
+					'compare' => '!=',
+				),
+			),
 		);
 
 		$coupons_query = new \WP_Query( $args );
@@ -227,7 +240,12 @@ class Checkout_Drawer_Controller {
 			while ( $coupons_query->have_posts() ) {
 				$coupons_query->the_post();
 				$coupon_id = get_the_ID();
-				$coupon    = new \WC_Coupon( $coupon_id );
+
+				if ( false === $coupon_id ) {
+					continue;
+				}
+
+				$coupon = new \WC_Coupon( $coupon_id );
 
 				$code = $coupon->get_code();
 
@@ -269,6 +287,16 @@ class Checkout_Drawer_Controller {
 			wp_reset_postdata();
 		}
 
+		/**
+		 * Filter the available coupons before display.
+		 *
+		 * @since 1.0.1
+		 *
+		 * @param array  $coupons Array of coupon data arrays.
+		 * @param string $context Display context — 'checkout_drawer'.
+		 */
+		$coupons = apply_filters( 'power_coupons_available_coupons', $coupons, 'checkout_drawer' );
+
 		return $coupons;
 	}
 
@@ -286,7 +314,8 @@ class Checkout_Drawer_Controller {
 	 * @return bool
 	 */
 	private function is_coupon_applied( $coupon_code ) {
-		return WC()->cart && WC()->cart->has_discount( $coupon_code );
+		$cart = WC()->cart;
+		return $cart instanceof \WC_Cart && $cart->has_discount( $coupon_code );
 	}
 
 	/**
