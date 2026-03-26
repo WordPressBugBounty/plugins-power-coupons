@@ -59,6 +59,11 @@ function FieldRenderer( { field, disabled = false } ) {
 		return null;
 	}
 
+	// Merge explicit disabled prop with field-level disabled_conditions.
+	const isConditionDisabled = field.disabled_conditions
+		? ! evaluateConditions( field.disabled_conditions, data )
+		: false;
+
 	const props = {
 		title: field.label,
 		description: field.description,
@@ -66,7 +71,7 @@ function FieldRenderer( { field, disabled = false } ) {
 		badge: field.badge,
 		min: field.min,
 		max: field.max,
-		disabled,
+		disabled: disabled || isConditionDisabled,
 	};
 
 	props.value = getValueFromName( field.name, data );

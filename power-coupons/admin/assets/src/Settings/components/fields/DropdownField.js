@@ -9,7 +9,7 @@ import FieldWrapper from '../wrappers/FieldWrapper';
 import { parseFieldName, getNestedValue, setNestedValue } from './fieldUtils';
 
 function DropdownField( props ) {
-	const { title, description, name, optionsArray } = props;
+	const { title, description, name, optionsArray, disabled = false } = props;
 	const [ data, dispatch ] = useStateValue();
 	const parts = parseFieldName( name );
 	const currentValue = getNestedValue( data, parts );
@@ -47,7 +47,11 @@ function DropdownField( props ) {
 	const dropdownId = `dropdown-${ name.replace( /[\[\]]/g, '-' ) }`;
 
 	return (
-		<FieldWrapper title={ title } description={ description }>
+		<FieldWrapper
+			title={ title }
+			description={ description }
+			disabled={ disabled }
+		>
 			<div className="flex-grow w-[25%]">
 				<Listbox
 					name={ name }
@@ -62,7 +66,7 @@ function DropdownField( props ) {
 					<Listbox.Label className="sr-only">{ title }</Listbox.Label>
 					<div className="relative mt-1 w-full min-w-32">
 						<Listbox.Button
-							className="relative w-full py-2 pl-3 pr-10 text-left bg-white rounded-md cursor-pointer border border-solid border-border-subtle active:border-wpcolor active:outline-none sm:text-sm focus:ring-2 focus:ring-wpcolor focus:border-wpcolor"
+							className="relative w-full py-2 pl-3 pr-10 text-left bg-white rounded-md cursor-pointer border border-solid border-border-subtle active:border-wpcolor active:outline-none sm:text-sm focus:outline-none focus:ring-2 focus:ring-wpcolor focus:border-wpcolor"
 							aria-labelledby={ `${ dropdownId }-label` }
 						>
 							<span

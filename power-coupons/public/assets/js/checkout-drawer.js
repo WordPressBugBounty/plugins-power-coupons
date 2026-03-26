@@ -34,6 +34,13 @@
 			this.isOpen = false;
 			this.couponsLoaded = false;
 
+			if ( this.drawer.length && powerCouponsDrawer.displayMode ) {
+				this.drawer.attr(
+					'data-display-mode',
+					powerCouponsDrawer.displayMode
+				);
+			}
+
 			this.bindEvents();
 
 			// Check if WooCommerce Blocks API is available

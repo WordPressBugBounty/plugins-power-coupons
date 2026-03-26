@@ -1,3 +1,4 @@
+/* global power_coupons_bogo, wc_cart_params, powerCouponsBogoData */
 /**
  * Power Coupons - BOGO JavaScript
  * Handles giveaway product selection and dynamic updates
@@ -6,8 +7,6 @@
  * @package
  * @since 1.0.0
  */
-
-/* global power_coupons_bogo, wc_cart_params, powerCouponsBogoData */
 
 ( function ( $ ) {
 	'use strict';

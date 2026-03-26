@@ -332,7 +332,7 @@ function LicenseSettings() {
 					{ licenseErrors && (
 						<Container.Item>
 							<div className="license-errors text-wpcolor">
-								{ licenseErrors }
+								{ parse( String( licenseErrors ) ) }
 							</div>
 						</Container.Item>
 					) }

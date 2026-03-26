@@ -45,6 +45,7 @@ function Number( props ) {
 				value={ value }
 				onChange={ handleChange }
 				min={ props.min || 0 }
+				step={ props.step || 'any' }
 			/>
 		</div>
 	);

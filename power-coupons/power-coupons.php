@@ -3,7 +3,7 @@
  * Plugin Name: Power Coupons for WooCommerce
  * Plugin URI: https://brainstormforce.com/
  * Description: Power Coupons is an advanced cart discount plugin for WooCommerce that helps you create discount rules, auto-apply coupons, and engaging cart incentives to boost conversions.
- * Version: 1.0.1
+ * Version: 1.0.2
  * Author: Brainstorm Force
  * Author URI: https://www.brainstormforce.com
  * License: GPL v2 or later
@@ -28,7 +28,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Set constants
  */
-define( 'POWER_COUPONS_VERSION', '1.0.1' );
+define( 'POWER_COUPONS_VERSION', '1.0.2' );
 define( 'POWER_COUPONS_FILE', __FILE__ );
 define( 'POWER_COUPONS_BASE', plugin_basename( POWER_COUPONS_FILE ) );
 define( 'POWER_COUPONS_DIR', plugin_dir_path( POWER_COUPONS_FILE ) );

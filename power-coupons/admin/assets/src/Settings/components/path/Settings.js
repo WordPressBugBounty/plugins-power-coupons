@@ -126,15 +126,13 @@ function Settings( props ) {
 				className="w-full max-w-[43.5rem] mx-auto mt-8 pr-4 pb-5 gap-0"
 				direction="column"
 			>
-				{ /* eslint-disable no-nested-ternary */ }
-				{ 'power_coupons_license' === tab ? (
-					<LicenseSettings />
-				) : showLicenseNotice ? (
+				{ 'power_coupons_license' === tab && <LicenseSettings /> }
+				{ 'power_coupons_license' !== tab && showLicenseNotice && (
 					<LicenseNotice navigate={ navigate } />
-				) : (
-					<FieldContainer tabKey={ tab } />
 				) }
-				{ /* eslint-enable no-nested-ternary */ }
+				{ 'power_coupons_license' !== tab && ! showLicenseNotice && (
+					<FieldContainer key={ tab } tabKey={ tab } />
+				) }
 			</Container>
 		</>
 	);

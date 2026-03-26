@@ -112,7 +112,8 @@ class Checkout_Drawer_Controller {
 			return;
 		}
 		?>
-		<div id="power-coupons-drawer" class="power-coupons-drawer" role="dialog" aria-modal="true" aria-labelledby="power-coupons-drawer-heading" aria-hidden="true">
+		<?php $display_mode = $this->settings_helper->get( 'general', 'coupon_display_mode', 'drawer' ); ?>
+		<div id="power-coupons-drawer" class="power-coupons-drawer" data-display-mode="<?php echo esc_attr( is_string( $display_mode ) ? $display_mode : 'drawer' ); ?>" role="dialog" aria-modal="true" aria-labelledby="power-coupons-drawer-heading" aria-hidden="true">
 			<div class="power-coupons-drawer-overlay" aria-hidden="true"></div>
 			<div class="power-coupons-drawer-content">
 				<div class="power-coupons-drawer-header">
@@ -176,6 +177,7 @@ class Checkout_Drawer_Controller {
 				'nonce'          => wp_create_nonce( 'power-coupons-drawer-nonce' ),
 				'showOnCart'     => $this->settings_helper->should_show_on_cart(),
 				'showOnCheckout' => $this->settings_helper->should_show_on_checkout(),
+				'displayMode'    => $this->settings_helper->get( 'general', 'coupon_display_mode', 'drawer' ),
 				'html'           => array(
 					'drawerButton' => $drawer_button,
 				),

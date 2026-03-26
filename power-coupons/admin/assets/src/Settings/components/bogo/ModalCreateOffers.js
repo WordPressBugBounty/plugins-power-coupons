@@ -5,6 +5,7 @@ import {
 	RadioButton,
 	Button,
 	Checkbox,
+	Switch,
 } from '@bsf/force-ui';
 import { __ } from '@wordpress/i18n';
 import { useState } from '@wordpress/element';
@@ -904,6 +905,275 @@ const FormTabs = [
 						>
 							{ __( 'Back', 'power-coupons' ) }
 						</Button>
+						{ SPEND_X_TYPES.includes( formData.key ) ? (
+							<Button
+								className="font-semibold text-sm px-3 py-2 w-fit ml-auto cursor-pointer no-underline text-white hover:text-white bg-wpcolor hover:bg-wphovercolor rounded-md box-content outline-0 hover:outline-0 focus:ring-0 focus-visible:ring-1 ring-0 border-none"
+								variant="primary"
+								onClick={ () => {
+									const tab3Errors = validateTab3( formData );
+									if (
+										Object.keys( tab3Errors ).length > 0
+									) {
+										setErrors( tab3Errors );
+										return;
+									}
+									setErrors( {} );
+									setActiveTab( FormTabs[ 3 ].slug );
+								} }
+							>
+								{ __( 'Save & Continue', 'power-coupons' ) }
+							</Button>
+						) : (
+							<Button
+								className="font-semibold text-sm px-3 py-2 w-fit ml-auto cursor-pointer no-underline text-white hover:text-white bg-wpcolor hover:bg-wphovercolor rounded-md box-content outline-0 hover:outline-0 focus:ring-0 focus-visible:ring-1 ring-0 border-none"
+								variant="primary"
+								onClick={ () => {
+									const tab3Errors = validateTab3( formData );
+									if (
+										Object.keys( tab3Errors ).length > 0
+									) {
+										setErrors( tab3Errors );
+										return;
+									}
+									setErrors( {} );
+									saveOffer();
+								} }
+								disabled={ isLoading }
+							>
+								{ /* eslint-disable no-nested-ternary */ }
+								{ isLoading
+									? formData.id
+										? __( 'Updating…', 'power-coupons' )
+										: __( 'Creating…', 'power-coupons' )
+									: formData.id
+									? __( 'Update Offer', 'power-coupons' )
+									: __( 'Create Offer', 'power-coupons' ) }
+								{ /* eslint-enable no-nested-ternary */ }
+							</Button>
+						) }
+					</div>
+				</>
+			);
+		},
+	},
+	{
+		slug: 'progress-bar',
+		title: __( 'Progress Bar', 'power-coupons' ),
+		content: ( {
+			formData,
+			setFormData,
+			setActiveTab,
+			saveOffer,
+			isLoading,
+			formError,
+		} ) => {
+			const isSpendType = SPEND_X_TYPES.includes( formData.key );
+
+			return (
+				<>
+					<div>
+						<strong>
+							{ __( 'Cart Progress Bar', 'power-coupons' ) }
+						</strong>
+						<p>
+							{ __(
+								'Configure how this offer appears in the cart progress bar. Only applies to spend-based offers.',
+								'power-coupons'
+							) }
+						</p>
+					</div>
+
+					{ ! isSpendType && (
+						<p className="text-sm text-text-tertiary bg-gray-50 border border-border-subtle rounded-md px-4 py-3">
+							{ __(
+								'Progress bar is only available for spend-based offers (Spend $X types). Quantity-based offers do not have a spend threshold.',
+								'power-coupons'
+							) }
+						</p>
+					) }
+
+					{ isSpendType && (
+						<div className="flex flex-col gap-4">
+							<div className="flex items-center gap-3">
+								<Switch
+									size="sm"
+									className="[&>input]:!border-none"
+									defaultValue={
+										formData.progress_bar_enabled || false
+									}
+									onChange={ ( checked ) =>
+										setFormData(
+											'progress_bar_enabled',
+											checked
+										)
+									}
+								/>
+								<span className="text-sm font-medium">
+									{ __(
+										'Enable Progress Bar',
+										'power-coupons'
+									) }
+								</span>
+							</div>
+
+							<div>
+								{ /* eslint-disable-next-line jsx-a11y/label-has-associated-control */ }
+								<label className="block text-sm font-medium mb-1">
+									{ __( 'Icon', 'power-coupons' ) }
+								</label>
+								<select
+									value={
+										formData.progress_bar_icon || 'gift'
+									}
+									onChange={ ( e ) =>
+										setFormData(
+											'progress_bar_icon',
+											e.target.value
+										)
+									}
+									className="block w-full border border-border-subtle rounded-md text-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-orange-500"
+								>
+									<option value="tag">
+										{ __( 'Tag', 'power-coupons' ) }
+									</option>
+									<option value="truck">
+										{ __( 'Truck', 'power-coupons' ) }
+									</option>
+									<option value="gift">
+										{ __( 'Gift', 'power-coupons' ) }
+									</option>
+									<option value="percent">
+										{ __( 'Percent', 'power-coupons' ) }
+									</option>
+								</select>
+							</div>
+
+							<Input
+								label={ __( 'Priority', 'power-coupons' ) }
+								type="number"
+								min="1"
+								step="1"
+								size="md"
+								defaultValue={
+									formData.progress_bar_priority || '1'
+								}
+								onChange={ ( value ) =>
+									setFormData(
+										'progress_bar_priority',
+										value
+									)
+								}
+							/>
+
+							<div>
+								<label
+									htmlFor="bogo-progress-bar-message"
+									className="block text-sm font-medium mb-1"
+								>
+									{ __(
+										'Progress Message',
+										'power-coupons'
+									) }
+								</label>
+								<textarea
+									id="bogo-progress-bar-message"
+									className="w-full p-2 border border-border-subtle rounded text-sm"
+									rows="2"
+									defaultValue={
+										formData.progress_bar_message ||
+										__(
+											'Spend {remaining} more to unlock {coupon_name}!',
+											'power-coupons'
+										)
+									}
+									onChange={ ( e ) =>
+										setFormData(
+											'progress_bar_message',
+											e.target.value
+										)
+									}
+								/>
+								<p className="mt-1 text-xs text-text-tertiary">
+									{ __(
+										'Placeholders: {remaining}, {threshold}, {coupon_name}',
+										'power-coupons'
+									) }
+								</p>
+							</div>
+
+							<div>
+								<label
+									htmlFor="bogo-progress-bar-success-msg"
+									className="block text-sm font-medium mb-1"
+								>
+									{ __( 'Success Message', 'power-coupons' ) }
+								</label>
+								<textarea
+									id="bogo-progress-bar-success-msg"
+									className="w-full p-2 border border-border-subtle rounded text-sm"
+									rows="2"
+									defaultValue={
+										formData.progress_bar_success_msg ||
+										__(
+											'You unlocked {coupon_name}!',
+											'power-coupons'
+										)
+									}
+									onChange={ ( e ) =>
+										setFormData(
+											'progress_bar_success_msg',
+											e.target.value
+										)
+									}
+								/>
+							</div>
+						</div>
+					) }
+
+					{ /* Server-level error banner */ }
+					{ formError && (
+						<div className="bg-red-50 border border-red-200 rounded-md px-4 py-3 text-red-700 text-sm flex items-start gap-2">
+							<svg
+								className="shrink-0 mt-0.5"
+								width="14"
+								height="14"
+								viewBox="0 0 12 12"
+								fill="none"
+								xmlns="http://www.w3.org/2000/svg"
+								aria-hidden="true"
+							>
+								<path
+									d="M6 1L11 10H1L6 1Z"
+									stroke="currentColor"
+									strokeWidth="1.2"
+									strokeLinecap="round"
+									strokeLinejoin="round"
+								/>
+								<path
+									d="M6 5V7"
+									stroke="currentColor"
+									strokeWidth="1.2"
+									strokeLinecap="round"
+								/>
+								<circle
+									cx="6"
+									cy="9"
+									r="0.5"
+									fill="currentColor"
+								/>
+							</svg>
+							{ formError }
+						</div>
+					) }
+
+					<div className="flex gap-2 ml-auto">
+						<Button
+							className="font-semibold text-sm px-3 py-2 cursor-pointer border border-border-subtle text-text-primary hover:text-text-primary bg-transparent hover:bg-field-secondary-background rounded-md"
+							variant="secondary"
+							onClick={ () => setActiveTab( FormTabs[ 2 ].slug ) }
+						>
+							{ __( 'Back', 'power-coupons' ) }
+						</Button>
 						<Button
 							className="font-semibold text-sm px-3 py-2 w-fit ml-auto cursor-pointer no-underline text-white hover:text-white bg-wpcolor hover:bg-wphovercolor rounded-md box-content outline-0 hover:outline-0 focus:ring-0 focus-visible:ring-1 ring-0 border-none"
 							variant="primary"
@@ -926,11 +1196,6 @@ const FormTabs = [
 		},
 	},
 ];
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-const getActiveTabIndex = ( slug ) =>
-	FormTabs.findIndex( ( t ) => t.slug === slug );
 
 // ─── Preset grid screen ───────────────────────────────────────────────────────
 
@@ -989,7 +1254,11 @@ const _ModalContentForm = ( {
 	const [ errors, setErrors ] = useState( {} );
 	const [ formError, setFormError ] = useState( '' );
 
-	const tabIndex = getActiveTabIndex( activeTab );
+	const isSpendType = SPEND_X_TYPES.includes( formData.key );
+	const visibleTabs = isSpendType
+		? FormTabs
+		: FormTabs.filter( ( tab ) => tab.slug !== 'progress-bar' );
+	const tabIndex = visibleTabs.findIndex( ( t ) => t.slug === activeTab );
 	const presetData = getBOGOPresetData( formData.key );
 
 	/**
@@ -1020,18 +1289,11 @@ const _ModalContentForm = ( {
 	};
 
 	/**
-	 * Final submit — called by Tab 3's "Create / Update Offer" button.
-	 * Runs client-side Tab 3 validation first, then POSTs to the server.
+	 * Final submit — called by the last tab's "Create / Update Offer" button.
+	 * POSTs to the server with all form data including progress bar fields.
 	 * Server validation errors are mapped back to the relevant tab.
 	 */
 	const saveOffer = async () => {
-		// Tab 3 client-side validation.
-		const tab3Errors = validateTab3( formData );
-		if ( Object.keys( tab3Errors ).length > 0 ) {
-			setErrors( tab3Errors );
-			return;
-		}
-
 		setIsLoading( true );
 		setFormError( '' );
 		setErrors( {} );
@@ -1078,6 +1340,28 @@ const _ModalContentForm = ( {
 			);
 			( formData.get_product_ids || [] ).forEach( ( id, i ) =>
 				payload.append( `get_product_ids[${ i }]`, id )
+			);
+
+			// Progress bar fields.
+			payload.append(
+				'progress_bar_enabled',
+				formData.progress_bar_enabled || false
+			);
+			payload.append(
+				'progress_bar_icon',
+				formData.progress_bar_icon || 'gift'
+			);
+			payload.append(
+				'progress_bar_priority',
+				formData.progress_bar_priority ?? 1
+			);
+			payload.append(
+				'progress_bar_message',
+				formData.progress_bar_message || ''
+			);
+			payload.append(
+				'progress_bar_success_msg',
+				formData.progress_bar_success_msg || ''
 			);
 
 			const response = await fetch( ajaxurl, {
@@ -1167,7 +1451,7 @@ const _ModalContentForm = ( {
 						variant="underline"
 						width="auto"
 					>
-						{ FormTabs.map( ( tab, index ) => (
+						{ visibleTabs.map( ( tab, index ) => (
 							<Tabs.Tab
 								key={ tab.slug }
 								type="button"
@@ -1186,7 +1470,7 @@ const _ModalContentForm = ( {
 					</Tabs.Group>
 
 					<div className="py-5 flex flex-col text-left gap-6">
-						{ FormTabs.map( ( tab ) => (
+						{ visibleTabs.map( ( tab ) => (
 							<Tabs.Panel key={ tab.slug } slug={ tab.slug }>
 								{
 									<tab.content
@@ -1236,6 +1520,15 @@ const ModalContent = ( { toggleModalOpen, editingOffer } ) => {
 					buy_product_ids: editingOffer.buy_product_ids || [],
 					get_product_ids: editingOffer.get_product_ids || [],
 					trigger_type: editingOffer.trigger_type || 'any_product',
+					progress_bar_enabled:
+						editingOffer.progress_bar_enabled || false,
+					progress_bar_icon: editingOffer.progress_bar_icon || 'gift',
+					progress_bar_priority:
+						editingOffer.progress_bar_priority || 1,
+					progress_bar_message:
+						editingOffer.progress_bar_message || '',
+					progress_bar_success_msg:
+						editingOffer.progress_bar_success_msg || '',
 			  }
 			: {}
 	);

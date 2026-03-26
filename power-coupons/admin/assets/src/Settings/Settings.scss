@@ -295,3 +295,106 @@ html.wp-toolbar.power-coupon-modal-open {
 	padding-top: 10px !important;
 	padding-bottom: 10px !important;
 }
+
+// Override force-ui rounded Tabs to match the reference pill style (orange active state).
+// The .pc-tabs-rounded wrapper is applied to Tabs.Group in Points.js.
+:is(#power-coupons-settings) .pc-tabs-rounded {
+	background-color: #fff !important;
+	padding: 0 !important;
+
+	// Active tab — orange tint background, orange text, orange outline.
+	> button.bg-background-primary {
+		background-color: #fef8f5 !important;
+		color: #e54e1a !important;
+		outline: 1px solid #f6a285 !important;
+		box-shadow: 0 1px 2px rgb(0 0 0 / 0.05) !important;
+
+		span {
+			color: inherit !important;
+		}
+	}
+
+	// Inactive tab — hover to orange text.
+	> button:not(.bg-background-primary) {
+		&:hover {
+			color: #e54e1a !important;
+
+			span {
+				color: inherit !important;
+			}
+		}
+	}
+}
+
+// CSS-only tooltip for campaign modal fields (avoids z-index issues with force-ui Tooltip in modal).
+.pc-field-tooltip {
+	&::after {
+		content: attr(data-tip);
+		position: absolute;
+		bottom: calc(100% + 6px);
+		left: 50%;
+		transform: translateX(-50%);
+		background: #111827;
+		color: #fff;
+		font-size: 12px;
+		font-weight: 400;
+		line-height: 1.4;
+		padding: 6px 10px;
+		border-radius: 6px;
+		white-space: normal;
+		width: max-content;
+		max-width: 240px;
+		pointer-events: none;
+		opacity: 0;
+		transition: opacity 0.15s;
+		z-index: 10;
+		box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+	}
+
+	&::before {
+		content: '';
+		position: absolute;
+		bottom: calc(100% + 2px);
+		left: 50%;
+		transform: translateX(-50%);
+		border: 4px solid transparent;
+		border-top-color: #111827;
+		pointer-events: none;
+		opacity: 0;
+		transition: opacity 0.15s;
+		z-index: 10;
+	}
+
+	&:hover::after,
+	&:hover::before,
+	&:focus::after,
+	&:focus::before {
+		opacity: 1;
+	}
+}
+
+// Override force-ui DatePicker brand colors to match plugin's orange theme.
+// force-ui defaults to purple (#6005ff) for primary/brand colors.
+// The .pc-date-picker-popup wrapper is applied to every DatePicker popup in the plugin.
+.pc-date-picker-popup {
+	// Apply button — normal & hover
+	.bg-button-primary { background-color: #f97316 !important; }
+	.hover\:bg-button-primary-hover:hover { background-color: #ea580c !important; }
+	.outline-button-primary { outline-color: #f97316 !important; }
+	.hover\:outline-button-primary-hover:hover { outline-color: #ea580c !important; }
+	.hover\:text-button-primary-hover:hover { color: #ea580c !important; }
+
+	// Selected day circles & today indicator dot
+	.bg-background-brand { background-color: #f97316 !important; }
+	.hover\:bg-background-brand:hover { background-color: #ea580c !important; }
+
+	// Range middle days (light tint between start and end)
+	.bg-brand-background-50 { background-color: #fff7ed !important; } // orange-50
+
+	// Borders, text, and focus ring
+	.border-brand-primary-600 { border-color: #f97316 !important; }
+	.text-brand-primary-600 { color: #ea580c !important; }
+	.ring-brand-primary-600 {
+		--tw-ring-color: rgb(249 115 22 / var(--tw-ring-opacity, 1)) !important;
+	}
+}

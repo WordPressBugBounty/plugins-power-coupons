@@ -460,6 +460,69 @@ div.power-coupons-drawer-trigger-wrapper .power-coupons-view-coupons-btn svg {
 	background: #9ca3af;
 }
 
+/* Modal Display Mode */
+.power-coupons-drawer[data-display-mode="modal"] .power-coupons-drawer-content {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	right: auto;
+	transform: translate( -50%, -50% ) scale( 0.95 );
+	width: 90%;
+	max-width: 720px;
+	height: auto;
+	max-height: 80vh;
+	border-radius: 12px;
+	box-shadow: 0 25px 50px -12px rgba( 0, 0, 0, 0.25 );
+	opacity: 0;
+	transition:
+		transform 0.3s ease,
+		opacity 0.3s ease;
+}
+
+.power-coupons-drawer[data-display-mode="modal"].is-open .power-coupons-drawer-content {
+	transform: translate( -50%, -50% ) scale( 1 );
+	opacity: 1;
+}
+
+.power-coupons-drawer[data-display-mode="modal"] .power-coupons-drawer-body {
+	max-height: calc( 80vh - 72px );
+	border-radius: 0 0 12px 12px;
+}
+
+.power-coupons-drawer[data-display-mode="modal"] .power-coupons-drawer-header {
+	border-radius: 12px 12px 0 0;
+}
+
+/* Modal coupon grid - 2 columns (specificity must beat .power-coupons-drawer.is-open .power-coupons-list .power-coupons-section) */
+.power-coupons-drawer[data-display-mode="modal"].is-open .power-coupons-list .power-coupons-section {
+	display: grid;
+	grid-template-columns: repeat( 2, 1fr );
+	gap: 16px;
+}
+
+.power-coupons-drawer[data-display-mode="modal"] .power-coupons-list .power-coupons-apply-coupon-btn {
+	width: 100%;
+}
+
+.power-coupons-drawer[data-display-mode="modal"] .power-coupons-list .power-coupons-apply-coupon-btn svg {
+	width: 100%;
+	height: auto;
+}
+
+/* Modal responsive */
+@media ( max-width: 768px ) {
+	.power-coupons-drawer[data-display-mode="modal"] .power-coupons-drawer-content {
+		width: 95%;
+		max-height: 90vh;
+	}
+	.power-coupons-drawer[data-display-mode="modal"] .power-coupons-drawer-body {
+		max-height: calc( 90vh - 72px );
+	}
+	.power-coupons-drawer[data-display-mode="modal"].is-open .power-coupons-list .power-coupons-section {
+		grid-template-columns: 1fr;
+	}
+}
+
 /* Reduced motion */
 @media ( prefers-reduced-motion: reduce ) {
 	.power-coupons-drawer,

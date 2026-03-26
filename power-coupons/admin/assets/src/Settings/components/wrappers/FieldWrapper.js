@@ -1,4 +1,5 @@
 import parse from 'html-react-parser';
+import { useId } from '@wordpress/element';
 import { Label } from '@bsf/force-ui';
 
 function FieldWrapper( props ) {
@@ -12,8 +13,8 @@ function FieldWrapper( props ) {
 		disabled = false,
 	} = props;
 
-	// Generate a unique ID if not provided
-	const fieldId = `field-${ Math.random().toString( 36 ).substr( 2, 9 ) }`;
+	// Generate a stable unique ID for ARIA associations.
+	const fieldId = useId();
 
 	return (
 		<section

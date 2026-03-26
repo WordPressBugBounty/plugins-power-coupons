@@ -31,7 +31,7 @@ class Power_Coupons_Settings_Helper {
 	 */
 	public static function get_default_settings( $translate = false ) {
 		$defaults = array(
-			'general'        => array(
+			'general'           => array(
 				'enable_plugin'             => true,
 				'show_on_cart'              => true,
 				'show_on_checkout'          => true,
@@ -40,17 +40,26 @@ class Power_Coupons_Settings_Helper {
 				'hide_wc_coupon_field'      => false,
 				'show_applied_coupons'      => true,
 				'show_expiry_info'          => true,
+				'coupon_display_mode'       => 'drawer',
 			),
-			'coupon_styling' => array(
+			'coupon_styling'    => array(
 				'coupon_style' => 'style-1',
 			),
-			'text'           => array(
+			'text'              => array(
 				'drawer_heading'       => 'Available Coupons',
 				'trigger_button_label' => 'View Available Coupons',
 				'coupon_applying_text' => 'Applying...',
 				'coupon_applied_text'  => 'Applied',
 				'no_coupons_text'      => 'No coupons available at this time.',
 				'coupons_loading_text' => 'Loading coupons...',
+			),
+			'cart_progress_bar' => array(
+				'enable'                => false,
+				'bar_color'             => '#f97316',
+				'bar_bg_color'          => '#e5e7eb',
+				'success_color'         => '#16a34a',
+				'animate'               => true,
+				'free_shipping_sources' => array(),
 			),
 		);
 

@@ -5,7 +5,7 @@ Tags: discount rules, dynamic discounts, woocommerce discounts, woocommerce coup
 Requires at least: 6.0
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.0.1
+Stable tag: 1.0.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -168,6 +168,15 @@ React / JavaScript source code:
 The files in `admin/assets/build/` are generated from the corresponding source files in `admin/assets/src/` using standard JavaScript build tools such as `wp-scripts`.
 
 == Changelog ==
+
+= 1.0.2 - Wednesday, 26th March 2026 =
+* New: Added compatibility for Loyalty Rewards (Pro).
+* New: Added compatibility for Cart Progress Bar (Pro).
+* New: Added coupon display mode setting with modal layout support.
+* New: Sub-tabbed settings for Loyalty Rewards and Text Customization.
+* Improvement: Settings UI improvements with cascading disable toggles.
+* Fix: Dropdown focus ring color consistency.
+* Fix: HTML entity rendering in admin history notes.
 
 = 1.0.1 - Monday, 16th March 2026 =
 * New: Added integration with the WordPress Abilities API.

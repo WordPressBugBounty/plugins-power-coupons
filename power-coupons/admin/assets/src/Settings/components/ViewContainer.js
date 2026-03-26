@@ -14,8 +14,10 @@ import Header from './Header';
 import Settings from './path/Settings';
 import apiFetch from '@wordpress/api-fetch';
 import BOGO from './path/BOGO';
+import Points from './path/Points';
 import LicenseNotice from './tabs/LicenseNotice';
 import ProUpsell from './tabs/ProUpsell';
+import DummyPointsTable from './tabs/PointsUpsell'; // Campaigns-only upsell placeholder
 
 const DUMMY_OFFERS = [
 	{
@@ -204,12 +206,23 @@ function ViewContainer() {
 			url: window.powerCouponsSettings.ajax_url,
 			method: 'POST',
 			body: formData,
-		} ).then( () => {
-			setProcessing( false );
-			toast.success( 'Successfully Saved!', {
-				description: '',
+		} )
+			.then( () => {
+				toast.success( 'Successfully Saved!', {
+					description: '',
+				} );
+			} )
+			.catch( () => {
+				toast.error(
+					__( 'Failed to save settings.', 'power-coupons' ),
+					{
+						description: '',
+					}
+				);
+			} )
+			.finally( () => {
+				setProcessing( false );
 			} );
-		} );
 	}, [ data ] );
 
 	const history = useHistory();
@@ -294,21 +307,54 @@ function ViewContainer() {
 							dismissAfter={ 2000 }
 							className="top-16"
 						/>
-						{ /* eslint-disable no-nested-ternary */ }
-						{ ! window.powerCouponsSettings.is_pro_active ? (
+						{ ! window.powerCouponsSettings.is_pro_active && (
 							<ProUpsell>
 								<DummyBOGOTable />
 							</ProUpsell>
-						) : showLicenseNotice ? (
-							<LicenseNotice navigate={ navigate } />
-						) : (
-							<BOGO
-								navigation={ navigation }
-								tab={ tab }
-								navigate={ navigate }
-								toast={ toast }
-							/>
 						) }
+						{ window.powerCouponsSettings.is_pro_active &&
+							showLicenseNotice && (
+								<LicenseNotice navigate={ navigate } />
+							) }
+						{ window.powerCouponsSettings.is_pro_active &&
+							! showLicenseNotice && (
+								<BOGO
+									navigation={ navigation }
+									tab={ tab }
+									navigate={ navigate }
+									toast={ toast }
+								/>
+							) }
+					</Container.Item>
+				) }
+				{ 'points' === activePath && (
+					<Container.Item className="m-[32px_32px_32px_12px]">
+						<Toaster
+							position="top-right"
+							design="stack"
+							theme="light"
+							autoDismiss={ true }
+							dismissAfter={ 2000 }
+							className="top-16"
+						/>
+						{ ! window.powerCouponsSettings.is_pro_active && (
+							<ProUpsell>
+								<DummyPointsTable />
+							</ProUpsell>
+						) }
+						{ window.powerCouponsSettings.is_pro_active &&
+							showLicenseNotice && (
+								<LicenseNotice navigate={ navigate } />
+							) }
+						{ window.powerCouponsSettings.is_pro_active &&
+							! showLicenseNotice && (
+								<Points
+									navigation={ navigation }
+									tab={ tab }
+									navigate={ navigate }
+									toast={ toast }
+								/>
+							) }
 					</Container.Item>
 				) }
 			</Container>

@@ -2,14 +2,14 @@
 # This file is distributed under the GPL v2 or later.
 msgid ""
 msgstr ""
-"Project-Id-Version: Power Coupons for WooCommerce 1.0.1\n"
+"Project-Id-Version: Power Coupons for WooCommerce 1.0.2\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/power-coupons\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-03-15T16:44:14+00:00\n"
+"POT-Creation-Date: 2026-03-26T07:10:54+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: power-coupons\n"
@@ -72,6 +72,7 @@ msgstr ""
 #: includes/class-power-coupons-ability.php:54
 #: admin/assets/build/settings/index.js:1
 #: admin/assets/build/settings/index.js:4
+#: admin/assets/build/settings/index.js:5
 msgid "Power Coupons"
 msgstr ""
 
@@ -89,7 +90,7 @@ msgstr ""
 #: admin/class-power-coupons-admin-settings.php:98
 #: admin/class-power-coupons-admin-settings.php:259
 #: admin/assets/build/settings/index.js:4
-#: admin/assets/build/settings/index.js:5
+#: admin/assets/build/settings/index.js:9
 msgid "BOGO Offers"
 msgstr ""
 
@@ -102,6 +103,7 @@ msgstr ""
 
 #: admin/class-power-coupons-admin-settings.php:332
 #: admin/class-power-coupons-admin-settings.php:333
+#: admin/class-power-coupons-admin-settings.php:351
 msgid "General"
 msgstr ""
 
@@ -115,150 +117,156 @@ msgstr ""
 msgid "Text Customization"
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:379
+#: admin/class-power-coupons-admin-settings.php:355
+#: admin/assets/build/settings/index.js:5
+#: admin/assets/build/settings/index.js:6
+msgid "Loyalty Rewards"
+msgstr ""
+
+#: admin/class-power-coupons-admin-settings.php:391
 #: admin/assets/build/settings/index.js:1
 msgid "Enable Plugin"
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:380
+#: admin/class-power-coupons-admin-settings.php:392
 #: admin/assets/build/settings/index.js:1
 msgid "Enable or disable Power Coupons functionality globally"
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:383
+#: admin/class-power-coupons-admin-settings.php:395
 msgid "Core Settings"
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:387
+#: admin/class-power-coupons-admin-settings.php:399
 #: admin/assets/build/settings/index.js:1
 msgid "Show on Cart"
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:388
+#: admin/class-power-coupons-admin-settings.php:400
 #: admin/assets/build/settings/index.js:1
 msgid "Display available coupons on cart page"
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:394
+#: admin/class-power-coupons-admin-settings.php:406
 #: admin/assets/build/settings/index.js:1
 msgid "Show on Checkout"
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:395
+#: admin/class-power-coupons-admin-settings.php:407
 #: admin/assets/build/settings/index.js:1
 msgid "Display available coupons on checkout page"
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:402
+#: admin/class-power-coupons-admin-settings.php:414
 msgid "Enable for Guests"
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:403
+#: admin/class-power-coupons-admin-settings.php:415
 msgid "Allow guest users to see and use coupons"
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:410
+#: admin/class-power-coupons-admin-settings.php:422
 msgid "Show Applied Coupons"
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:411
+#: admin/class-power-coupons-admin-settings.php:423
 msgid "Display list of currently applied coupons"
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:417
+#: admin/class-power-coupons-admin-settings.php:429
 msgid "Show Expiry Info"
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:418
+#: admin/class-power-coupons-admin-settings.php:430
 msgid "Show expiry date/countdown for coupons"
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:435
+#: admin/class-power-coupons-admin-settings.php:449
 msgid "Choose Coupon Styling"
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:436
+#: admin/class-power-coupons-admin-settings.php:450
 msgid "Select a visual style template for how your coupons will be displayed to customers."
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:439
+#: admin/class-power-coupons-admin-settings.php:453
 msgid "Section Headings"
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:455
+#: admin/class-power-coupons-admin-settings.php:468
 msgid "Drawer Heading"
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:456
+#: admin/class-power-coupons-admin-settings.php:469
 msgid "Drawer heading text"
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:461
+#: admin/class-power-coupons-admin-settings.php:475
 msgid "Drawer Trigger Button Label"
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:462
+#: admin/class-power-coupons-admin-settings.php:476
 msgid "Text label for the drawer trigger button"
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:467
+#: admin/class-power-coupons-admin-settings.php:482
 msgid "Coupon Applying Text"
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:468
+#: admin/class-power-coupons-admin-settings.php:483
 msgid "Text to display when coupon is applying."
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:473
+#: admin/class-power-coupons-admin-settings.php:489
 msgid "Coupon Applied Text"
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:474
+#: admin/class-power-coupons-admin-settings.php:490
 msgid "Text to display when coupon is successfully applied."
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:479
+#: admin/class-power-coupons-admin-settings.php:496
 msgid "No Coupons Text"
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:480
+#: admin/class-power-coupons-admin-settings.php:497
 msgid "Text to display when no valid coupons are available."
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:485
+#: admin/class-power-coupons-admin-settings.php:503
 msgid "Coupons Loading Text"
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:486
+#: admin/class-power-coupons-admin-settings.php:504
 msgid "Text to display when coupons are loading in the drawer."
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:516
+#: admin/class-power-coupons-admin-settings.php:535
 msgid "Permission denied"
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:529
-#: admin/class-power-coupons-admin-settings.php:539
+#: admin/class-power-coupons-admin-settings.php:548
+#: admin/class-power-coupons-admin-settings.php:558
 msgid "Invalid settings data format."
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:557
+#: admin/class-power-coupons-admin-settings.php:577
 msgid "Settings saved successfully"
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:570
+#: admin/class-power-coupons-admin-settings.php:590
 msgid "Permission denied."
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:576
+#: admin/class-power-coupons-admin-settings.php:596
 msgid "Power Coupons Pro is not installed."
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:580
+#: admin/class-power-coupons-admin-settings.php:600
 msgid "Power Coupons Pro is already active."
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:589
+#: admin/class-power-coupons-admin-settings.php:609
 msgid "Power Coupons Pro activated successfully."
 msgstr ""
 
@@ -270,38 +278,38 @@ msgstr ""
 msgid "View available discount coupons"
 msgstr ""
 
-#: controllers/class-checkout-drawer-controller.php:122
-#: controllers/class-checkout-drawer-controller.php:132
-#: includes/class-power-coupons-settings-helper.php:60
+#: controllers/class-checkout-drawer-controller.php:123
+#: controllers/class-checkout-drawer-controller.php:133
+#: includes/class-power-coupons-settings-helper.php:69
 #: views/coupon-list.php:40
 msgid "Available Coupons"
 msgstr ""
 
-#: controllers/class-checkout-drawer-controller.php:126
+#: controllers/class-checkout-drawer-controller.php:127
 msgid "Close coupon drawer"
 msgstr ""
 
-#: controllers/class-checkout-drawer-controller.php:133
+#: controllers/class-checkout-drawer-controller.php:134
 msgid "Loading coupons"
 msgstr ""
 
-#: controllers/class-checkout-drawer-controller.php:283
+#: controllers/class-checkout-drawer-controller.php:285
 #: controllers/class-power-coupons-display-controller.php:312
 msgid "NA"
 msgstr ""
 
-#: controllers/class-checkout-drawer-controller.php:324
-#: controllers/class-power-coupons-display-controller.php:350
+#: controllers/class-checkout-drawer-controller.php:336
+#: controllers/class-power-coupons-display-controller.php:360
 msgid "Percent Discount"
 msgstr ""
 
-#: controllers/class-checkout-drawer-controller.php:326
-#: controllers/class-power-coupons-display-controller.php:354
+#: controllers/class-checkout-drawer-controller.php:338
+#: controllers/class-power-coupons-display-controller.php:364
 msgid "Cart Discount"
 msgstr ""
 
-#: controllers/class-checkout-drawer-controller.php:328
-#: controllers/class-power-coupons-display-controller.php:358
+#: controllers/class-checkout-drawer-controller.php:340
+#: controllers/class-power-coupons-display-controller.php:368
 msgid "Product Discount"
 msgstr ""
 
@@ -616,25 +624,25 @@ msgstr ""
 msgid "Removes an applied coupon from the WooCommerce cart. Cannot remove auto-applied coupons. Requires an active cart session."
 msgstr ""
 
-#: includes/class-power-coupons-settings-helper.php:61
+#: includes/class-power-coupons-settings-helper.php:70
 msgid "View Available Coupons"
 msgstr ""
 
-#: includes/class-power-coupons-settings-helper.php:62
+#: includes/class-power-coupons-settings-helper.php:71
 #: public/class-power-coupons-frontend.php:126
 msgid "Applying..."
 msgstr ""
 
-#: includes/class-power-coupons-settings-helper.php:63
+#: includes/class-power-coupons-settings-helper.php:72
 #: views/coupon-list.php:75
 msgid "Applied"
 msgstr ""
 
-#: includes/class-power-coupons-settings-helper.php:64
+#: includes/class-power-coupons-settings-helper.php:73
 msgid "No coupons available at this time."
 msgstr ""
 
-#: includes/class-power-coupons-settings-helper.php:65
+#: includes/class-power-coupons-settings-helper.php:74
 msgid "Loading coupons..."
 msgstr ""
 
@@ -683,6 +691,7 @@ msgid "Copy Code"
 msgstr ""
 
 #: public/class-power-coupons-frontend.php:134
+#: views/points/cart-redeem-widget.php:57
 msgid "Remove"
 msgstr ""
 
@@ -740,6 +749,10 @@ msgstr ""
 msgid "This offer has been applied to your cart"
 msgstr ""
 
+#: views/cart-progress-bar/progress-bar.php:30
+msgid "Cart Progress"
+msgstr ""
+
 #: views/coupon-list.php:31
 msgid "Expires: {date}"
 msgstr ""
@@ -754,6 +767,226 @@ msgstr ""
 #: views/coupon-list.php:92
 #, php-format
 msgid "Coupon %1$s is already applied. %2$s"
+msgstr ""
+
+#. translators: %s: customer name
+#: views/emails/points/points-earned.php:22
+#: views/emails/points/points-expired.php:21
+#: views/emails/points/points-expiring.php:22
+#: views/emails/points/points-redeemed.php:22
+#, php-format
+msgid "Hi %s,"
+msgstr ""
+
+#. translators: 1: points earned, 2: points label, 3: order ID
+#: views/emails/points/points-earned.php:32
+#, php-format
+msgid "You have earned %1$s %2$s on your order #%3$s."
+msgstr ""
+
+#. translators: 1: balance, 2: points label
+#: views/emails/points/points-earned.php:44
+#: views/emails/points/points-expiring.php:46
+#, php-format
+msgid "Your current balance is %1$s %2$s."
+msgstr ""
+
+#: views/emails/points/points-earned.php:51
+msgid "Keep shopping to earn more rewards!"
+msgstr ""
+
+#. translators: 1: points amount, 2: points label
+#: views/emails/points/points-expired.php:31
+#, php-format
+msgid "%1$s %2$s have expired from your account."
+msgstr ""
+
+#. translators: 1: balance, 2: points label
+#: views/emails/points/points-expired.php:42
+#: views/emails/points/points-redeemed.php:44
+#, php-format
+msgid "Your remaining balance is %1$s %2$s."
+msgstr ""
+
+#: views/emails/points/points-expired.php:49
+msgid "Keep earning and redeeming to make the most of your rewards!"
+msgstr ""
+
+#. translators: 1: points amount, 2: points label, 3: days until expiry
+#: views/emails/points/points-expiring.php:32
+#, php-format
+msgid "%1$s %2$s will expire in %3$s days."
+msgstr ""
+
+#: views/emails/points/points-expiring.php:40
+msgid "Visit our store and redeem your credits before they expire!"
+msgstr ""
+
+#. translators: 1: points redeemed, 2: points label, 3: discount description
+#: views/emails/points/points-redeemed.php:32
+#, php-format
+msgid "You have redeemed %1$s %2$s for a %3$s discount."
+msgstr ""
+
+#. translators: 1: points balance, 2: points label
+#: views/points/cart-redeem-widget.php:32
+#, php-format
+msgid "Your balance: %1$s %2$s"
+msgstr ""
+
+#. translators: 1: discount amount, 2: points used, 3: points label
+#: views/points/cart-redeem-widget.php:46
+#, php-format
+msgid "%1$s discount applied (%2$s %3$s)"
+msgstr ""
+
+#. translators: 1: discount amount, 2: points count, 3: points label
+#: views/points/cart-redeem-widget.php:68
+#, php-format
+msgid "Use %1$s %2$s for a %3$s discount"
+msgstr ""
+
+#: views/points/cart-redeem-widget.php:80
+#: views/points/cart-redeem-widget.php:101
+msgid "Apply"
+msgstr ""
+
+#: views/points/cart-redeem-widget.php:94
+msgid "Enter credits"
+msgstr ""
+
+#: views/points/cart-redeem-widget.php:95
+msgid "Credits to apply"
+msgstr ""
+
+#: views/points/my-account-points.php:23
+#: views/points/my-account-points.php:24
+#: admin/assets/build/settings/index.js:5
+#: admin/assets/build/settings/index.js:6
+msgid "Order Earning"
+msgstr ""
+
+#: views/points/my-account-points.php:25
+#: admin/assets/build/settings/index.js:6
+msgid "Order Earning (Pending)"
+msgstr ""
+
+#: views/points/my-account-points.php:26
+#: admin/assets/build/settings/index.js:6
+msgid "Redemption"
+msgstr ""
+
+#: views/points/my-account-points.php:27
+#: admin/assets/build/settings/index.js:6
+msgid "Admin Adjustment"
+msgstr ""
+
+#: views/points/my-account-points.php:28
+#: admin/assets/build/settings/index.js:5
+#: admin/assets/build/settings/index.js:6
+msgid "Signup Bonus"
+msgstr ""
+
+#: views/points/my-account-points.php:29
+#: admin/assets/build/settings/index.js:5
+#: admin/assets/build/settings/index.js:6
+msgid "Product Review"
+msgstr ""
+
+#: views/points/my-account-points.php:30
+#: admin/assets/build/settings/index.js:6
+msgid "Expired"
+msgstr ""
+
+#: views/points/my-account-points.php:31
+msgid "Cancelled"
+msgstr ""
+
+#: views/points/my-account-points.php:32
+#: admin/assets/build/settings/index.js:6
+msgid "Refund"
+msgstr ""
+
+#: views/points/my-account-points.php:44
+msgid "Available"
+msgstr ""
+
+#: views/points/my-account-points.php:48
+msgid "Total Earned"
+msgstr ""
+
+#: views/points/my-account-points.php:52
+msgid "Total Redeemed"
+msgstr ""
+
+#: views/points/my-account-points.php:56
+msgid "Pending credits will be added to your balance once your order is completed."
+msgstr ""
+
+#: views/points/my-account-points.php:57
+msgid "Pending"
+msgstr ""
+
+#: views/points/my-account-points.php:67
+msgid "Credits History"
+msgstr ""
+
+#: views/points/my-account-points.php:70
+msgid "No credits activity yet."
+msgstr ""
+
+#: views/points/my-account-points.php:75
+#: admin/assets/build/settings/index.js:6
+msgid "Date"
+msgstr ""
+
+#: views/points/my-account-points.php:76
+#: admin/assets/build/settings/index.js:6
+msgid "Action"
+msgstr ""
+
+#: views/points/my-account-points.php:77
+#: admin/assets/build/settings/index.js:6
+#: admin/assets/build/settings/index.js:8
+msgid "Credits"
+msgstr ""
+
+#: views/points/my-account-points.php:78
+msgid "Balance"
+msgstr ""
+
+#: views/points/my-account-points.php:80
+msgid "Expires"
+msgstr ""
+
+#: views/points/my-account-points.php:82
+#: admin/assets/build/settings/index.js:6
+#: admin/assets/build/settings/index.js:8
+msgid "Note"
+msgstr ""
+
+#: views/points/review-pending-points.php:20
+msgid "Once approved,"
+msgstr ""
+
+#: views/points/review-pending-points.php:23
+msgid "will be added to your account."
+msgstr ""
+
+#: views/points/thankyou-earn-message.php:25
+msgid "will be added to your account once the order is fulfilled."
+msgstr ""
+
+#: views/points/thankyou-earn-message.php:29
+msgid "You've earned"
+msgstr ""
+
+#: views/points/thankyou-earn-message.php:32
+msgid "on this order!"
+msgstr ""
+
+#: views/points/thankyou-earn-message.php:33
+msgid "View your credits balance"
 msgstr ""
 
 #: views/templates/card-style-1.php:14
@@ -995,6 +1228,7 @@ msgid "Type at least 3 letters to search"
 msgstr ""
 
 #: admin/assets/build/settings/index.js:4
+#: admin/assets/build/settings/index.js:8
 msgid "Searching…"
 msgstr ""
 
@@ -1003,6 +1237,15 @@ msgid "No products found"
 msgstr ""
 
 #: admin/assets/build/settings/index.js:4
+msgid "Please select at least one product to buy."
+msgstr ""
+
+#: admin/assets/build/settings/index.js:4
+msgid "Please select at least one product to get."
+msgstr ""
+
+#: admin/assets/build/settings/index.js:4
+#: admin/assets/build/settings/index.js:5
 msgid "Basic Settings"
 msgstr ""
 
@@ -1015,7 +1258,7 @@ msgid "Define the core settings for your offer."
 msgstr ""
 
 #: admin/assets/build/settings/index.js:4
-#: admin/assets/build/settings/index.js:5
+#: admin/assets/build/settings/index.js:9
 msgid "Offer Name"
 msgstr ""
 
@@ -1025,6 +1268,7 @@ msgstr ""
 
 #: admin/assets/build/settings/index.js:4
 #: admin/assets/build/settings/index.js:5
+#: admin/assets/build/settings/index.js:9
 msgid "Description"
 msgstr ""
 
@@ -1057,6 +1301,7 @@ msgid "Offer name is required."
 msgstr ""
 
 #: admin/assets/build/settings/index.js:4
+#: admin/assets/build/settings/index.js:5
 msgid "Save & Continue"
 msgstr ""
 
@@ -1081,6 +1326,7 @@ msgid "Free"
 msgstr ""
 
 #: admin/assets/build/settings/index.js:4
+#: admin/assets/build/settings/index.js:5
 msgid "Percentage"
 msgstr ""
 
@@ -1113,6 +1359,7 @@ msgid "Include free shipping"
 msgstr ""
 
 #: admin/assets/build/settings/index.js:4
+#: admin/assets/build/settings/index.js:5
 msgid "Back"
 msgstr ""
 
@@ -1201,15 +1448,73 @@ msgid "Create Offer"
 msgstr ""
 
 #: admin/assets/build/settings/index.js:4
+msgid "Progress Bar"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:4
+#: admin/assets/build/settings/index.js:9
+msgid "Cart Progress Bar"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:4
+msgid "Configure how this offer appears in the cart progress bar. Only applies to spend-based offers."
+msgstr ""
+
+#: admin/assets/build/settings/index.js:4
+msgid "Progress bar is only available for spend-based offers (Spend $X types). Quantity-based offers do not have a spend threshold."
+msgstr ""
+
+#: admin/assets/build/settings/index.js:4
+msgid "Enable Progress Bar"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:4
+msgid "Icon"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:4
+msgid "Tag"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:4
+msgid "Truck"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:4
+msgid "Gift"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:4
+msgid "Percent"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:4
+#: admin/assets/build/settings/index.js:5
+msgid "Priority"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:4
+msgid "Progress Message"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:4
+msgid "Spend {remaining} more to unlock {coupon_name}!"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:4
+msgid "Placeholders: {remaining}, {threshold}, {coupon_name}"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:4
+msgid "Success Message"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:4
+msgid "You unlocked {coupon_name}!"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:4
 msgid "Select the offer you want to create"
-msgstr ""
-
-#: admin/assets/build/settings/index.js:4
-msgid "Please select at least one product to buy."
-msgstr ""
-
-#: admin/assets/build/settings/index.js:4
-msgid "Please select at least one product to get."
 msgstr ""
 
 #: admin/assets/build/settings/index.js:4
@@ -1237,10 +1542,13 @@ msgid "Are you sure you want to delete this item? This action cannot be undone."
 msgstr ""
 
 #: admin/assets/build/settings/index.js:4
+#: admin/assets/build/settings/index.js:5
+#: admin/assets/build/settings/index.js:6
 msgid "Delete"
 msgstr ""
 
 #: admin/assets/build/settings/index.js:4
+#: admin/assets/build/settings/index.js:8
 msgid "Cancel"
 msgstr ""
 
@@ -1333,16 +1641,19 @@ msgid "BOGO offer created successfully!"
 msgstr ""
 
 #: admin/assets/build/settings/index.js:4
+#: admin/assets/build/settings/index.js:5
+#: admin/assets/build/settings/index.js:6
 msgid "Selected"
 msgstr ""
 
 #: admin/assets/build/settings/index.js:4
-#: admin/assets/build/settings/index.js:5
+#: admin/assets/build/settings/index.js:9
 msgid "Search offers…"
 msgstr ""
 
 #: admin/assets/build/settings/index.js:4
 #: admin/assets/build/settings/index.js:5
+#: admin/assets/build/settings/index.js:9
 msgid "Create New Offer"
 msgstr ""
 
@@ -1351,17 +1662,19 @@ msgid "Loading offers…"
 msgstr ""
 
 #: admin/assets/build/settings/index.js:4
-#: admin/assets/build/settings/index.js:5
+#: admin/assets/build/settings/index.js:9
 msgid "Offer Type"
 msgstr ""
 
 #: admin/assets/build/settings/index.js:4
 #: admin/assets/build/settings/index.js:5
+#: admin/assets/build/settings/index.js:9
 msgid "Status"
 msgstr ""
 
 #: admin/assets/build/settings/index.js:4
 #: admin/assets/build/settings/index.js:5
+#: admin/assets/build/settings/index.js:9
 msgid "Actions"
 msgstr ""
 
@@ -1420,49 +1733,470 @@ msgid "Boost your sales and increase average order value by creating powerful Bu
 msgstr ""
 
 #: admin/assets/build/settings/index.js:5
+msgid "Clear"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:5
+msgid "Award credits when a customer completes an order."
+msgstr ""
+
+#: admin/assets/build/settings/index.js:5
+msgid "Award credits once when a new user registers an account."
+msgstr ""
+
+#: admin/assets/build/settings/index.js:5
+msgid "Award credits when a customer leaves an approved product review."
+msgstr ""
+
+#: admin/assets/build/settings/index.js:5
+msgid "Fixed"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:5
+msgid "A fixed number of credits per order, regardless of total."
+msgstr ""
+
+#: admin/assets/build/settings/index.js:5
+msgid "Per Currency Unit"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:5
+msgid "Credits based on amount spent. E.g. 2 = 2 credits per $1."
+msgstr ""
+
+#: admin/assets/build/settings/index.js:5
+msgid "Credits as a % of order total. E.g. 10 = 10% as credits."
+msgstr ""
+
+#: admin/assets/build/settings/index.js:5
+msgid "Campaign Basics"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:5
+msgid "Define the name, type, and earning rules for this campaign."
+msgstr ""
+
+#: admin/assets/build/settings/index.js:5
+msgid "Campaign Name"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:5
+msgid "E.g. Order Credits — 1 per $1"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:5
+msgid "Optional description for this campaign"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:5
+#: admin/assets/build/settings/index.js:9
+msgid "Action Type"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:5
+msgid "Campaign name is required."
+msgstr ""
+
+#: admin/assets/build/settings/index.js:5
+msgid "Earning Rules"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:5
+msgid "Earning Configuration"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:5
+msgid "Set the credits value, limits, and schedule for this campaign."
+msgstr ""
+
+#: admin/assets/build/settings/index.js:5
+#: admin/assets/build/settings/index.js:9
+msgid "Earn Type"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:5
+msgid "Verified Purchases Only"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:5
+msgid "Only award credits to customers who have purchased the reviewed product."
+msgstr ""
+
+#: admin/assets/build/settings/index.js:5
+#: admin/assets/build/settings/index.js:9
+msgid "Earn Value"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:5
+msgid "Credits to Award"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:5
+msgid "Fixed number of credits awarded each time this action occurs."
+msgstr ""
+
+#: admin/assets/build/settings/index.js:5
+msgid "E.g. \"2\" means 2 credits for every $1 spent."
+msgstr ""
+
+#: admin/assets/build/settings/index.js:5
+msgid "E.g. \"10\" means 10% of the order total as credits."
+msgstr ""
+
+#: admin/assets/build/settings/index.js:5
+msgid "A fixed number of credits awarded per order, regardless of total."
+msgstr ""
+
+#: admin/assets/build/settings/index.js:5
+msgid "Min Order Total"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:5
+msgid "Minimum order amount to earn credits. 0 = no minimum."
+msgstr ""
+
+#: admin/assets/build/settings/index.js:5
+msgid "Max Credits Cap"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:5
+msgid "Maximum credits per order. 0 = unlimited."
+msgstr ""
+
+#: admin/assets/build/settings/index.js:5
+msgid "Lower number = higher priority. When multiple campaigns match, the highest priority wins."
+msgstr ""
+
+#: admin/assets/build/settings/index.js:5
+msgid "Start Date"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:5
+msgid "Select start date"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:5
+msgid "Optional. Leave blank to start immediately."
+msgstr ""
+
+#: admin/assets/build/settings/index.js:5
+msgid "End Date"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:5
+msgid "Select end date"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:5
+msgid "Optional. Leave blank to run indefinitely."
+msgstr ""
+
+#: admin/assets/build/settings/index.js:5
+msgid "Earn value must be greater than 0."
+msgstr ""
+
+#: admin/assets/build/settings/index.js:5
+#: admin/assets/build/settings/index.js:8
+msgid "Saving…"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:5
+msgid "Update Campaign"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:5
+msgid "Create Campaign"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:5
+msgid "Failed to save campaign. Please try again."
+msgstr ""
+
+#: admin/assets/build/settings/index.js:5
+msgid "An error occurred. Please try again."
+msgstr ""
+
+#: admin/assets/build/settings/index.js:5
+msgid "Edit Campaign"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:5
+msgid "Create a New Campaign"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:5
+msgid "Campaign Navigation"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:5
+msgid "Birthday"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:5
+msgid "A fixed number of credits awarded per order, regardless of cart total."
+msgstr ""
+
+#: admin/assets/build/settings/index.js:5
+msgid "Credits based on amount spent. E.g., \"100\" means 100 credits earned per $1 spent."
+msgstr ""
+
+#: admin/assets/build/settings/index.js:5
+msgid "Credits as a percentage of the order total. E.g., \"10\" means 10 credits per $10 spent."
+msgstr ""
+
+#: admin/assets/build/settings/index.js:5
+msgid "Campaign updated successfully!"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:5
+msgid "Campaign created successfully!"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:5
+msgid "Search campaigns…"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:5
+#: admin/assets/build/settings/index.js:6
+#: admin/assets/build/settings/index.js:9
+msgid "Create New Campaign"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:5
+msgid "Loading campaigns…"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:5
+#: admin/assets/build/settings/index.js:9
+msgid "Title"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:5
+msgid "No campaigns found matching your search."
+msgstr ""
+
+#: admin/assets/build/settings/index.js:5
+#: admin/assets/build/settings/index.js:6
+msgid "-"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:5
+msgid "Campaign enabled successfully!"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:5
+msgid "Campaign disabled successfully!"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:5
+msgid "Campaigns deleted successfully!"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:5
+msgid "Campaign deleted successfully!"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:5
+msgid "Delete Selected Campaigns"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:5
+msgid "Delete Campaign"
+msgstr ""
+
+#. translators: %s: number of selected campaigns
+#: admin/assets/build/settings/index.js:6
+#, js-format
+msgid "Are you sure you want to delete %s selected campaign(s)? This action cannot be undone."
+msgstr ""
+
+#: admin/assets/build/settings/index.js:6
+msgid "Are you sure you want to delete this campaign? This action cannot be undone."
+msgstr ""
+
+#: admin/assets/build/settings/index.js:6
+msgid "Create Your First Credits Campaign"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:6
+msgid "Reward your customers with credits for purchases, signups, reviews, and more. Credits can be redeemed for discounts to drive repeat sales."
+msgstr ""
+
+#: admin/assets/build/settings/index.js:6
+msgid "Cancelled/Reversed"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:6
+msgid "All Actions"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:6
+msgid "Search user…"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:6
+msgid "All Dates"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:6
+msgid "Clear dates"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:6
+msgid "Manually add or deduct credits for a specific user"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:6
+msgid "Manual Adjust"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:6
+msgid "Loading history…"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:6
+#: admin/assets/build/settings/index.js:8
+msgid "User"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:6
+msgid "Balance After"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:6
+msgid "No history entries found."
+msgstr ""
+
+#. translators: 1: current range start, 2: current range end, 3: total entries
+#: admin/assets/build/settings/index.js:7
+#, js-format
+msgid "Showing %1$s-%2$s of %3$s"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:7
+msgid "Previous page"
+msgstr ""
+
+#. translators: 1: current page, 2: total pages
+#: admin/assets/build/settings/index.js:8
+#, js-format
+msgid "%1$s / %2$s"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:8
+msgid "Next page"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:8
+msgid "Manual Credits Adjustment"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:8
+msgid "Search by name or email…"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:8
+msgid "Type at least 2 characters to search"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:8
+msgid "No users found"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:8
+msgid "e.g. 50 or -25"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:8
+msgid "Use positive values to add credits, negative to deduct."
+msgstr ""
+
+#: admin/assets/build/settings/index.js:8
+msgid "Optional note for this adjustment"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:8
+msgid "Please select a user."
+msgstr ""
+
+#: admin/assets/build/settings/index.js:8
+msgid "Credits must be a non-zero value."
+msgstr ""
+
+#: admin/assets/build/settings/index.js:8
+msgid "Credits adjusted successfully!"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:8
+msgid "Failed to adjust credits."
+msgstr ""
+
+#: admin/assets/build/settings/index.js:8
+msgid "Adjust Credits"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:8
+msgid "Entries deleted successfully!"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:8
+msgid "Delete Selected Entries"
+msgstr ""
+
+#. translators: %s: number of selected entries
+#: admin/assets/build/settings/index.js:9
+#, js-format
+msgid "Are you sure you want to delete %s selected history entry(s)? This action cannot be undone."
+msgstr ""
+
+#: admin/assets/build/settings/index.js:9
+msgid "Reward Campaigns"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:9
+msgid "Logs"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:9
 msgid "Advanced Discount Rules"
 msgstr ""
 
-#: admin/assets/build/settings/index.js:5
-msgid "Cart Progress Bar"
-msgstr ""
-
-#: admin/assets/build/settings/index.js:5
+#: admin/assets/build/settings/index.js:9
 msgid "Loyalty Points"
 msgstr ""
 
-#: admin/assets/build/settings/index.js:5
+#: admin/assets/build/settings/index.js:9
 msgid "Coupon Analytics"
 msgstr ""
 
-#: admin/assets/build/settings/index.js:5
+#: admin/assets/build/settings/index.js:9
 msgid "And More…"
 msgstr ""
 
-#: admin/assets/build/settings/index.js:5
+#: admin/assets/build/settings/index.js:9
 msgid "Power Coupons Pro"
 msgstr ""
 
-#: admin/assets/build/settings/index.js:5
+#: admin/assets/build/settings/index.js:9
 msgid "PRO Feature"
 msgstr ""
 
-#: admin/assets/build/settings/index.js:5
+#: admin/assets/build/settings/index.js:9
 msgid "Unlock the Full Power of Power Coupons Pro"
 msgstr ""
 
-#: admin/assets/build/settings/index.js:5
+#: admin/assets/build/settings/index.js:9
 msgid "Boost conversions with advanced coupon automation, smart discount rules, and powerful cart incentives designed to increase sales."
 msgstr ""
 
-#: admin/assets/build/settings/index.js:5
+#: admin/assets/build/settings/index.js:9
 msgid "Activating…"
 msgstr ""
 
-#: admin/assets/build/settings/index.js:5
+#: admin/assets/build/settings/index.js:9
 msgid "Activate Power Coupons Pro"
 msgstr ""
 
-#: admin/assets/build/settings/index.js:5
+#: admin/assets/build/settings/index.js:9
 msgid "Upgrade to PRO"
 msgstr ""

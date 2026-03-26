@@ -332,7 +332,7 @@ class Power_Coupons_Admin_Settings {
 				'name'     => __( 'General', 'power-coupons' ),
 				'label'    => __( 'General', 'power-coupons' ),
 				'slug'     => 'power_coupons_general',
-				'priority' => 10,
+				'priority' => 20,
 			),
 			'power_coupons_coupon_styling' => array(
 				'name'     => __( 'Coupon Styling', 'power-coupons' ),
@@ -344,7 +344,17 @@ class Power_Coupons_Admin_Settings {
 				'name'     => __( 'Text Customization', 'power-coupons' ),
 				'label'    => __( 'Text Customization', 'power-coupons' ),
 				'slug'     => 'power_coupons_text',
-				'priority' => 40,
+				'priority' => 60,
+				'subtabs'  => array(
+					array(
+						'slug'  => 'general',
+						'title' => __( 'General', 'power-coupons' ),
+					),
+					array(
+						'slug'  => 'loyalty_rewards',
+						'title' => __( 'Loyalty Rewards', 'power-coupons' ),
+					),
+				),
 			),
 		);
 
@@ -358,11 +368,13 @@ class Power_Coupons_Admin_Settings {
 	 * @return array
 	 */
 	private function get_settings_fields() {
-		return array(
+		$fields = array(
 			'power_coupons_general'        => $this->get_general_fields(),
 			'power_coupons_coupon_styling' => $this->get_coupon_styling_fields(),
 			'power_coupons_text'           => $this->get_text_fields(),
 		);
+
+		return apply_filters( 'power_coupons_filter_settings_fields', $fields );
 	}
 
 	/**
@@ -372,7 +384,7 @@ class Power_Coupons_Admin_Settings {
 	 * @return array
 	 */
 	private function get_general_fields() {
-		return array(
+		$fields = array(
 			// Core Settings.
 			array(
 				'name'          => 'general[enable_plugin]',
@@ -420,6 +432,8 @@ class Power_Coupons_Admin_Settings {
 				'section'     => 'behavior',
 			),
 		);
+
+		return apply_filters( 'power_coupons_filter_general_fields', $fields );
 	}
 
 	/**
@@ -449,42 +463,47 @@ class Power_Coupons_Admin_Settings {
 	 */
 	private function get_text_fields() {
 		return array(
-			// Section Headings.
 			array(
 				'name'        => 'text[drawer_heading]',
 				'label'       => __( 'Drawer Heading', 'power-coupons' ),
 				'description' => __( 'Drawer heading text', 'power-coupons' ),
 				'type'        => 'text',
+				'subtab'      => 'general',
 			),
 			array(
 				'name'        => 'text[trigger_button_label]',
 				'label'       => __( 'Drawer Trigger Button Label', 'power-coupons' ),
 				'description' => __( 'Text label for the drawer trigger button', 'power-coupons' ),
 				'type'        => 'text',
+				'subtab'      => 'general',
 			),
 			array(
 				'name'        => 'text[coupon_applying_text]',
 				'label'       => __( 'Coupon Applying Text', 'power-coupons' ),
 				'description' => __( 'Text to display when coupon is applying.', 'power-coupons' ),
 				'type'        => 'text',
+				'subtab'      => 'general',
 			),
 			array(
 				'name'        => 'text[coupon_applied_text]',
 				'label'       => __( 'Coupon Applied Text', 'power-coupons' ),
 				'description' => __( 'Text to display when coupon is successfully applied.', 'power-coupons' ),
 				'type'        => 'text',
+				'subtab'      => 'general',
 			),
 			array(
 				'name'        => 'text[no_coupons_text]',
 				'label'       => __( 'No Coupons Text', 'power-coupons' ),
 				'description' => __( 'Text to display when no valid coupons are available.', 'power-coupons' ),
 				'type'        => 'text',
+				'subtab'      => 'general',
 			),
 			array(
 				'name'        => 'text[coupons_loading_text]',
 				'label'       => __( 'Coupons Loading Text', 'power-coupons' ),
 				'description' => __( 'Text to display when coupons are loading in the drawer.', 'power-coupons' ),
 				'type'        => 'text',
+				'subtab'      => 'general',
 			),
 		);
 	}
@@ -547,9 +566,10 @@ class Power_Coupons_Admin_Settings {
 
 		// Sanitize settings by section.
 		$sanitized = array(
-			'general'        => $this->sanitize_general_settings( $settings['general'] ?? array() ),
-			'coupon_styling' => $this->sanitize_coupon_styling_settings( $settings['coupon_styling'] ?? array() ),
-			'text'           => $this->sanitize_text_settings( $settings['text'] ?? array() ),
+			'general'           => $this->sanitize_general_settings( $settings['general'] ?? array() ),
+			'coupon_styling'    => $this->sanitize_coupon_styling_settings( $settings['coupon_styling'] ?? array() ),
+			'text'              => $this->sanitize_text_settings( $settings['text'] ?? array() ),
+			'cart_progress_bar' => $this->sanitize_cart_progress_bar_settings( $settings['cart_progress_bar'] ?? array() ),
 		);
 
 		update_option( self::OPTION_KEY, $sanitized );
@@ -604,6 +624,9 @@ class Power_Coupons_Admin_Settings {
 			'hide_wc_coupon_field' => ! empty( $settings['hide_wc_coupon_field'] ),
 			'show_applied_coupons' => ! empty( $settings['show_applied_coupons'] ),
 			'show_expiry_info'     => ! empty( $settings['show_expiry_info'] ),
+			'coupon_display_mode'  => in_array( $settings['coupon_display_mode'] ?? 'drawer', array( 'drawer', 'modal' ), true )
+				? sanitize_text_field( $settings['coupon_display_mode'] )
+				: 'drawer',
 		);
 	}
 
@@ -641,6 +664,28 @@ class Power_Coupons_Admin_Settings {
 		return array(
 			'coupon_style' => sanitize_text_field( $settings['coupon_style'] ?? 'style-1' ),
 		);
+	}
+
+	/**
+	 * Sanitize cart progress bar settings
+	 *
+	 * @param array $settings Cart progress bar settings to sanitize.
+	 * @return array Sanitized settings.
+	 */
+	private function sanitize_cart_progress_bar_settings( $settings ) {
+		$bar_color     = sanitize_hex_color( $settings['bar_color'] ?? '#f97316' );
+		$bar_bg_color  = sanitize_hex_color( $settings['bar_bg_color'] ?? '#e5e7eb' );
+		$success_color = sanitize_hex_color( $settings['success_color'] ?? '#16a34a' );
+
+		$sanitized = array(
+			'enable'        => ! empty( $settings['enable'] ),
+			'bar_color'     => $bar_color ? $bar_color : '#f97316',
+			'bar_bg_color'  => $bar_bg_color ? $bar_bg_color : '#e5e7eb',
+			'success_color' => $success_color ? $success_color : '#16a34a',
+			'animate'       => isset( $settings['animate'] ) ? (bool) $settings['animate'] : true,
+		);
+
+		return $sanitized;
 	}
 
 }

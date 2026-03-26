@@ -148,7 +148,7 @@ function ProUpsell( { children } ) {
 						</button>
 					) : (
 						<a
-							href="https://cartflows.com/power-coupons-pro-waitlist?utm_source=dashboard&utm_medium=free-power-coupons&utm_campaign=go-pro"
+							href="https://cartflows.com/power-coupons-pricing/?utm_source=dashboard&utm_medium=free-power-coupons&utm_campaign=go-pro"
 							target="_blank"
 							rel="noopener noreferrer"
 							className="block w-full text-center rounded-lg py-3 text-sm font-semibold no-underline text-white bg-orange-500 hover:bg-orange-600 border-0 ring-0 cursor-pointer"
