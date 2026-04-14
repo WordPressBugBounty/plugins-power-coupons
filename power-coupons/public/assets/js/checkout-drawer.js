@@ -525,17 +525,12 @@
 					type === 'success'
 						? 'woocommerce-message'
 						: 'woocommerce-error';
-				const notice = $(
-					'<div class="' +
-						noticeClass +
-						'" role="' +
-						noticeRole +
-						'" aria-live="' +
-						ariaLive +
-						'" aria-atomic="true">' +
-						message +
-						'</div>'
-				);
+				const notice = $( '<div>' )
+					.addClass( noticeClass )
+					.attr( 'role', noticeRole )
+					.attr( 'aria-live', ariaLive )
+					.attr( 'aria-atomic', 'true' )
+					.text( message );
 
 				noticeWrapper.html( notice );
 

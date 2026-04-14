@@ -6,6 +6,7 @@ import reducer, { initialState } from './components/Reducer';
 import './Settings.scss';
 import { StateProvider } from './components/Data';
 import ViewContainer from './components/ViewContainer';
+import Onboarding from './components/onboarding';
 
 const container = document.getElementById( 'power-coupons-settings' );
 const root = createRoot( container ); // Added compatibility for React 18.
@@ -13,7 +14,11 @@ const root = createRoot( container ); // Added compatibility for React 18.
 const App = () => (
 	<BrowserRouter>
 		<StateProvider initialState={ initialState } reducer={ reducer }>
-			<ViewContainer />
+			{ window.powerCouponsSettings.onboarding?.inProgress ? (
+				<Onboarding />
+			) : (
+				<ViewContainer />
+			) }
 		</StateProvider>
 	</BrowserRouter>
 );

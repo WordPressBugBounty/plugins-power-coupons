@@ -225,6 +225,11 @@ class Checkout_Drawer_Controller {
 					'value'   => 'power_coupons_bogo',
 					'compare' => '!=',
 				),
+				// Exclude gift card coupons — they are personal, recipient-specific codes.
+				array(
+					'key'     => '_power_coupon_gift_card',
+					'compare' => 'NOT EXISTS',
+				),
 			),
 		);
 

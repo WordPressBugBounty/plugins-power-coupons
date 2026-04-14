@@ -18,7 +18,6 @@ import Points from './path/Points';
 import LicenseNotice from './tabs/LicenseNotice';
 import ProUpsell from './tabs/ProUpsell';
 import DummyPointsTable from './tabs/PointsUpsell'; // Campaigns-only upsell placeholder
-
 const DUMMY_OFFERS = [
 	{
 		name: 'Buy 2 Get 1 Free — T-Shirts',

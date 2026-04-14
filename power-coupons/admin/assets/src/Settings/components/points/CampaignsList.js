@@ -90,7 +90,7 @@ function CampaignsList( { toast, tabSelector } ) {
 	// Initial load on mount.
 	useEffect( () => {
 		loadCampaigns();
-	}, [] );
+	}, [] ); // eslint-disable-line react-hooks/exhaustive-deps
 
 	// Debounced server search whenever searchQuery changes.
 	useEffect( () => {

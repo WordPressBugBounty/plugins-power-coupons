@@ -48,8 +48,15 @@ class Power_Coupons_Core {
 			\Power_Coupons\Admin\Power_Coupons_Admin::get_instance();
 		}
 
+		// Initialize BSF Analytics (stats payload + deactivation survey).
+		if ( is_admin() ) {
+			\Power_Coupons\Admin\Power_Coupons_Analytics::get_instance();
+		}
+
+		// Initialize analytics events tracking.
+		Power_Coupons_Analytics::get_instance();
+
 		// Initialize public.
 		\Power_Coupons\Public_Folder\Power_Coupons_Frontend::get_instance();
 	}
 }
-

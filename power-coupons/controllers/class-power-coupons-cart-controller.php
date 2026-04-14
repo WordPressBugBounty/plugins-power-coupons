@@ -105,6 +105,11 @@ class Cart_Controller {
 		$result = $wc_cart->apply_coupon( $coupon_code );
 
 		if ( $result ) {
+			// Analytics flag-setter: first coupon applied via Power Coupons.
+			if ( ! get_option( 'power_coupons_first_coupon_applied' ) ) {
+				update_option( 'power_coupons_first_coupon_applied', true );
+			}
+
 			wp_send_json_success( array( 'message' => __( 'Coupon applied successfully.', 'power-coupons' ) ) );
 		}
 

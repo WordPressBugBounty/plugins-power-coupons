@@ -36,13 +36,12 @@ function FieldContainer( { tabKey } ) {
 	if ( hasSubtabs ) {
 		const fields = allFields.filter( ( f ) => f.subtab === activeSubtab );
 
-		// Toggle states for cascading disable.
+		// --- Loyalty Rewards (Points) cascading disable ---
 		const isLoyaltyEnabled = data?.points_settings?.enable ?? true;
 		const isRedemptionEnabled =
 			data?.points_settings?.enable_redemption ?? true;
 		const isExpiryEnabled = data?.points_settings?.enable_expiry ?? true;
 
-		// Redemption sub-fields gated by enable_redemption.
 		const redemptionSubFields = [
 			'points_settings[redemption_mode]',
 			'points_settings[min_points_to_redeem]',
@@ -53,39 +52,55 @@ function FieldContainer( { tabKey } ) {
 			'points_settings[max_credits_per_order]',
 		];
 
-		// Expiry sub-fields gated by enable_expiry.
 		const expirySubFields = [
 			'points_settings[expiry_days]',
 			'points_settings[expiry_notice_days]',
 		];
 
+		// --- Gift Cards cascading disable ---
+		const isGiftCardsEnabled = data?.gift_card_settings?.enable ?? true;
+
 		const isFieldDisabled = ( fieldName ) => {
-			// Master toggle is never disabled.
-			if ( fieldName === 'points_settings[enable]' ) {
+			// Loyalty Rewards tab fields.
+			if ( fieldName.startsWith( 'points_settings[' ) ) {
+				if ( fieldName === 'points_settings[enable]' ) {
+					return false;
+				}
+				if ( ! isLoyaltyEnabled ) {
+					return true;
+				}
+				if ( fieldName === 'points_settings[enable_redemption]' ) {
+					return false;
+				}
+				if ( fieldName === 'points_settings[enable_expiry]' ) {
+					return false;
+				}
+				if (
+					! isRedemptionEnabled &&
+					redemptionSubFields.includes( fieldName )
+				) {
+					return true;
+				}
+				if (
+					! isExpiryEnabled &&
+					expirySubFields.includes( fieldName )
+				) {
+					return true;
+				}
 				return false;
 			}
-			// If master is off, everything else is disabled.
-			if ( ! isLoyaltyEnabled ) {
-				return true;
-			}
-			// Section toggles are not disabled by their own sub-fields.
-			if ( fieldName === 'points_settings[enable_redemption]' ) {
+
+			// Gift Cards tab fields.
+			if ( fieldName.startsWith( 'gift_card_settings[' ) ) {
+				if ( fieldName === 'gift_card_settings[enable]' ) {
+					return false;
+				}
+				if ( ! isGiftCardsEnabled ) {
+					return true;
+				}
 				return false;
 			}
-			if ( fieldName === 'points_settings[enable_expiry]' ) {
-				return false;
-			}
-			// Redemption sub-fields gated by enable_redemption.
-			if (
-				! isRedemptionEnabled &&
-				redemptionSubFields.includes( fieldName )
-			) {
-				return true;
-			}
-			// Expiry sub-fields gated by enable_expiry.
-			if ( ! isExpiryEnabled && expirySubFields.includes( fieldName ) ) {
-				return true;
-			}
+
 			return false;
 		};
 

@@ -2,18 +2,137 @@ import {
 	Topbar,
 	Tabs,
 	Input,
+	DatePicker,
 	RadioButton,
 	Button,
 	Checkbox,
 	Switch,
 } from '@bsf/force-ui';
 import { __ } from '@wordpress/i18n';
-import { useState } from '@wordpress/element';
+import { useState, useEffect, useRef } from '@wordpress/element';
 import Logo from '../../../../images/logo.svg';
 import { BOGOPresets, getBOGOPresetData, RenderIcon } from '../common/Utils';
 import { CheckCircleIcon } from '@heroicons/react/24/solid';
-import { ClockIcon } from '@heroicons/react/24/outline';
+import {
+	CalendarIcon,
+	ClockIcon,
+	InformationCircleIcon,
+} from '@heroicons/react/24/outline';
+import { format } from 'date-fns';
 import ProductSelector from './ProductSelector';
+
+// ─── Date helpers ────────────────────────────────────────────────────────────
+
+const toYMD = ( date ) => format( date, 'yyyy-MM-dd' );
+
+// Guard against MySQL DATETIME strings ('2026-03-23 00:00:00') and invalid values.
+const parseDate = ( val ) => {
+	if ( ! val ) {
+		return undefined;
+	}
+	// Slice to first 10 chars so '2026-03-23 00:00:00' → '2026-03-23'
+	const d = new Date( String( val ).slice( 0, 10 ) + 'T00:00:00' );
+	return isNaN( d.getTime() ) ? undefined : d;
+};
+
+const toDisplay = ( date ) => {
+	if ( ! date || isNaN( date.getTime() ) ) {
+		return '';
+	}
+	return format( date, 'MMM d, yyyy' );
+};
+
+// ─── DateField component ─────────────────────────────────────────────────────
+
+const DateField = ( { id, label, value, placeholder, onChange, hint } ) => {
+	const [ open, setOpen ] = useState( false );
+	const [ dropUp, setDropUp ] = useState( false );
+	const dateRef = useRef( null );
+
+	useEffect( () => {
+		if ( ! open ) {
+			return;
+		}
+		const handler = ( e ) => {
+			if ( dateRef.current && ! dateRef.current.contains( e.target ) ) {
+				setOpen( false );
+			}
+		};
+		document.addEventListener( 'mousedown', handler );
+		return () => document.removeEventListener( 'mousedown', handler );
+	}, [ open ] );
+
+	const handleToggle = () => {
+		if ( ! open && dateRef.current ) {
+			const rect = dateRef.current.getBoundingClientRect();
+			// Single-month DatePicker is ~350px tall; flip up if not enough room below.
+			setDropUp( window.innerHeight - rect.bottom < 370 );
+		}
+		setOpen( ( v ) => ! v );
+	};
+
+	const selected = parseDate( value );
+
+	return (
+		<div className="flex flex-col gap-1.5" ref={ dateRef }>
+			<label
+				htmlFor={ id }
+				className="text-sm font-medium text-text-primary flex items-center gap-1"
+			>
+				{ label }
+				{ hint && (
+					<span
+						className="pc-field-tooltip inline-flex cursor-help relative"
+						data-tip={ hint }
+					>
+						<InformationCircleIcon className="w-4 h-4 text-text-tertiary flex-shrink-0" />
+					</span>
+				) }
+			</label>
+			<div className="relative">
+				<button
+					id={ id }
+					type="button"
+					onClick={ handleToggle }
+					className="w-full h-10 px-3.5 flex items-center gap-2 bg-white text-text-primary outline outline-1 outline-border-subtle border-none transition-[color,box-shadow,outline] duration-200 rounded text-sm text-left cursor-pointer hover:outline-border-strong focus:outline-focus-border focus:ring-2 focus:ring-toggle-on focus:ring-offset-2"
+				>
+					<CalendarIcon className="w-4 h-4 text-text-tertiary flex-shrink-0" />
+					<span
+						className={
+							value ? 'text-text-primary' : 'text-text-tertiary'
+						}
+					>
+						{ value
+							? toDisplay( parseDate( value ) )
+							: placeholder }
+					</span>
+				</button>
+				{ open && (
+					<div
+						className={ `pc-date-picker-popup absolute z-50 ${
+							dropUp ? 'bottom-full mb-1' : 'top-full mt-1'
+						} left-0 shadow-lg rounded-md` }
+					>
+						<DatePicker
+							selectionType="single"
+							variant="normal"
+							selected={ selected }
+							onApply={ ( date ) => {
+								onChange( toYMD( date ) );
+								setOpen( false );
+							} }
+							onCancel={ () => {
+								onChange( '' );
+								setOpen( false );
+							} }
+							cancelButtonText={ __( 'Clear', 'power-coupons' ) }
+						/>
+					</div>
+				) }
+			</div>
+		</div>
+	);
+};
 
 // ─── Offer type groups ───────────────────────────────────────────────────────
 
@@ -647,6 +766,42 @@ const FormTabs = [
 								/>
 							</div>
 						) }
+
+						{ /* Schedule — Start & End Dates */ }
+						<div className="grid grid-cols-2 gap-4">
+							<DateField
+								id="bogo-input-start-date"
+								label={ __( 'Start Date', 'power-coupons' ) }
+								value={ formData.start_date ?? '' }
+								placeholder={ __(
+									'Select start date',
+									'power-coupons'
+								) }
+								onChange={ ( value ) =>
+									setFormData( 'start_date', value )
+								}
+								hint={ __(
+									'Optional. Leave blank to start immediately.',
+									'power-coupons'
+								) }
+							/>
+							<DateField
+								id="bogo-input-end-date"
+								label={ __( 'End Date', 'power-coupons' ) }
+								value={ formData.end_date ?? '' }
+								placeholder={ __(
+									'Select end date',
+									'power-coupons'
+								) }
+								onChange={ ( value ) =>
+									setFormData( 'end_date', value )
+								}
+								hint={ __(
+									'Optional. Leave blank to run indefinitely.',
+									'power-coupons'
+								) }
+							/>
+						</div>
 
 						{ /* Free Shipping Option */ }
 						<div className="flex items-start flex-col gap-1.5">
@@ -1335,6 +1490,10 @@ const _ModalContentForm = ( {
 				formData.trigger_type || 'any_product'
 			);
 
+			// Schedule fields.
+			payload.append( 'start_date', formData.start_date || '' );
+			payload.append( 'end_date', formData.end_date || '' );
+
 			( formData.buy_product_ids || [] ).forEach( ( id, i ) =>
 				payload.append( `buy_product_ids[${ i }]`, id )
 			);
@@ -1520,6 +1679,8 @@ const ModalContent = ( { toggleModalOpen, editingOffer } ) => {
 					buy_product_ids: editingOffer.buy_product_ids || [],
 					get_product_ids: editingOffer.get_product_ids || [],
 					trigger_type: editingOffer.trigger_type || 'any_product',
+					start_date: editingOffer.start_date || '',
+					end_date: editingOffer.end_date || '',
 					progress_bar_enabled:
 						editingOffer.progress_bar_enabled || false,
 					progress_bar_icon: editingOffer.progress_bar_icon || 'gift',

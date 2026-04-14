@@ -135,7 +135,7 @@ function PointsHistory( { toast, tabSelector } ) {
 	// Initial load on mount.
 	useEffect( () => {
 		loadHistory();
-	}, [] );
+	}, [] ); // eslint-disable-line react-hooks/exhaustive-deps
 
 	// Reload when page changes (but not on first render which is handled above).
 	useEffect( () => {

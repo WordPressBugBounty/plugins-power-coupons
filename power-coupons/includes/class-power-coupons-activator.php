@@ -31,8 +31,23 @@ class Power_Coupons_Activator {
 		// Flush rewrite rules.
 		flush_rewrite_rules();
 
+		// Run data migrations (idempotent — safe to run on every activation).
+		require_once POWER_COUPONS_DIR . 'includes/class-power-coupons-migration.php';
+		Power_Coupons_Migration::run_on_activation();
+
 		// Set activation flag.
 		set_transient( 'power_coupons_activated', true, 30 );
+
+		// Set onboarding redirect transient (only if onboarding not already completed).
+		$is_onboarding_complete = get_option( 'power_coupons_is_onboarding_complete', 'no' );
+		if ( 'yes' !== $is_onboarding_complete ) {
+			set_transient( 'power_coupons_redirect_to_onboarding', 'yes' );
+		}
+
+		// Record install time for analytics (days_since_install calculation).
+		if ( ! get_option( 'power_coupons_usage_installed_time' ) ) {
+			update_option( 'power_coupons_usage_installed_time', time() );
+		}
 	}
 
 	/**

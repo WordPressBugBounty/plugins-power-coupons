@@ -14,11 +14,13 @@ parameters:
 	stubFiles:
 		- tests/php/stubs/wordpress-override.php
 	scanFiles:
+		- admin/class-power-coupons-analytics.php
 	bootstrapFiles:
 		- %rootDir%/../../php-stubs/wordpress-stubs/wordpress-stubs.php
 		- %rootDir%/../../php-stubs/woocommerce-stubs/woocommerce-stubs.php
 		- tests/php/stubs/wpb-constants.php
 		- tests/php/stubs/wpb-stubs.php
+		- tests/php/stubs/bsf-analytics-stubs.php
 	paths:
 		- power-coupons.php
 		- models

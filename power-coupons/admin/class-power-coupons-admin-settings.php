@@ -50,6 +50,8 @@ class Power_Coupons_Admin_Settings {
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_settings_assets' ) );
 		add_action( 'wp_ajax_power_coupons_update_settings', array( $this, 'ajax_update_settings' ) );
 		add_action( 'wp_ajax_power_coupons_activate_pro', array( $this, 'ajax_activate_pro' ) );
+		add_action( 'wp_ajax_power_coupons_complete_onboarding', array( $this, 'complete_onboarding' ) );
+		add_action( 'wp_ajax_power_coupons_onboarding_skipped', array( $this, 'ajax_onboarding_skipped' ) );
 	}
 
 	/**
@@ -212,6 +214,8 @@ class Power_Coupons_Admin_Settings {
 		$settings = $this->get_settings();
 
 		// Localize script with settings data.
+		$is_onboarding = self::is_admin_onboarding_screen();
+
 		$localize_data = array(
 			'ajax_url'               => admin_url( 'admin-ajax.php' ),
 			'update_nonce'           => wp_create_nonce( 'power_coupons_update_settings' ),
@@ -225,6 +229,24 @@ class Power_Coupons_Admin_Settings {
 			'is_pro_active'          => defined( 'POWER_COUPONS_PRO_VERSION' ),
 			'is_pro_installed'       => file_exists( WP_PLUGIN_DIR . '/power-coupons-pro/power-coupons-pro.php' ),
 			'activate_pro_nonce'     => wp_create_nonce( 'power_coupons_activate_pro' ),
+			'onboarding'             => array(
+				'inProgress' => $is_onboarding,
+				'ajaxUrl'    => add_query_arg(
+					array(
+						'action' => 'power_coupons_complete_onboarding',
+						'nonce'  => wp_create_nonce( 'power_coupons_onboarding_nonce' ),
+					),
+					admin_url( 'admin-ajax.php' )
+				),
+				'skipUrl'    => add_query_arg(
+					array(
+						'action' => 'power_coupons_onboarding_skipped',
+						'nonce'  => wp_create_nonce( 'power_coupons_onboarding_skip_nonce' ),
+					),
+					admin_url( 'admin-ajax.php' )
+				),
+				'defaults'   => $this->get_onboarding_defaults(),
+			),
 		);
 
 		$localize_data = apply_filters( 'power_coupons_filter_admin_localize_data', $localize_data );
@@ -236,6 +258,23 @@ class Power_Coupons_Admin_Settings {
 		}
 
 		wp_localize_script( 'power-coupons-settings', 'powerCouponsSettings', $localize_data );
+
+		// Hide admin bar and sidebar during onboarding for a clean full-screen experience.
+		if ( $is_onboarding ) {
+			$onboarding_css = '
+				html.wp-toolbar {
+					padding: 0;
+				}
+				#wpcontent {
+					margin: 0;
+					padding: 0;
+				}
+				#wpadminbar, #adminmenumain {
+					display: none;
+				}
+			';
+			wp_add_inline_style( 'power-coupons-settings', $onboarding_css );
+		}
 	}
 
 	/**
@@ -354,6 +393,10 @@ class Power_Coupons_Admin_Settings {
 						'slug'  => 'loyalty_rewards',
 						'title' => __( 'Loyalty Rewards', 'power-coupons' ),
 					),
+					array(
+						'slug'  => 'gift_cards',
+						'title' => __( 'Gift Cards', 'power-coupons' ),
+					),
 				),
 			),
 		);
@@ -428,6 +471,18 @@ class Power_Coupons_Admin_Settings {
 				'name'        => 'general[show_expiry_info]',
 				'label'       => __( 'Show Expiry Info', 'power-coupons' ),
 				'description' => __( 'Show expiry date/countdown for coupons', 'power-coupons' ),
+				'type'        => 'toggle',
+				'section'     => 'behavior',
+			),
+			array(
+				'name'        => 'general[enable_usage_tracking]',
+				'label'       => __( 'Help Us Improve Your Experience', 'power-coupons' ),
+				'description' => sprintf(
+					/* translators: %1$s: link html start, %2$s: link html end. */
+					__( 'Allow Power Coupons and our other products to track non-sensitive usage tracking data. %1$sLearn More%2$s', 'power-coupons' ),
+					'<a href="https://store.brainstormforce.com/usage-tracking/?utm_source=dashboard&utm_medium=power-coupons&utm_campaign=docs" class="text-wpcolor hover:text-wphovercolor no-underline" target="_blank">',
+					'</a>'
+				),
 				'type'        => 'toggle',
 				'section'     => 'behavior',
 			),
@@ -617,14 +672,15 @@ class Power_Coupons_Admin_Settings {
 	 */
 	private function sanitize_general_settings( $settings ) {
 		return array(
-			'enable_plugin'        => ! empty( $settings['enable_plugin'] ),
-			'show_on_cart'         => ! empty( $settings['show_on_cart'] ),
-			'show_on_checkout'     => ! empty( $settings['show_on_checkout'] ),
-			'enable_for_guests'    => ! empty( $settings['enable_for_guests'] ),
-			'hide_wc_coupon_field' => ! empty( $settings['hide_wc_coupon_field'] ),
-			'show_applied_coupons' => ! empty( $settings['show_applied_coupons'] ),
-			'show_expiry_info'     => ! empty( $settings['show_expiry_info'] ),
-			'coupon_display_mode'  => in_array( $settings['coupon_display_mode'] ?? 'drawer', array( 'drawer', 'modal' ), true )
+			'enable_plugin'         => ! empty( $settings['enable_plugin'] ),
+			'show_on_cart'          => ! empty( $settings['show_on_cart'] ),
+			'show_on_checkout'      => ! empty( $settings['show_on_checkout'] ),
+			'enable_for_guests'     => ! empty( $settings['enable_for_guests'] ),
+			'hide_wc_coupon_field'  => ! empty( $settings['hide_wc_coupon_field'] ),
+			'show_applied_coupons'  => ! empty( $settings['show_applied_coupons'] ),
+			'show_expiry_info'      => ! empty( $settings['show_expiry_info'] ),
+			'enable_usage_tracking' => ! empty( $settings['enable_usage_tracking'] ),
+			'coupon_display_mode'   => in_array( $settings['coupon_display_mode'] ?? 'drawer', array( 'drawer', 'modal' ), true )
 				? sanitize_text_field( $settings['coupon_display_mode'] )
 				: 'drawer',
 		);
@@ -686,6 +742,300 @@ class Power_Coupons_Admin_Settings {
 		);
 
 		return $sanitized;
+	}
+
+	/**
+	 * Check whether the current admin screen is the onboarding page.
+	 *
+	 * @since 1.0.3
+	 * @return bool
+	 */
+	public static function is_admin_onboarding_screen() {
+		if ( empty( $_GET['page'] ) || empty( $_GET['onboarding'] ) || empty( $_GET['nonce'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			return false;
+		}
+
+		if ( 'power_coupons_settings' !== sanitize_key( wp_unslash( $_GET['page'] ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			return false;
+		}
+
+		if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['nonce'] ) ), 'power_coupons_onboarding_nonce' ) ) {
+			return false;
+		}
+
+		return true;
+	}
+
+	/**
+	 * Get onboarding default values.
+	 *
+	 * @since 1.0.3
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function get_onboarding_defaults() {
+		$current_user = wp_get_current_user();
+
+		return array(
+			1 => array(
+				'coupon_style'      => 'style-1',
+				'show_on_cart'      => true,
+				'show_on_checkout'  => true,
+				'enable_for_guests' => true,
+			),
+			2 => array(
+				'user_detail_firstname' => $current_user->first_name,
+				'user_detail_lastname'  => $current_user->last_name,
+				'user_detail_email'     => $current_user->user_email,
+				'optin_usage_tracking'  => false,
+			),
+			3 => array(
+				'cartflows'                     => true,
+				'woo-cart-abandonment-recovery' => true,
+				'sureforms'                     => true,
+				'surerank'                      => true,
+			),
+		);
+	}
+
+	/**
+	 * Map onboarding key to original settings key.
+	 *
+	 * @since 1.0.3
+	 * @param string $key   Onboarding field key.
+	 * @param mixed  $value Field value.
+	 * @return array{section: string, key: string, value: mixed}|null
+	 */
+	private function map_onboarding_key_to_original_key( $key, $value ) {
+		switch ( $key ) {
+			case 'coupon_style':
+				return array(
+					'section' => 'coupon_styling',
+					'key'     => 'coupon_style',
+					'value'   => sanitize_text_field( $value ),
+				);
+
+			case 'show_on_cart':
+				return array(
+					'section' => 'general',
+					'key'     => 'show_on_cart',
+					'value'   => (bool) $value,
+				);
+
+			case 'show_on_checkout':
+				return array(
+					'section' => 'general',
+					'key'     => 'show_on_checkout',
+					'value'   => (bool) $value,
+				);
+
+			case 'enable_for_guests':
+				return array(
+					'section' => 'general',
+					'key'     => 'enable_for_guests',
+					'value'   => (bool) $value,
+				);
+
+			case 'optin_usage_tracking':
+				return array(
+					'section' => 'general',
+					'key'     => 'enable_usage_tracking',
+					'value'   => (bool) $value,
+				);
+
+			default:
+				return null;
+		}
+	}
+
+	/**
+	 * AJAX handler for completing onboarding.
+	 *
+	 * @since 1.0.3
+	 * @return void
+	 */
+	public function complete_onboarding() {
+		if ( ! isset( $_GET['nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['nonce'] ) ), 'power_coupons_onboarding_nonce' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Nonce verification failed.', 'power-coupons' ) ) );
+		}
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'power-coupons' ) ) );
+		}
+
+		$raw_input       = file_get_contents( 'php://input' );
+		$onboarding_data = is_string( $raw_input ) ? json_decode( $raw_input, true ) : null;
+
+		if ( empty( $onboarding_data ) || ! is_array( $onboarding_data ) ) {
+			wp_send_json_error( array( 'message' => __( 'Invalid data.', 'power-coupons' ) ) );
+		}
+
+		// Get current settings as base.
+		$settings = $this->get_settings();
+
+		$installable_plugin_slugs = array();
+		$user_details_data        = array();
+
+		foreach ( $onboarding_data as $index => $data ) {
+			if ( ! is_array( $data ) ) {
+				continue;
+			}
+
+			if ( isset( $data['hasSkipped'] ) ) {
+				continue;
+			}
+
+			foreach ( $data as $key => $value ) {
+				if ( ! is_string( $key ) ) {
+					continue;
+				}
+
+				// Map settings from step 1.
+				$mapped = $this->map_onboarding_key_to_original_key( $key, $value );
+				if ( $mapped ) {
+					$settings[ $mapped['section'] ][ $mapped['key'] ] = $mapped['value'];
+				}
+
+				// Collect user details from step 2.
+				if ( 2 === (int) $index && is_scalar( $value ) ) {
+					$user_details_data[ sanitize_key( $key ) ] = sanitize_text_field( wp_unslash( (string) $value ) );
+				}
+
+				// Collect plugin slugs from step 3.
+				if ( 3 === (int) $index && (bool) $value ) {
+					$allowed_slugs = array_keys( $this->get_onboarding_defaults()[3] ?? array() );
+					if ( in_array( $key, $allowed_slugs, true ) ) {
+						$installable_plugin_slugs[] = $key;
+					}
+				}
+			}
+		}
+
+		// Send user details to webhook.
+		if ( ! empty( $user_details_data ) ) {
+			$encoded_body = wp_json_encode( $user_details_data );
+			wp_remote_post(
+				POWER_COUPONS_ONBOARDING_USER_SUB_WORKFLOW_URL,
+				array(
+					'body'    => $encoded_body ? $encoded_body : '',
+					'headers' => array(
+						'Content-Type' => 'application/json',
+					),
+				)
+			);
+		}
+
+		// Save settings.
+		update_option( self::OPTION_KEY, $settings );
+
+		// Install selected plugins.
+		if ( ! empty( $installable_plugin_slugs ) ) {
+			self::install_wordpress_plugins( $installable_plugin_slugs );
+		}
+
+		// Mark onboarding as complete.
+		update_option( 'power_coupons_is_onboarding_complete', 'yes' );
+
+		wp_send_json_success();
+	}
+
+	/**
+	 * AJAX handler for onboarding skipped.
+	 *
+	 * Saves which step the user exited at for analytics tracking.
+	 *
+	 * @since 1.0.3
+	 * @return void
+	 */
+	public function ajax_onboarding_skipped() {
+		if ( ! isset( $_GET['nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['nonce'] ) ), 'power_coupons_onboarding_skip_nonce' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Nonce verification failed.', 'power-coupons' ) ) );
+		}
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'power-coupons' ) ) );
+		}
+
+		$raw_input = file_get_contents( 'php://input' );
+		$data      = is_string( $raw_input ) ? json_decode( $raw_input, true ) : null;
+		$exit_step = is_array( $data ) && isset( $data['exit_step'] ) ? sanitize_text_field( $data['exit_step'] ) : '';
+
+		update_option(
+			'power_coupons_onboarding_skipped',
+			array( 'exit_step' => $exit_step )
+		);
+
+		// Mark onboarding as complete so the wizard doesn't re-appear on re-activation.
+		update_option( 'power_coupons_is_onboarding_complete', 'yes' );
+
+		wp_send_json_success();
+	}
+
+	/**
+	 * Install WordPress plugins from the repository.
+	 *
+	 * @since 1.0.3
+	 * @param array<string> $plugin_slugs Array of plugin slugs to install.
+	 * @return void
+	 */
+	public static function install_wordpress_plugins( $plugin_slugs ) {
+		if ( empty( $plugin_slugs ) || ! is_array( $plugin_slugs ) ) {
+			return;
+		}
+
+		require_once ABSPATH . 'wp-admin/includes/plugin.php';
+		require_once ABSPATH . 'wp-admin/includes/plugin-install.php';
+		require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
+		require_once ABSPATH . 'wp-admin/includes/class-plugin-upgrader.php';
+
+		foreach ( $plugin_slugs as $slug ) {
+			$slug = sanitize_key( $slug );
+
+			// Check if already installed.
+			$installed_plugins = get_plugins();
+			$is_installed      = false;
+			foreach ( $installed_plugins as $plugin_file => $plugin_data ) {
+				if ( strpos( $plugin_file, $slug . '/' ) === 0 ) {
+					$is_installed = true;
+					// Activate if not active.
+					if ( ! is_plugin_active( $plugin_file ) ) {
+						activate_plugin( $plugin_file );
+					}
+					break;
+				}
+			}
+
+			if ( $is_installed ) {
+				continue;
+			}
+
+			// Fetch plugin info from WordPress.org.
+			$api = plugins_api(
+				'plugin_information',
+				array(
+					'slug'   => $slug,
+					'fields' => array( 'sections' => false ),
+				)
+			);
+
+			if ( is_wp_error( $api ) ) {
+				continue;
+			}
+
+			// Install the plugin silently.
+			$upgrader = new \Plugin_Upgrader( new \Automatic_Upgrader_Skin() );
+			$result   = $upgrader->install( $api->download_link );
+
+			if ( true === $result ) {
+				// Activate after install.
+				$installed_plugins = get_plugins();
+				foreach ( $installed_plugins as $plugin_file => $plugin_data ) {
+					if ( strpos( $plugin_file, $slug . '/' ) === 0 ) {
+						activate_plugin( $plugin_file );
+						break;
+					}
+				}
+			}
+		}
 	}
 
 }

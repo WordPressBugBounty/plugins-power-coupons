@@ -162,6 +162,11 @@ class Power_Coupons_Admin_Rules {
 		// Save using registry (includes sanitization).
 		Power_Coupons_Rules_Registry::save_meta( $coupon_id, $sanitized_rules_data );
 
+		// Analytics flag-setter: first rule created with conditions enabled.
+		if ( 'yes' === $enabled && ! get_option( 'power_coupons_first_rule_created' ) ) {
+			update_option( 'power_coupons_first_rule_created', true );
+		}
+
 		// Clear all relevant caches to ensure updated rules take effect immediately.
 		$this->clear_coupon_caches( $coupon_id );
 	}

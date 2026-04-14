@@ -107,7 +107,9 @@
 				success( response ) {
 					if ( parseInt( response.coupon_id, 10 ) > 0 ) {
 						const couponCards = document.querySelectorAll(
-							`.power-coupons-apply-coupon-btn[data-coupon="${ response.coupon_code }"]`
+							`.power-coupons-apply-coupon-btn[data-coupon="${ CSS.escape(
+								response.coupon_code
+							) }"]`
 						);
 
 						const template = document.createElement( 'template' );
@@ -554,7 +556,7 @@
 					.attr( 'role', noticeRole )
 					.attr( 'aria-live', ariaLive )
 					.attr( 'aria-atomic', 'true' )
-					.html( message );
+					.text( message );
 
 				// Clear existing notices and add new one
 				noticeContainer.empty().append( notice );

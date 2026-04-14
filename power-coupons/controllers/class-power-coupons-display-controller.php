@@ -200,6 +200,11 @@ class Display_Controller {
 			return;
 		}
 
+		// Analytics flag-setter: first coupon displayed.
+		if ( ! get_option( 'power_coupons_first_coupon_displayed' ) ) {
+			update_option( 'power_coupons_first_coupon_displayed', array( 'context' => $context ) );
+		}
+
 		$all_coupons = array();
 
 		foreach ( $coupons as $coupon ) {
@@ -249,6 +254,11 @@ class Display_Controller {
 					'value'   => 'power_coupons_bogo',
 					'compare' => '!=',
 				),
+				// Exclude gift card coupons — they are personal, recipient-specific codes.
+				array(
+					'key'     => '_power_coupon_gift_card',
+					'compare' => 'NOT EXISTS',
+				),
 			),
 		);
 
@@ -287,8 +297,8 @@ class Display_Controller {
 				continue;
 			}
 
-			// Skip coupons hidden from slideout display.
-			if ( 'yes' === get_post_meta( $id, '_power_coupon_hide_in_slideout', true ) ) {
+			// Only show coupons explicitly enabled for slideout display.
+			if ( 'yes' !== get_post_meta( $id, '_power_coupon_show_in_slideout', true ) ) {
 				continue;
 			}
 

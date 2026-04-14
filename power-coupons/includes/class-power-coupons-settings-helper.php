@@ -41,6 +41,7 @@ class Power_Coupons_Settings_Helper {
 				'show_applied_coupons'      => true,
 				'show_expiry_info'          => true,
 				'coupon_display_mode'       => 'drawer',
+				'enable_usage_tracking'     => false,
 			),
 			'coupon_styling'    => array(
 				'coupon_style' => 'style-1',

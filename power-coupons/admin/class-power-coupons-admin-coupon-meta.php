@@ -44,6 +44,10 @@ class Admin_Coupon_Meta {
 		add_action( 'woocommerce_coupon_options_save', array( $this, 'save_auto_apply_field' ), 10, 2 );
 
 		add_filter( 'woocommerce_coupon_data_tabs', array( $this, 'add_coupon_meta_tab' ) );
+
+		// Bulk edit support for coupons.
+		add_action( 'bulk_edit_custom_box', array( $this, 'add_bulk_edit_fields' ), 10, 2 );
+		add_action( 'save_post_shop_coupon', array( $this, 'save_bulk_edit_fields' ), 10, 2 );
 	}
 
 	/**
@@ -83,10 +87,10 @@ class Admin_Coupon_Meta {
 
 		woocommerce_wp_checkbox(
 			array(
-				'id'          => '_power_coupon_hide_in_slideout',
-				'label'       => __( 'Hide from slideout', 'power-coupons' ),
-				'description' => __( 'Hide this coupon from the Power Coupons slideout. The coupon can still be applied using its code.', 'power-coupons' ),
-				'value'       => get_post_meta( $coupon_id, '_power_coupon_hide_in_slideout', true ),
+				'id'          => '_power_coupon_show_in_slideout',
+				'label'       => __( 'Show in slideout', 'power-coupons' ),
+				'description' => __( 'Show this coupon in the Power Coupons slideout on the frontend.', 'power-coupons' ),
+				'value'       => get_post_meta( $coupon_id, '_power_coupon_show_in_slideout', true ),
 			)
 		);
 	}
@@ -112,12 +116,14 @@ class Admin_Coupon_Meta {
 		$auto_apply = isset( $_POST['_power_coupon_auto_apply'] ) ? 'yes' : 'no';
 		update_post_meta( $coupon_id, '_power_coupon_auto_apply', $auto_apply );
 
-		$hide_in_slideout = isset( $_POST['_power_coupon_hide_in_slideout'] ) ? 'yes' : 'no';
-		update_post_meta( $coupon_id, '_power_coupon_hide_in_slideout', $hide_in_slideout );
+		$show_in_slideout = isset( $_POST['_power_coupon_show_in_slideout'] ) ? 'yes' : 'no';
+		update_post_meta( $coupon_id, '_power_coupon_show_in_slideout', $show_in_slideout );
 
 		if ( isset( $_POST['_power_coupon_start_date'] ) ) {
 			$start_date = sanitize_text_field( wp_unslash( $_POST['_power_coupon_start_date'] ) );
-			update_post_meta( $coupon_id, '_power_coupon_start_date', $start_date );
+			if ( empty( $start_date ) || preg_match( '/^\d{4}-\d{2}-\d{2}$/', $start_date ) ) {
+				update_post_meta( $coupon_id, '_power_coupon_start_date', $start_date );
+			}
 		}
 	}
 
@@ -135,5 +141,68 @@ class Admin_Coupon_Meta {
 		);
 
 		return $tabs;
+	}
+
+	/**
+	 * Add custom fields to the coupon bulk edit form.
+	 *
+	 * @param string $column_name Column being shown.
+	 * @param string $post_type   Post type being shown.
+	 */
+	public function add_bulk_edit_fields( $column_name, $post_type ) {
+		if ( 'shop_coupon' !== $post_type || 'coupon_code' !== $column_name ) {
+			return;
+		}
+
+		wp_nonce_field( 'power_coupons_bulk_edit', 'power_coupons_bulk_edit_nonce' );
+		?>
+		<fieldset class="inline-edit-col-right">
+			<div class="inline-edit-col">
+				<div class="inline-edit-group">
+					<label class="alignleft">
+						<span class="title"><?php esc_html_e( 'Show in slideout', 'power-coupons' ); ?></span>
+						<select name="_power_coupon_show_in_slideout_bulk">
+							<option value="">&mdash; <?php esc_html_e( 'No Change', 'power-coupons' ); ?> &mdash;</option>
+							<option value="yes"><?php esc_html_e( 'Yes', 'power-coupons' ); ?></option>
+							<option value="no"><?php esc_html_e( 'No', 'power-coupons' ); ?></option>
+						</select>
+					</label>
+				</div>
+			</div>
+		</fieldset>
+		<?php
+	}
+
+	/**
+	 * Save bulk edit fields for coupons.
+	 *
+	 * @param int     $post_id Post ID being saved.
+	 * @param WP_Post $post    Post object being saved.
+	 */
+	public function save_bulk_edit_fields( $post_id, $post ) {
+		// Only process bulk edits.
+		if ( ! isset( $_REQUEST['bulk_edit'] ) ) {
+			return;
+		}
+
+		// Verify nonce.
+		if ( ! isset( $_REQUEST['power_coupons_bulk_edit_nonce'] ) ||
+			! wp_verify_nonce( sanitize_text_field( wp_unslash( $_REQUEST['power_coupons_bulk_edit_nonce'] ) ), 'power_coupons_bulk_edit' ) ) {
+			return;
+		}
+
+		// Check capabilities.
+		if ( ! current_user_can( 'edit_shop_coupons' ) ) {
+			return;
+		}
+
+		if ( isset( $_REQUEST['_power_coupon_show_in_slideout_bulk'] ) ) {
+			$value = sanitize_text_field( wp_unslash( $_REQUEST['_power_coupon_show_in_slideout_bulk'] ) );
+
+			// Only update if the user selected a value (not "No Change").
+			if ( '' !== $value ) {
+				update_post_meta( $post_id, '_power_coupon_show_in_slideout', $value );
+			}
+		}
 	}
 }

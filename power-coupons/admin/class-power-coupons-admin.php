@@ -48,6 +48,10 @@ class Power_Coupons_Admin {
 
 		// Initialize Conditional Rules Admin.
 		Power_Coupons_Admin_Rules::get_instance();
+
+		// Load Admin Notices.
+		require_once POWER_COUPONS_DIR . 'admin/class-power-coupons-admin-notices.php';
+		Power_Coupons_Admin_Notices::get_instance();
 	}
 
 	/**

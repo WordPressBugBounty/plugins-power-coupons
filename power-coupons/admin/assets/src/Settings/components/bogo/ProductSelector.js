@@ -2,7 +2,13 @@ import { Badge, SearchBox } from '@bsf/force-ui';
 import { __ } from '@wordpress/i18n';
 import { useEffect, useState, useRef } from 'react';
 
-const ProductSelector = ( { label, placeholder, value = [], onChange } ) => {
+const ProductSelector = ( {
+	label,
+	placeholder,
+	value = [],
+	onChange,
+	portalId = 'power-coupons-bogo-modal',
+} ) => {
 	const [ selectedProducts, setSelectedProducts ] = useState( [] );
 	const [ searchTerm, setSearchTerm ] = useState( '' );
 	const [ products, setProducts ] = useState( [] );
@@ -132,7 +138,7 @@ const ProductSelector = ( { label, placeholder, value = [], onChange } ) => {
 					value={ searchTerm }
 					onChange={ setSearchTerm }
 				/>
-				<SearchBox.Portal id="power-coupons-bogo-modal">
+				<SearchBox.Portal id={ portalId }>
 					<SearchBox.Content>
 						<SearchBox.List>
 							{ products.length > 0 ? (

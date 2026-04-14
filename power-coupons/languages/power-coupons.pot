@@ -2,14 +2,14 @@
 # This file is distributed under the GPL v2 or later.
 msgid ""
 msgstr ""
-"Project-Id-Version: Power Coupons for WooCommerce 1.0.2\n"
+"Project-Id-Version: Power Coupons for WooCommerce 1.0.3\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/power-coupons\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-03-26T07:10:54+00:00\n"
+"POT-Creation-Date: 2026-04-14T09:23:27+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: power-coupons\n"
@@ -39,36 +39,69 @@ msgstr ""
 msgid "https://www.brainstormforce.com"
 msgstr ""
 
-#: admin/class-power-coupons-admin-coupon-meta.php:63
+#: admin/class-power-coupons-admin-coupon-meta.php:67
 msgid "Coupon start date"
 msgstr ""
 
-#: admin/class-power-coupons-admin-coupon-meta.php:65
+#: admin/class-power-coupons-admin-coupon-meta.php:69
 msgid "The date this coupon becomes active."
 msgstr ""
 
-#: admin/class-power-coupons-admin-coupon-meta.php:78
+#: admin/class-power-coupons-admin-coupon-meta.php:82
 msgid "Auto Apply"
 msgstr ""
 
-#: admin/class-power-coupons-admin-coupon-meta.php:79
+#: admin/class-power-coupons-admin-coupon-meta.php:83
 msgid "Automatically apply this coupon when conditions are met."
 msgstr ""
 
-#: admin/class-power-coupons-admin-coupon-meta.php:87
-msgid "Hide from slideout"
+#: admin/class-power-coupons-admin-coupon-meta.php:91
+#: admin/class-power-coupons-admin-coupon-meta.php:163
+msgid "Show in slideout"
 msgstr ""
 
-#: admin/class-power-coupons-admin-coupon-meta.php:88
-msgid "Hide this coupon from the Power Coupons slideout. The coupon can still be applied using its code."
+#: admin/class-power-coupons-admin-coupon-meta.php:92
+msgid "Show this coupon in the Power Coupons slideout on the frontend."
 msgstr ""
 
-#: admin/class-power-coupons-admin-coupon-meta.php:132
+#: admin/class-power-coupons-admin-coupon-meta.php:138
 msgid "Rules"
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:67
-#: admin/class-power-coupons-admin-settings.php:68
+#: admin/class-power-coupons-admin-coupon-meta.php:165
+msgid "No Change"
+msgstr ""
+
+#: admin/class-power-coupons-admin-coupon-meta.php:166
+msgid "Yes"
+msgstr ""
+
+#: admin/class-power-coupons-admin-coupon-meta.php:167
+msgid "No"
+msgstr ""
+
+#: admin/class-power-coupons-admin-notices.php:111
+msgid "Your coupons are converting &mdash; want to help others do the same?"
+msgstr ""
+
+#: admin/class-power-coupons-admin-notices.php:112
+msgid "A quick 5-star review helps other WooCommerce store owners discover Power Coupons. It takes 30 seconds and means a lot to our team."
+msgstr ""
+
+#: admin/class-power-coupons-admin-notices.php:114
+msgid "Ok, you deserve it"
+msgstr ""
+
+#: admin/class-power-coupons-admin-notices.php:116
+msgid "Nope, maybe later"
+msgstr ""
+
+#: admin/class-power-coupons-admin-notices.php:117
+msgid "I already did"
+msgstr ""
+
+#: admin/class-power-coupons-admin-settings.php:69
+#: admin/class-power-coupons-admin-settings.php:70
 #: includes/class-power-coupons-ability.php:54
 #: admin/assets/build/settings/index.js:1
 #: admin/assets/build/settings/index.js:4
@@ -76,201 +109,227 @@ msgstr ""
 msgid "Power Coupons"
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:79
-#: admin/class-power-coupons-admin-settings.php:80
+#: admin/class-power-coupons-admin-settings.php:81
+#: admin/class-power-coupons-admin-settings.php:82
 msgid "All coupons"
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:88
-#: admin/class-power-coupons-admin-settings.php:89
+#: admin/class-power-coupons-admin-settings.php:90
+#: admin/class-power-coupons-admin-settings.php:91
 msgid "Add coupon"
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:97
-#: admin/class-power-coupons-admin-settings.php:98
-#: admin/class-power-coupons-admin-settings.php:259
+#: admin/class-power-coupons-admin-settings.php:99
+#: admin/class-power-coupons-admin-settings.php:100
+#: admin/class-power-coupons-admin-settings.php:298
 #: admin/assets/build/settings/index.js:4
 #: admin/assets/build/settings/index.js:9
 msgid "BOGO Offers"
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:106
-#: admin/class-power-coupons-admin-settings.php:107
-#: admin/class-power-coupons-admin-settings.php:250
-#: admin/class-power-coupons-admin.php:109
+#: admin/class-power-coupons-admin-settings.php:108
+#: admin/class-power-coupons-admin-settings.php:109
+#: admin/class-power-coupons-admin-settings.php:289
+#: admin/class-power-coupons-admin.php:113
 msgid "Settings"
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:332
-#: admin/class-power-coupons-admin-settings.php:333
-#: admin/class-power-coupons-admin-settings.php:351
+#: admin/class-power-coupons-admin-settings.php:371
+#: admin/class-power-coupons-admin-settings.php:372
+#: admin/class-power-coupons-admin-settings.php:390
 msgid "General"
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:338
-#: admin/class-power-coupons-admin-settings.php:339
+#: admin/class-power-coupons-admin-settings.php:377
+#: admin/class-power-coupons-admin-settings.php:378
 msgid "Coupon Styling"
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:344
-#: admin/class-power-coupons-admin-settings.php:345
+#: admin/class-power-coupons-admin-settings.php:383
+#: admin/class-power-coupons-admin-settings.php:384
 msgid "Text Customization"
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:355
+#: admin/class-power-coupons-admin-settings.php:394
 #: admin/assets/build/settings/index.js:5
 #: admin/assets/build/settings/index.js:6
 msgid "Loyalty Rewards"
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:391
+#: admin/class-power-coupons-admin-settings.php:398
+msgid "Gift Cards"
+msgstr ""
+
+#: admin/class-power-coupons-admin-settings.php:434
 #: admin/assets/build/settings/index.js:1
 msgid "Enable Plugin"
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:392
+#: admin/class-power-coupons-admin-settings.php:435
 #: admin/assets/build/settings/index.js:1
 msgid "Enable or disable Power Coupons functionality globally"
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:395
+#: admin/class-power-coupons-admin-settings.php:438
 msgid "Core Settings"
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:399
+#: admin/class-power-coupons-admin-settings.php:442
 #: admin/assets/build/settings/index.js:1
 msgid "Show on Cart"
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:400
+#: admin/class-power-coupons-admin-settings.php:443
 #: admin/assets/build/settings/index.js:1
 msgid "Display available coupons on cart page"
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:406
+#: admin/class-power-coupons-admin-settings.php:449
 #: admin/assets/build/settings/index.js:1
 msgid "Show on Checkout"
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:407
+#: admin/class-power-coupons-admin-settings.php:450
 #: admin/assets/build/settings/index.js:1
 msgid "Display available coupons on checkout page"
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:414
+#: admin/class-power-coupons-admin-settings.php:457
 msgid "Enable for Guests"
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:415
+#: admin/class-power-coupons-admin-settings.php:458
 msgid "Allow guest users to see and use coupons"
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:422
+#: admin/class-power-coupons-admin-settings.php:465
 msgid "Show Applied Coupons"
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:423
+#: admin/class-power-coupons-admin-settings.php:466
 msgid "Display list of currently applied coupons"
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:429
+#: admin/class-power-coupons-admin-settings.php:472
 msgid "Show Expiry Info"
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:430
+#: admin/class-power-coupons-admin-settings.php:473
 msgid "Show expiry date/countdown for coupons"
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:449
-msgid "Choose Coupon Styling"
+#: admin/class-power-coupons-admin-settings.php:479
+msgid "Help Us Improve Your Experience"
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:450
-msgid "Select a visual style template for how your coupons will be displayed to customers."
-msgstr ""
-
-#: admin/class-power-coupons-admin-settings.php:453
-msgid "Section Headings"
-msgstr ""
-
-#: admin/class-power-coupons-admin-settings.php:468
-msgid "Drawer Heading"
-msgstr ""
-
-#: admin/class-power-coupons-admin-settings.php:469
-msgid "Drawer heading text"
-msgstr ""
-
-#: admin/class-power-coupons-admin-settings.php:475
-msgid "Drawer Trigger Button Label"
-msgstr ""
-
-#: admin/class-power-coupons-admin-settings.php:476
-msgid "Text label for the drawer trigger button"
-msgstr ""
-
+#. translators: %1$s: link html start, %2$s: link html end.
 #: admin/class-power-coupons-admin-settings.php:482
-msgid "Coupon Applying Text"
-msgstr ""
-
-#: admin/class-power-coupons-admin-settings.php:483
-msgid "Text to display when coupon is applying."
-msgstr ""
-
-#: admin/class-power-coupons-admin-settings.php:489
-msgid "Coupon Applied Text"
-msgstr ""
-
-#: admin/class-power-coupons-admin-settings.php:490
-msgid "Text to display when coupon is successfully applied."
-msgstr ""
-
-#: admin/class-power-coupons-admin-settings.php:496
-msgid "No Coupons Text"
-msgstr ""
-
-#: admin/class-power-coupons-admin-settings.php:497
-msgid "Text to display when no valid coupons are available."
-msgstr ""
-
-#: admin/class-power-coupons-admin-settings.php:503
-msgid "Coupons Loading Text"
+#, php-format
+msgid "Allow Power Coupons and our other products to track non-sensitive usage tracking data. %1$sLearn More%2$s"
 msgstr ""
 
 #: admin/class-power-coupons-admin-settings.php:504
+#: admin/assets/build/settings/index.js:9
+msgid "Choose Coupon Styling"
+msgstr ""
+
+#: admin/class-power-coupons-admin-settings.php:505
+msgid "Select a visual style template for how your coupons will be displayed to customers."
+msgstr ""
+
+#: admin/class-power-coupons-admin-settings.php:508
+msgid "Section Headings"
+msgstr ""
+
+#: admin/class-power-coupons-admin-settings.php:523
+msgid "Drawer Heading"
+msgstr ""
+
+#: admin/class-power-coupons-admin-settings.php:524
+msgid "Drawer heading text"
+msgstr ""
+
+#: admin/class-power-coupons-admin-settings.php:530
+msgid "Drawer Trigger Button Label"
+msgstr ""
+
+#: admin/class-power-coupons-admin-settings.php:531
+msgid "Text label for the drawer trigger button"
+msgstr ""
+
+#: admin/class-power-coupons-admin-settings.php:537
+msgid "Coupon Applying Text"
+msgstr ""
+
+#: admin/class-power-coupons-admin-settings.php:538
+msgid "Text to display when coupon is applying."
+msgstr ""
+
+#: admin/class-power-coupons-admin-settings.php:544
+msgid "Coupon Applied Text"
+msgstr ""
+
+#: admin/class-power-coupons-admin-settings.php:545
+msgid "Text to display when coupon is successfully applied."
+msgstr ""
+
+#: admin/class-power-coupons-admin-settings.php:551
+msgid "No Coupons Text"
+msgstr ""
+
+#: admin/class-power-coupons-admin-settings.php:552
+msgid "Text to display when no valid coupons are available."
+msgstr ""
+
+#: admin/class-power-coupons-admin-settings.php:558
+msgid "Coupons Loading Text"
+msgstr ""
+
+#: admin/class-power-coupons-admin-settings.php:559
 msgid "Text to display when coupons are loading in the drawer."
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:535
+#: admin/class-power-coupons-admin-settings.php:590
 msgid "Permission denied"
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:548
-#: admin/class-power-coupons-admin-settings.php:558
+#: admin/class-power-coupons-admin-settings.php:603
+#: admin/class-power-coupons-admin-settings.php:613
 msgid "Invalid settings data format."
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:577
+#: admin/class-power-coupons-admin-settings.php:632
 msgid "Settings saved successfully"
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:590
+#: admin/class-power-coupons-admin-settings.php:645
+#: admin/class-power-coupons-admin-settings.php:862
+#: admin/class-power-coupons-admin-settings.php:955
 msgid "Permission denied."
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:596
+#: admin/class-power-coupons-admin-settings.php:651
 msgid "Power Coupons Pro is not installed."
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:600
+#: admin/class-power-coupons-admin-settings.php:655
 msgid "Power Coupons Pro is already active."
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:609
+#: admin/class-power-coupons-admin-settings.php:664
 msgid "Power Coupons Pro activated successfully."
 msgstr ""
 
-#: admin/class-power-coupons-admin.php:76
+#: admin/class-power-coupons-admin-settings.php:858
+#: admin/class-power-coupons-admin-settings.php:951
+msgid "Nonce verification failed."
+msgstr ""
+
+#: admin/class-power-coupons-admin-settings.php:869
+msgid "Invalid data."
+msgstr ""
+
+#: admin/class-power-coupons-admin.php:80
 msgid "Shortcode"
 msgstr ""
 
@@ -280,7 +339,7 @@ msgstr ""
 
 #: controllers/class-checkout-drawer-controller.php:123
 #: controllers/class-checkout-drawer-controller.php:133
-#: includes/class-power-coupons-settings-helper.php:69
+#: includes/class-power-coupons-settings-helper.php:70
 #: views/coupon-list.php:40
 msgid "Available Coupons"
 msgstr ""
@@ -293,59 +352,59 @@ msgstr ""
 msgid "Loading coupons"
 msgstr ""
 
-#: controllers/class-checkout-drawer-controller.php:285
-#: controllers/class-power-coupons-display-controller.php:312
+#: controllers/class-checkout-drawer-controller.php:290
+#: controllers/class-power-coupons-display-controller.php:322
 msgid "NA"
 msgstr ""
 
-#: controllers/class-checkout-drawer-controller.php:336
-#: controllers/class-power-coupons-display-controller.php:360
+#: controllers/class-checkout-drawer-controller.php:341
+#: controllers/class-power-coupons-display-controller.php:370
 msgid "Percent Discount"
 msgstr ""
 
-#: controllers/class-checkout-drawer-controller.php:338
-#: controllers/class-power-coupons-display-controller.php:364
+#: controllers/class-checkout-drawer-controller.php:343
+#: controllers/class-power-coupons-display-controller.php:374
 msgid "Cart Discount"
 msgstr ""
 
-#: controllers/class-checkout-drawer-controller.php:340
-#: controllers/class-power-coupons-display-controller.php:368
+#: controllers/class-checkout-drawer-controller.php:345
+#: controllers/class-power-coupons-display-controller.php:378
 msgid "Product Discount"
 msgstr ""
 
 #: controllers/class-power-coupons-cart-controller.php:90
-#: controllers/class-power-coupons-cart-controller.php:128
+#: controllers/class-power-coupons-cart-controller.php:133
 msgid "Invalid coupon code."
 msgstr ""
 
 #: controllers/class-power-coupons-cart-controller.php:95
-#: controllers/class-power-coupons-cart-controller.php:133
+#: controllers/class-power-coupons-cart-controller.php:138
 msgid "Cart not found."
 msgstr ""
 
-#: controllers/class-power-coupons-cart-controller.php:108
+#: controllers/class-power-coupons-cart-controller.php:113
 #: includes/class-power-coupons-ability.php:1085
 msgid "Coupon applied successfully."
 msgstr ""
 
-#: controllers/class-power-coupons-cart-controller.php:113
+#: controllers/class-power-coupons-cart-controller.php:118
 msgid "Failed to apply coupon."
 msgstr ""
 
-#: controllers/class-power-coupons-cart-controller.php:139
+#: controllers/class-power-coupons-cart-controller.php:144
 msgid "This coupon is auto-applied and cannot be removed."
 msgstr ""
 
-#: controllers/class-power-coupons-cart-controller.php:145
+#: controllers/class-power-coupons-cart-controller.php:150
 msgid "Coupon removed successfully."
 msgstr ""
 
-#: controllers/class-power-coupons-cart-controller.php:147
+#: controllers/class-power-coupons-cart-controller.php:152
 msgid "Failed to remove coupon."
 msgstr ""
 
 #. translators: %s: start date
-#: controllers/class-power-coupons-cart-controller.php:173
+#: controllers/class-power-coupons-cart-controller.php:178
 #, php-format
 msgid "Sorry, this coupon is only available after %s"
 msgstr ""
@@ -624,26 +683,34 @@ msgstr ""
 msgid "Removes an applied coupon from the WooCommerce cart. Cannot remove auto-applied coupons. Requires an active cart session."
 msgstr ""
 
-#: includes/class-power-coupons-settings-helper.php:70
+#: includes/class-power-coupons-settings-helper.php:71
 msgid "View Available Coupons"
 msgstr ""
 
-#: includes/class-power-coupons-settings-helper.php:71
+#: includes/class-power-coupons-settings-helper.php:72
 #: public/class-power-coupons-frontend.php:126
 msgid "Applying..."
 msgstr ""
 
-#: includes/class-power-coupons-settings-helper.php:72
+#: includes/class-power-coupons-settings-helper.php:73
 #: views/coupon-list.php:75
 msgid "Applied"
 msgstr ""
 
-#: includes/class-power-coupons-settings-helper.php:73
+#: includes/class-power-coupons-settings-helper.php:74
 msgid "No coupons available at this time."
 msgstr ""
 
-#: includes/class-power-coupons-settings-helper.php:74
+#: includes/class-power-coupons-settings-helper.php:75
 msgid "Loading coupons..."
+msgstr ""
+
+#: libraries/astra-notices/class-astra-notices.php:146
+msgid "WordPress Nonce not validated."
+msgstr ""
+
+#: libraries/astra-notices/class-astra-notices.php:153
+msgid "Invalid notice ID."
 msgstr ""
 
 #: public/class-power-coupons-frontend.php:115
@@ -687,6 +754,7 @@ msgid "Apply Coupon"
 msgstr ""
 
 #: public/class-power-coupons-frontend.php:133
+#: views/my-account/gift-cards.php:82
 msgid "Copy Code"
 msgstr ""
 
@@ -769,6 +837,64 @@ msgstr ""
 msgid "Coupon %1$s is already applied. %2$s"
 msgstr ""
 
+#: views/emails/gift-cards/gift-card-received.php:20
+msgid "You've received a gift card!"
+msgstr ""
+
+#. translators: 1: sender name, 2: formatted amount
+#: views/emails/gift-cards/gift-card-received.php:27
+#, php-format
+msgid "%1$s has sent you a %2$s gift card."
+msgstr ""
+
+#: views/emails/gift-cards/gift-card-received.php:42
+msgid "Your gift card code:"
+msgstr ""
+
+#. translators: %s: formatted amount
+#: views/emails/gift-cards/gift-card-received.php:51
+#, php-format
+msgid "Value: %s"
+msgstr ""
+
+#. translators: %s: expiry date
+#: views/emails/gift-cards/gift-card-received.php:63
+#, php-format
+msgid "Valid until: %s"
+msgstr ""
+
+#: views/emails/gift-cards/gift-card-received.php:70
+msgid "This gift card does not expire."
+msgstr ""
+
+#: views/emails/gift-cards/gift-card-received.php:76
+msgid "Shop Now"
+msgstr ""
+
+#: views/emails/gift-cards/gift-card-received.php:81
+msgid "To redeem, enter the code at checkout."
+msgstr ""
+
+#: views/emails/gift-cards/gift-card-sender-confirm.php:17
+msgid "Your gift card has been sent!"
+msgstr ""
+
+#. translators: 1: formatted amount, 2: recipient name
+#: views/emails/gift-cards/gift-card-sender-confirm.php:24
+#, php-format
+msgid "A %1$s gift card has been delivered to %2$s."
+msgstr ""
+
+#. translators: %s: coupon code
+#: views/emails/gift-cards/gift-card-sender-confirm.php:35
+#, php-format
+msgid "Gift card code: %s"
+msgstr ""
+
+#: views/emails/gift-cards/gift-card-sender-confirm.php:41
+msgid "Thank you for your purchase!"
+msgstr ""
+
 #. translators: %s: customer name
 #: views/emails/points/points-earned.php:22
 #: views/emails/points/points-expired.php:21
@@ -826,6 +952,109 @@ msgstr ""
 #: views/emails/points/points-redeemed.php:32
 #, php-format
 msgid "You have redeemed %1$s %2$s for a %3$s discount."
+msgstr ""
+
+#: views/my-account/gift-cards.php:15
+#: admin/assets/build/settings/index.js:4
+msgid "Active"
+msgstr ""
+
+#: views/my-account/gift-cards.php:16
+#: views/points/my-account-points.php:30
+#: admin/assets/build/settings/index.js:6
+msgid "Expired"
+msgstr ""
+
+#: views/my-account/gift-cards.php:17
+msgid "Fully Redeemed"
+msgstr ""
+
+#: views/my-account/gift-cards.php:18
+msgid "Delivered"
+msgstr ""
+
+#: views/my-account/gift-cards.php:19
+msgid "Partially Used"
+msgstr ""
+
+#: views/my-account/gift-cards.php:35
+msgid "My Gift Cards"
+msgstr ""
+
+#: views/my-account/gift-cards.php:39
+msgid "You haven't received any gift cards yet."
+msgstr ""
+
+#: views/my-account/gift-cards.php:45
+#: views/my-account/gift-cards.php:56
+#: views/my-account/gift-cards.php:107
+#: views/my-account/gift-cards.php:123
+msgid "Code"
+msgstr ""
+
+#: views/my-account/gift-cards.php:46
+#: views/my-account/gift-cards.php:61
+msgid "Original Amount"
+msgstr ""
+
+#: views/my-account/gift-cards.php:47
+#: views/my-account/gift-cards.php:64
+#: views/points/my-account-points.php:78
+msgid "Balance"
+msgstr ""
+
+#: views/my-account/gift-cards.php:48
+#: views/my-account/gift-cards.php:67
+#: views/my-account/gift-cards.php:108
+#: views/my-account/gift-cards.php:130
+#: admin/assets/build/settings/index.js:4
+#: admin/assets/build/settings/index.js:5
+#: admin/assets/build/settings/index.js:9
+msgid "Status"
+msgstr ""
+
+#: views/my-account/gift-cards.php:49
+#: views/my-account/gift-cards.php:72
+msgid "Expiry"
+msgstr ""
+
+#: views/my-account/gift-cards.php:73
+msgid "No expiry"
+msgstr ""
+
+#: views/my-account/gift-cards.php:95
+msgid "Sent Gift Cards"
+msgstr ""
+
+#: views/my-account/gift-cards.php:99
+msgid "You haven't sent any gift cards yet."
+msgstr ""
+
+#: views/my-account/gift-cards.php:105
+#: views/my-account/gift-cards.php:115
+msgid "Recipient"
+msgstr ""
+
+#: views/my-account/gift-cards.php:106
+#: views/my-account/gift-cards.php:120
+msgid "Amount"
+msgstr ""
+
+#: views/my-account/gift-cards.php:109
+#: views/my-account/gift-cards.php:135
+#: views/points/my-account-points.php:75
+#: admin/assets/build/settings/index.js:6
+msgid "Date"
+msgstr ""
+
+#: views/my-account/gift-cards.php:127
+#: views/points/my-account-points.php:57
+msgid "Pending"
+msgstr ""
+
+#: views/my-account/gift-cards.php:160
+#: views/my-account/gift-cards.php:175
+msgid "Copied!"
 msgstr ""
 
 #. translators: 1: points balance, 2: points label
@@ -893,11 +1122,6 @@ msgstr ""
 msgid "Product Review"
 msgstr ""
 
-#: views/points/my-account-points.php:30
-#: admin/assets/build/settings/index.js:6
-msgid "Expired"
-msgstr ""
-
 #: views/points/my-account-points.php:31
 msgid "Cancelled"
 msgstr ""
@@ -923,21 +1147,12 @@ msgstr ""
 msgid "Pending credits will be added to your balance once your order is completed."
 msgstr ""
 
-#: views/points/my-account-points.php:57
-msgid "Pending"
-msgstr ""
-
 #: views/points/my-account-points.php:67
 msgid "Credits History"
 msgstr ""
 
 #: views/points/my-account-points.php:70
 msgid "No credits activity yet."
-msgstr ""
-
-#: views/points/my-account-points.php:75
-#: admin/assets/build/settings/index.js:6
-msgid "Date"
 msgstr ""
 
 #: views/points/my-account-points.php:76
@@ -949,10 +1164,6 @@ msgstr ""
 #: admin/assets/build/settings/index.js:6
 #: admin/assets/build/settings/index.js:8
 msgid "Credits"
-msgstr ""
-
-#: views/points/my-account-points.php:78
-msgid "Balance"
 msgstr ""
 
 #: views/points/my-account-points.php:80
@@ -1122,6 +1333,27 @@ msgid "Disabled"
 msgstr ""
 
 #: admin/assets/build/settings/index.js:1
+msgid "Type at least 3 letters to search"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:1
+#: admin/assets/build/settings/index.js:8
+msgid "Searching…"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:1
+msgid "No products found"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:1
+msgid "Type at least 2 letters to search"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:1
+msgid "No categories found"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:1
 msgid "Activate Your License"
 msgstr ""
 
@@ -1224,16 +1456,8 @@ msgid "Enable free shipping when cart total reaches $X."
 msgstr ""
 
 #: admin/assets/build/settings/index.js:4
-msgid "Type at least 3 letters to search"
-msgstr ""
-
-#: admin/assets/build/settings/index.js:4
-#: admin/assets/build/settings/index.js:8
-msgid "Searching…"
-msgstr ""
-
-#: admin/assets/build/settings/index.js:4
-msgid "No products found"
+#: admin/assets/build/settings/index.js:5
+msgid "Clear"
 msgstr ""
 
 #: admin/assets/build/settings/index.js:4
@@ -1355,11 +1579,42 @@ msgid "Fixed Discount Amount"
 msgstr ""
 
 #: admin/assets/build/settings/index.js:4
+#: admin/assets/build/settings/index.js:5
+msgid "Start Date"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:4
+#: admin/assets/build/settings/index.js:5
+msgid "Select start date"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:4
+#: admin/assets/build/settings/index.js:5
+msgid "Optional. Leave blank to start immediately."
+msgstr ""
+
+#: admin/assets/build/settings/index.js:4
+#: admin/assets/build/settings/index.js:5
+msgid "End Date"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:4
+#: admin/assets/build/settings/index.js:5
+msgid "Select end date"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:4
+#: admin/assets/build/settings/index.js:5
+msgid "Optional. Leave blank to run indefinitely."
+msgstr ""
+
+#: admin/assets/build/settings/index.js:4
 msgid "Include free shipping"
 msgstr ""
 
 #: admin/assets/build/settings/index.js:4
 #: admin/assets/build/settings/index.js:5
+#: admin/assets/build/settings/index.js:9
 msgid "Back"
 msgstr ""
 
@@ -1605,10 +1860,6 @@ msgid "All Products"
 msgstr ""
 
 #: admin/assets/build/settings/index.js:4
-msgid "Active"
-msgstr ""
-
-#: admin/assets/build/settings/index.js:4
 msgid "Inactive"
 msgstr ""
 
@@ -1669,12 +1920,6 @@ msgstr ""
 #: admin/assets/build/settings/index.js:4
 #: admin/assets/build/settings/index.js:5
 #: admin/assets/build/settings/index.js:9
-msgid "Status"
-msgstr ""
-
-#: admin/assets/build/settings/index.js:4
-#: admin/assets/build/settings/index.js:5
-#: admin/assets/build/settings/index.js:9
 msgid "Actions"
 msgstr ""
 
@@ -1730,10 +1975,6 @@ msgstr ""
 
 #: admin/assets/build/settings/index.js:5
 msgid "Boost your sales and increase average order value by creating powerful Buy One Get One offers in your store. Reward customers automatically and drive conversions with flexible, fully customizable BOGO promotions."
-msgstr ""
-
-#: admin/assets/build/settings/index.js:5
-msgid "Clear"
 msgstr ""
 
 #: admin/assets/build/settings/index.js:5
@@ -1865,30 +2106,6 @@ msgstr ""
 
 #: admin/assets/build/settings/index.js:5
 msgid "Lower number = higher priority. When multiple campaigns match, the highest priority wins."
-msgstr ""
-
-#: admin/assets/build/settings/index.js:5
-msgid "Start Date"
-msgstr ""
-
-#: admin/assets/build/settings/index.js:5
-msgid "Select start date"
-msgstr ""
-
-#: admin/assets/build/settings/index.js:5
-msgid "Optional. Leave blank to start immediately."
-msgstr ""
-
-#: admin/assets/build/settings/index.js:5
-msgid "End Date"
-msgstr ""
-
-#: admin/assets/build/settings/index.js:5
-msgid "Select end date"
-msgstr ""
-
-#: admin/assets/build/settings/index.js:5
-msgid "Optional. Leave blank to run indefinitely."
 msgstr ""
 
 #: admin/assets/build/settings/index.js:5
@@ -2199,4 +2416,188 @@ msgstr ""
 
 #: admin/assets/build/settings/index.js:9
 msgid "Upgrade to PRO"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:9
+msgid "Failed to save settings."
+msgstr ""
+
+#: admin/assets/build/settings/index.js:9
+msgid "Skip"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:9
+msgid "Next"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:9
+msgid "Display available coupons beautifully on cart and checkout pages."
+msgstr ""
+
+#: admin/assets/build/settings/index.js:9
+msgid "Let customers apply coupons with a single click — no copy-pasting needed."
+msgstr ""
+
+#: admin/assets/build/settings/index.js:9
+msgid "Auto-apply coupons based on smart rules and conditions."
+msgstr ""
+
+#: admin/assets/build/settings/index.js:9
+msgid "Create BOGO offers to boost average order value."
+msgstr ""
+
+#: admin/assets/build/settings/index.js:9
+msgid "Customize coupon styles, colors, and text to match your brand."
+msgstr ""
+
+#: admin/assets/build/settings/index.js:9
+msgid "Welcome to Power Coupons"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:9
+msgid "Supercharge your WooCommerce store with powerful, flexible discount features!"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:9
+msgid "Get Started with Onboarding"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:9
+msgid "Configure Your Coupons"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:9
+msgid "Set up coupon settings to match your store's needs in just a few clicks."
+msgstr ""
+
+#: admin/assets/build/settings/index.js:9
+msgid "Select a visual style for how coupons will appear to your customers."
+msgstr ""
+
+#: admin/assets/build/settings/index.js:9
+msgid "Show Coupons on Cart"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:9
+msgid "Display available coupons on the cart page so customers can easily apply discounts."
+msgstr ""
+
+#: admin/assets/build/settings/index.js:9
+msgid "Show Coupons on Checkout"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:9
+msgid "Display available coupons on the checkout page to boost conversions."
+msgstr ""
+
+#: admin/assets/build/settings/index.js:9
+msgid "Enable for Guest Users"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:9
+msgid "Allow guest users (not logged in) to see and use available coupons."
+msgstr ""
+
+#: admin/assets/build/settings/index.js:9
+msgid "Okay, Just One Last Step…"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:9
+msgid "Subscribe to get the latest updates, tips, and features."
+msgstr ""
+
+#: admin/assets/build/settings/index.js:9
+msgid "First Name"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:9
+msgid "Last Name"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:9
+msgid "Your Email"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:9
+msgid "Allow Power Coupons and our other products to track non-sensitive usage tracking data."
+msgstr ""
+
+#: admin/assets/build/settings/index.js:9
+msgid "Learn More"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:9
+msgid "Add More Power to Your Website"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:9
+msgid "These tools can help you build your website faster and easier. Try them out and see how they can help your website grow."
+msgstr ""
+
+#: admin/assets/build/settings/index.js:9
+msgid "You're Good to Go! 🚀"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:9
+msgid "Great job! 🎉 With Power Coupons active, your store is ready to deliver smart discounts that keep customers happy and drive more revenue."
+msgstr ""
+
+#: admin/assets/build/settings/index.js:9
+msgid "Here's What Power Coupons Will Do for You Now:"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:9
+msgid "Effortless discounts:"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:9
+msgid "Customers see and apply coupons with a single click."
+msgstr ""
+
+#: admin/assets/build/settings/index.js:9
+msgid "Higher conversions:"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:9
+msgid "Smart coupon display encourages customers to complete their purchase."
+msgstr ""
+
+#: admin/assets/build/settings/index.js:9
+msgid "Peace of mind:"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:9
+msgid "Automated coupon rules work in the background so you can focus on growing your business."
+msgstr ""
+
+#: admin/assets/build/settings/index.js:9
+msgid "Go To Dashboard"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:9
+msgid "Documentation"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:9
+msgid "Create beautiful checkout pages & sales funnels for WooCommerce."
+msgstr ""
+
+#: admin/assets/build/settings/index.js:9
+msgid "Start recovering lost revenue with ease in less than 10 minutes."
+msgstr ""
+
+#: admin/assets/build/settings/index.js:9
+msgid "Create forms that feel like a chat. One question at a time keeps users engaged."
+msgstr ""
+
+#: admin/assets/build/settings/index.js:9
+msgid "Just a simple, lightweight SEO assistant that helps your site rise in the rankings."
+msgstr ""
+
+#: admin/assets/build/settings/index.js:9
+msgid "Power Coupons Logo"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:9
+msgid "Exit Guided Setup"
 msgstr ""

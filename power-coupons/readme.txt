@@ -5,7 +5,7 @@ Tags: discount rules, dynamic discounts, woocommerce discounts, woocommerce coup
 Requires at least: 6.0
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.0.2
+Stable tag: 1.0.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -168,6 +168,12 @@ React / JavaScript source code:
 The files in `admin/assets/build/` are generated from the corresponding source files in `admin/assets/src/` using standard JavaScript build tools such as `wp-scripts`.
 
 == Changelog ==
+
+= 1.0.3 - Tuesday, 14th April 2026 =
+* New: Gift Cards — purchase, deliver, and redeem store-credit gift cards (Pro).
+* New: Bulk edit for coupon slideout visibility with opt-in model.
+* New: Added an onboarding wizard to provide a smooth onboarding experience and enable quick, guided setup.
+* Fix: Improved code quality and static analysis compliance.
 
 = 1.0.2 - Wednesday, 26th March 2026 =
 * New: Added compatibility for Loyalty Rewards (Pro).

@@ -240,6 +240,28 @@ html.wp-toolbar.power-coupon-modal-open {
 	background-color: #f06434;
 }
 
+// Hide WordPress admin footer on Power Coupons settings and onboarding screens.
+.toplevel_page_power_coupons_settings #wpfooter {
+	display: none !important;
+}
+
+// Override force-ui ProgressSteps brand-primary-600 (purple) to match the plugin's orange theme.
+:is( #power-coupons-settings ) .ring-brand-primary-600 {
+	--tw-ring-color: #f06434 !important;
+}
+
+:is( #power-coupons-settings ) .text-brand-primary-600 {
+	color: #f06434 !important;
+}
+
+:is( #power-coupons-settings ) .bg-brand-primary-600 {
+	background-color: #f06434 !important;
+}
+
+:is( #power-coupons-settings ) .border-brand-primary-600 {
+	border-color: #f06434 !important;
+}
+
 .power-coupons-coupon-style-btn > label {
 	left: 0;
 	min-width: 0 !important;

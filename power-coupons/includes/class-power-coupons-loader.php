@@ -125,6 +125,11 @@ class Power_Coupons_Loader {
 		// Load dependencies first.
 		$this->load_dependencies();
 
+		// Run pending migrations on admin page loads.
+		if ( is_admin() ) {
+			add_action( 'admin_init', array( '\Power_Coupons\Includes\Power_Coupons_Migration', 'run' ) );
+		}
+
 		// Initialize main plugin class.
 		\Power_Coupons\Includes\Power_Coupons_Core::get_instance();
 	}
@@ -148,6 +153,10 @@ class Power_Coupons_Loader {
 		// Load utility classes.
 		require_once POWER_COUPONS_DIR . 'includes/class-power-coupons-utilities.php';
 		require_once POWER_COUPONS_DIR . 'includes/class-power-coupons-settings-helper.php';
+		require_once POWER_COUPONS_DIR . 'includes/class-power-coupons-migration.php';
+
+		// Load analytics tracking.
+		require_once POWER_COUPONS_DIR . 'includes/class-power-coupons-analytics.php';
 
 		// Load controllers.
 		require_once POWER_COUPONS_DIR . 'includes/class-power-coupons-wc-blocks-integration.php';
@@ -170,6 +179,7 @@ class Power_Coupons_Loader {
 		if ( is_admin() ) {
 			require_once POWER_COUPONS_DIR . 'admin/class-power-coupons-admin.php';
 			require_once POWER_COUPONS_DIR . 'admin/class-power-coupons-admin-rules.php';
+			require_once POWER_COUPONS_DIR . 'admin/class-power-coupons-analytics.php';
 		}
 
 		require_once POWER_COUPONS_DIR . 'public/class-power-coupons-frontend.php';
