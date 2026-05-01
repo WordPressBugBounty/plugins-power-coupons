@@ -3,6 +3,9 @@ import SectionRenderer from '../common/SectionRenderer';
 import { Title } from '@bsf/force-ui';
 import { useStateValue } from '../Data';
 import FieldRenderer from '../common/FieldRenderer';
+import UpgradeNotice from '../common/UpgradeNotice';
+import UpgradeFeatureCard from '../common/UpgradeFeatureCard';
+import getProTabNudges from '../common/ProTabNudges';
 
 function sortFieldsByPriority( fields ) {
 	const fieldsArray = Object.values( fields );
@@ -21,12 +24,37 @@ function FieldContainer( { tabKey } ) {
 	const title = tab?.title || tab?.name;
 	const allFields = powerCouponsSettings.settings_fields?.[ tabKey ] || [];
 	const [ data ] = useStateValue();
-
 	const subtabs = tab?.subtabs || [];
 	const hasSubtabs = subtabs.length > 0;
 	const [ activeSubtab, setActiveSubtab ] = useState(
 		hasSubtabs ? subtabs[ 0 ].slug : ''
 	);
+
+	// Render PRO upsell card for tabs flagged as PRO-only placeholders.
+	if ( tab?.is_pro_upsell && ! window.powerCouponsSettings?.is_pro_active ) {
+		const nudge = getProTabNudges()[ tabKey ];
+		if ( nudge ) {
+			return (
+				<>
+					<Title
+						description=""
+						icon={ null }
+						size="md"
+						tag="h2"
+						title={ title }
+						className="mb-6 [&_h2]:text-gray-900 text-xl"
+					/>
+					<UpgradeFeatureCard
+						title={ nudge.title }
+						subtitle={ nudge.subtitle }
+						description={ nudge.description }
+						visual={ nudge.visual }
+						utmMedium={ nudge.utmMedium }
+					/>
+				</>
+			);
+		}
+	}
 
 	const isGeneralTab = tabKey === 'power_coupons_general';
 	const isPluginEnabled = isGeneralTab
@@ -150,6 +178,8 @@ function FieldContainer( { tabKey } ) {
 	}
 
 	const fields = allFields;
+	const showUpgradeNotice =
+		isGeneralTab && ! window.powerCouponsSettings?.is_pro_active;
 
 	return (
 		<>
@@ -167,6 +197,13 @@ function FieldContainer( { tabKey } ) {
 				masterDisabled={ ! isPluginEnabled }
 				masterFieldName="general[enable_plugin]"
 			/>
+
+			{ showUpgradeNotice && (
+				<UpgradeNotice
+					className="mt-6"
+					utmMedium="free-power-coupons-general"
+				/>
+			) }
 		</>
 	);
 }

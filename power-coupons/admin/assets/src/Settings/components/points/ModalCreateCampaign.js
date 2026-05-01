@@ -11,11 +11,7 @@ import { useState, useEffect, useRef } from '@wordpress/element';
 import Logo from '../../../../images/logo.svg';
 import { RenderIcon } from '../common/Utils';
 import { CheckCircleIcon } from '@heroicons/react/24/solid';
-import {
-	CalendarIcon,
-	ClockIcon,
-	InformationCircleIcon,
-} from '@heroicons/react/24/outline';
+import { CalendarIcon, ClockIcon } from '@heroicons/react/24/outline';
 import { format } from 'date-fns';
 
 // ─── Date helpers ─────────────────────────────────────────────────────────────
@@ -41,7 +37,7 @@ const toDisplay = ( date ) => {
 
 // ─── DateField component ──────────────────────────────────────────────────────
 
-const DateField = ( { id, label, value, placeholder, onChange, hint } ) => {
+const DateField = ( { id, label, value, placeholder, onChange, helper } ) => {
 	const [ open, setOpen ] = useState( false );
 	const [ dropUp, setDropUp ] = useState( false );
 	const ref = useRef( null );
@@ -74,17 +70,9 @@ const DateField = ( { id, label, value, placeholder, onChange, hint } ) => {
 		<div className="flex flex-col gap-1.5" ref={ ref }>
 			<label
 				htmlFor={ id }
-				className="text-sm font-medium text-text-primary flex items-center gap-1"
+				className="text-sm font-medium text-text-primary"
 			>
 				{ label }
-				{ hint && (
-					<span
-						className="pc-field-tooltip inline-flex cursor-help relative"
-						data-tip={ hint }
-					>
-						<InformationCircleIcon className="w-4 h-4 text-text-tertiary flex-shrink-0" />
-					</span>
-				) }
 			</label>
 			<div className="relative">
 				<button
@@ -127,6 +115,7 @@ const DateField = ( { id, label, value, placeholder, onChange, hint } ) => {
 					</div>
 				) }
 			</div>
+			<HelperText>{ helper }</HelperText>
 		</div>
 	);
 };
@@ -189,22 +178,25 @@ const EARN_TYPE_OPTIONS = [
 
 // ─── Helper text & error display ─────────────────────────────────────────────
 
-const FieldLabel = ( { htmlFor, text, tooltip } ) => (
+const FieldLabel = ( { htmlFor, text } ) => (
 	<label
 		htmlFor={ htmlFor }
-		className="text-sm font-medium text-text-primary flex items-center gap-1"
+		className="text-sm font-medium text-text-primary"
 	>
 		{ text }
-		{ tooltip && (
-			<span
-				className="pc-field-tooltip inline-flex cursor-help relative"
-				data-tip={ tooltip }
-			>
-				<InformationCircleIcon className="w-4 h-4 text-text-tertiary flex-shrink-0" />
-			</span>
-		) }
 	</label>
 );
+
+const HelperText = ( { children } ) => {
+	if ( ! children ) {
+		return null;
+	}
+	return (
+		<p className="m-0 text-xs text-text-tertiary leading-snug">
+			{ children }
+		</p>
+	);
+};
 
 const FieldError = ( { message } ) => {
 	if ( ! message ) {
@@ -472,35 +464,34 @@ const FormTabs = [
 
 						{ /* Verified Purchase Only — for review campaigns */ }
 						{ 'review' === formData.action_type && (
-							<div className="flex items-center justify-between">
-								<div className="flex items-center gap-1">
+							<div className="flex flex-col gap-1">
+								<div className="flex items-center justify-between gap-3">
 									<span className="text-sm font-medium text-text-primary">
 										{ __(
 											'Verified Purchases Only',
 											'power-coupons'
 										) }
 									</span>
-									<span
-										className="pc-field-tooltip inline-flex cursor-help relative"
-										data-tip={ __(
-											'Only award credits to customers who have purchased the reviewed product.',
-											'power-coupons'
-										) }
-									>
-										<InformationCircleIcon className="w-4 h-4 text-text-tertiary flex-shrink-0" />
-									</span>
+									<Switch
+										size="sm"
+										value={
+											!! formData.verified_purchase_only
+										}
+										onChange={ () =>
+											setFormData(
+												'verified_purchase_only',
+												! formData.verified_purchase_only
+											)
+										}
+										className="[&>input]:!border-none"
+									/>
 								</div>
-								<Switch
-									size="sm"
-									value={ !! formData.verified_purchase_only }
-									onChange={ () =>
-										setFormData(
-											'verified_purchase_only',
-											! formData.verified_purchase_only
-										)
-									}
-									className="[&>input]:!border-none"
-								/>
+								<HelperText>
+									{ __(
+										'Only award credits to customers who have actually purchased the reviewed product.',
+										'power-coupons'
+									) }
+								</HelperText>
 							</div>
 						) }
 
@@ -514,7 +505,6 @@ const FormTabs = [
 								<FieldLabel
 									htmlFor="campaign-input-earn-value"
 									text={ getEarnValueLabel() }
-									tooltip={ getEarnValueHint() }
 								/>
 								<Input
 									value={ formData.earn_value ?? '' }
@@ -527,6 +517,7 @@ const FormTabs = [
 										clearError( 'earn_value' );
 									} }
 								/>
+								<HelperText>{ getEarnValueHint() }</HelperText>
 								<FieldError message={ errors.earn_value } />
 							</div>
 							{ isOrderEarn && (
@@ -538,10 +529,6 @@ const FormTabs = [
 												'Min Order Total',
 												'power-coupons'
 											) }
-											tooltip={ __(
-												'Minimum order amount to earn credits. 0 = no minimum.',
-												'power-coupons'
-											) }
 										/>
 										<Input
 											value={
@@ -550,7 +537,10 @@ const FormTabs = [
 											id="campaign-input-min-order"
 											size="md"
 											type="number"
-											placeholder="0"
+											placeholder={ __(
+												'No minimum',
+												'power-coupons'
+											) }
 											onChange={ ( value ) =>
 												setFormData(
 													'min_order_total',
@@ -558,16 +548,18 @@ const FormTabs = [
 												)
 											}
 										/>
+										<HelperText>
+											{ __(
+												'Leave blank for no minimum order requirement.',
+												'power-coupons'
+											) }
+										</HelperText>
 									</div>
 									<div className="flex flex-col gap-1">
 										<FieldLabel
 											htmlFor="campaign-input-max-points"
 											text={ __(
 												'Max Credits Cap',
-												'power-coupons'
-											) }
-											tooltip={ __(
-												'Maximum credits per order. 0 = unlimited.',
 												'power-coupons'
 											) }
 										/>
@@ -578,7 +570,10 @@ const FormTabs = [
 											id="campaign-input-max-points"
 											size="md"
 											type="number"
-											placeholder="0"
+											placeholder={ __(
+												'No cap',
+												'power-coupons'
+											) }
 											onChange={ ( value ) =>
 												setFormData(
 													'max_points_cap',
@@ -586,6 +581,12 @@ const FormTabs = [
 												)
 											}
 										/>
+										<HelperText>
+											{ __(
+												'Leave blank for no cap on credits per order.',
+												'power-coupons'
+											) }
+										</HelperText>
 									</div>
 								</>
 							) }
@@ -593,10 +594,6 @@ const FormTabs = [
 								<FieldLabel
 									htmlFor="campaign-input-priority"
 									text={ __( 'Priority', 'power-coupons' ) }
-									tooltip={ __(
-										'Lower number = higher priority. When multiple campaigns match, the highest priority wins.',
-										'power-coupons'
-									) }
 								/>
 								<Input
 									value={ formData.priority ?? '10' }
@@ -608,6 +605,12 @@ const FormTabs = [
 										setFormData( 'priority', value )
 									}
 								/>
+								<HelperText>
+									{ __(
+										'Lower number = higher priority. The highest priority campaign wins when multiple match.',
+										'power-coupons'
+									) }
+								</HelperText>
 							</div>
 						</div>
 
@@ -624,8 +627,8 @@ const FormTabs = [
 								onChange={ ( value ) =>
 									setFormData( 'start_date', value )
 								}
-								hint={ __(
-									'Optional. Leave blank to start immediately.',
+								helper={ __(
+									'Leave blank to start immediately.',
 									'power-coupons'
 								) }
 							/>
@@ -640,8 +643,8 @@ const FormTabs = [
 								onChange={ ( value ) =>
 									setFormData( 'end_date', value )
 								}
-								hint={ __(
-									'Optional. Leave blank to run indefinitely.',
+								helper={ __(
+									'Leave blank to never expire.',
 									'power-coupons'
 								) }
 							/>

@@ -71,11 +71,15 @@ if ( ! defined( 'ABSPATH' ) ) {
 </p>
 <?php endif; ?>
 
-<p style="margin: 24px 0 0; text-align: center;">
-	<a href="<?php echo esc_url( $shop_url ); ?>" style="display: inline-block; padding: 12px 32px; background-color: #15803d; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 14px;">
-		<?php esc_html_e( 'Shop Now', 'power-coupons' ); ?>
-	</a>
-</p>
+<table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin: 24px auto 0;">
+	<tr>
+		<td align="center" bgcolor="#15803d" style="border-radius: 6px;">
+			<a href="<?php echo esc_url( $shop_url ); ?>" style="display: inline-block; padding: 12px 32px; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 14px; mso-padding-alt: 0;">
+				<?php esc_html_e( 'Shop Now', 'power-coupons' ); ?>
+			</a>
+		</td>
+	</tr>
+</table>
 
 <p style="margin: 16px 0 0; font-size: 13px; color: #9ca3af; text-align: center;">
 	<?php esc_html_e( 'To redeem, enter the code at checkout.', 'power-coupons' ); ?>

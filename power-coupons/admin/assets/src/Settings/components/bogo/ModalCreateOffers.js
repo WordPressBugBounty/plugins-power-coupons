@@ -13,11 +13,7 @@ import { useState, useEffect, useRef } from '@wordpress/element';
 import Logo from '../../../../images/logo.svg';
 import { BOGOPresets, getBOGOPresetData, RenderIcon } from '../common/Utils';
 import { CheckCircleIcon } from '@heroicons/react/24/solid';
-import {
-	CalendarIcon,
-	ClockIcon,
-	InformationCircleIcon,
-} from '@heroicons/react/24/outline';
+import { CalendarIcon, ClockIcon } from '@heroicons/react/24/outline';
 import { format } from 'date-fns';
 import ProductSelector from './ProductSelector';
 
@@ -44,7 +40,7 @@ const toDisplay = ( date ) => {
 
 // ─── DateField component ─────────────────────────────────────────────────────
 
-const DateField = ( { id, label, value, placeholder, onChange, hint } ) => {
+const DateField = ( { id, label, value, placeholder, onChange, helper } ) => {
 	const [ open, setOpen ] = useState( false );
 	const [ dropUp, setDropUp ] = useState( false );
 	const dateRef = useRef( null );
@@ -77,17 +73,9 @@ const DateField = ( { id, label, value, placeholder, onChange, hint } ) => {
 		<div className="flex flex-col gap-1.5" ref={ dateRef }>
 			<label
 				htmlFor={ id }
-				className="text-sm font-medium text-text-primary flex items-center gap-1"
+				className="text-sm font-medium text-text-primary"
 			>
 				{ label }
-				{ hint && (
-					<span
-						className="pc-field-tooltip inline-flex cursor-help relative"
-						data-tip={ hint }
-					>
-						<InformationCircleIcon className="w-4 h-4 text-text-tertiary flex-shrink-0" />
-					</span>
-				) }
 			</label>
 			<div className="relative">
 				<button
@@ -130,6 +118,11 @@ const DateField = ( { id, label, value, placeholder, onChange, hint } ) => {
 					</div>
 				) }
 			</div>
+			{ helper && (
+				<p className="m-0 text-xs text-text-tertiary leading-snug">
+					{ helper }
+				</p>
+			) }
 		</div>
 	);
 };
@@ -780,8 +773,8 @@ const FormTabs = [
 								onChange={ ( value ) =>
 									setFormData( 'start_date', value )
 								}
-								hint={ __(
-									'Optional. Leave blank to start immediately.',
+								helper={ __(
+									'Leave blank to start immediately.',
 									'power-coupons'
 								) }
 							/>
@@ -796,8 +789,8 @@ const FormTabs = [
 								onChange={ ( value ) =>
 									setFormData( 'end_date', value )
 								}
-								hint={ __(
-									'Optional. Leave blank to run indefinitely.',
+								helper={ __(
+									'Leave blank to never expire.',
 									'power-coupons'
 								) }
 							/>

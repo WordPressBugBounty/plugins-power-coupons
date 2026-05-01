@@ -5,7 +5,7 @@ Tags: discount rules, dynamic discounts, woocommerce discounts, woocommerce coup
 Requires at least: 6.0
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.0.3
+Stable tag: 1.0.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -168,6 +168,12 @@ React / JavaScript source code:
 The files in `admin/assets/build/` are generated from the corresponding source files in `admin/assets/src/` using standard JavaScript build tools such as `wp-scripts`.
 
 == Changelog ==
+
+= 1.0.4 - Friday, 1st May 2026 =
+* Improvement: Loyalty Rewards admin now shows a banner and status pill when the master toggle is off, so the program isn't accidentally left disabled.
+* Improvement: Loyalty Rewards landing page surfaces the available program types (Order Earning, Signup Bonus, Product Review) and notes that multiple campaigns can run simultaneously.
+* Improvement: Loyalty Rewards and BOGO create/edit modals — field rules and start/end date scheduling hints are now visible inline instead of hidden in hover-only tooltips.
+* Fix: Gift card email "Shop Now" button no longer renders broken in Outlook and other email clients.
 
 = 1.0.3 - Tuesday, 14th April 2026 =
 * New: Gift Cards — purchase, deliver, and redeem store-credit gift cards (Pro).

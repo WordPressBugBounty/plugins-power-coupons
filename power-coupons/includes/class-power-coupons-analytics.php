@@ -306,7 +306,10 @@ class Power_Coupons_Analytics {
 		// ---- Activation & Setup ----
 
 		// plugin_activated — fires once on first admin load after activation.
-		$events->track( 'plugin_activated', POWER_COUPONS_VERSION );
+		$referer_key   = defined( 'BSF_UTM_ANALYTICS_REFERER' ) ? BSF_UTM_ANALYTICS_REFERER : 'bsf_product_referers';
+		$bsf_referrers = (array) get_option( $referer_key, array() );
+		$source        = ! empty( $bsf_referrers['power-coupons'] ) ? $bsf_referrers['power-coupons'] : 'self';
+		$events->track( 'plugin_activated', POWER_COUPONS_VERSION, array( 'source' => $source ) );
 
 		// plugin_updated — fires when version changes.
 		$stored_version = get_option( 'power_coupons_tracked_version', '' );

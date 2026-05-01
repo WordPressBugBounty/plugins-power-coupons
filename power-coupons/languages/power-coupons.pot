@@ -2,14 +2,14 @@
 # This file is distributed under the GPL v2 or later.
 msgid ""
 msgstr ""
-"Project-Id-Version: Power Coupons for WooCommerce 1.0.3\n"
+"Project-Id-Version: Power Coupons for WooCommerce 1.0.4\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/power-coupons\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-04-14T09:23:27+00:00\n"
+"POT-Creation-Date: 2026-05-01T09:35:48+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: power-coupons\n"
@@ -151,181 +151,192 @@ msgid "Text Customization"
 msgstr ""
 
 #: admin/class-power-coupons-admin-settings.php:394
+#: admin/class-power-coupons-admin-settings.php:415
+#: admin/class-power-coupons-admin-settings.php:416
 #: admin/assets/build/settings/index.js:5
 #: admin/assets/build/settings/index.js:6
 msgid "Loyalty Rewards"
 msgstr ""
 
 #: admin/class-power-coupons-admin-settings.php:398
+#: admin/class-power-coupons-admin-settings.php:422
+#: admin/class-power-coupons-admin-settings.php:423
 msgid "Gift Cards"
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:434
+#: admin/class-power-coupons-admin-settings.php:408
+#: admin/class-power-coupons-admin-settings.php:409
+#: admin/assets/build/settings/index.js:4
+#: admin/assets/build/settings/index.js:9
+msgid "Cart Progress Bar"
+msgstr ""
+
+#: admin/class-power-coupons-admin-settings.php:460
 #: admin/assets/build/settings/index.js:1
 msgid "Enable Plugin"
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:435
+#: admin/class-power-coupons-admin-settings.php:461
 #: admin/assets/build/settings/index.js:1
 msgid "Enable or disable Power Coupons functionality globally"
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:438
+#: admin/class-power-coupons-admin-settings.php:464
 msgid "Core Settings"
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:442
+#: admin/class-power-coupons-admin-settings.php:468
 #: admin/assets/build/settings/index.js:1
 msgid "Show on Cart"
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:443
+#: admin/class-power-coupons-admin-settings.php:469
 #: admin/assets/build/settings/index.js:1
 msgid "Display available coupons on cart page"
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:449
+#: admin/class-power-coupons-admin-settings.php:475
 #: admin/assets/build/settings/index.js:1
 msgid "Show on Checkout"
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:450
+#: admin/class-power-coupons-admin-settings.php:476
 #: admin/assets/build/settings/index.js:1
 msgid "Display available coupons on checkout page"
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:457
+#: admin/class-power-coupons-admin-settings.php:483
 msgid "Enable for Guests"
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:458
+#: admin/class-power-coupons-admin-settings.php:484
 msgid "Allow guest users to see and use coupons"
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:465
+#: admin/class-power-coupons-admin-settings.php:491
 msgid "Show Applied Coupons"
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:466
+#: admin/class-power-coupons-admin-settings.php:492
 msgid "Display list of currently applied coupons"
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:472
+#: admin/class-power-coupons-admin-settings.php:498
 msgid "Show Expiry Info"
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:473
+#: admin/class-power-coupons-admin-settings.php:499
 msgid "Show expiry date/countdown for coupons"
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:479
+#: admin/class-power-coupons-admin-settings.php:505
 msgid "Help Us Improve Your Experience"
 msgstr ""
 
 #. translators: %1$s: link html start, %2$s: link html end.
-#: admin/class-power-coupons-admin-settings.php:482
+#: admin/class-power-coupons-admin-settings.php:508
 #, php-format
 msgid "Allow Power Coupons and our other products to track non-sensitive usage tracking data. %1$sLearn More%2$s"
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:504
+#: admin/class-power-coupons-admin-settings.php:530
 #: admin/assets/build/settings/index.js:9
 msgid "Choose Coupon Styling"
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:505
+#: admin/class-power-coupons-admin-settings.php:531
 msgid "Select a visual style template for how your coupons will be displayed to customers."
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:508
+#: admin/class-power-coupons-admin-settings.php:534
 msgid "Section Headings"
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:523
+#: admin/class-power-coupons-admin-settings.php:549
 msgid "Drawer Heading"
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:524
+#: admin/class-power-coupons-admin-settings.php:550
 msgid "Drawer heading text"
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:530
+#: admin/class-power-coupons-admin-settings.php:556
 msgid "Drawer Trigger Button Label"
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:531
+#: admin/class-power-coupons-admin-settings.php:557
 msgid "Text label for the drawer trigger button"
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:537
+#: admin/class-power-coupons-admin-settings.php:563
 msgid "Coupon Applying Text"
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:538
+#: admin/class-power-coupons-admin-settings.php:564
 msgid "Text to display when coupon is applying."
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:544
+#: admin/class-power-coupons-admin-settings.php:570
 msgid "Coupon Applied Text"
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:545
+#: admin/class-power-coupons-admin-settings.php:571
 msgid "Text to display when coupon is successfully applied."
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:551
+#: admin/class-power-coupons-admin-settings.php:577
 msgid "No Coupons Text"
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:552
+#: admin/class-power-coupons-admin-settings.php:578
 msgid "Text to display when no valid coupons are available."
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:558
+#: admin/class-power-coupons-admin-settings.php:584
 msgid "Coupons Loading Text"
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:559
+#: admin/class-power-coupons-admin-settings.php:585
 msgid "Text to display when coupons are loading in the drawer."
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:590
+#: admin/class-power-coupons-admin-settings.php:625
 msgid "Permission denied"
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:603
-#: admin/class-power-coupons-admin-settings.php:613
+#: admin/class-power-coupons-admin-settings.php:638
+#: admin/class-power-coupons-admin-settings.php:648
 msgid "Invalid settings data format."
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:632
+#: admin/class-power-coupons-admin-settings.php:667
 msgid "Settings saved successfully"
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:645
-#: admin/class-power-coupons-admin-settings.php:862
-#: admin/class-power-coupons-admin-settings.php:955
+#: admin/class-power-coupons-admin-settings.php:680
+#: admin/class-power-coupons-admin-settings.php:897
+#: admin/class-power-coupons-admin-settings.php:990
 msgid "Permission denied."
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:651
+#: admin/class-power-coupons-admin-settings.php:686
 msgid "Power Coupons Pro is not installed."
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:655
+#: admin/class-power-coupons-admin-settings.php:690
 msgid "Power Coupons Pro is already active."
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:664
+#: admin/class-power-coupons-admin-settings.php:699
 msgid "Power Coupons Pro activated successfully."
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:858
-#: admin/class-power-coupons-admin-settings.php:951
+#: admin/class-power-coupons-admin-settings.php:893
+#: admin/class-power-coupons-admin-settings.php:986
 msgid "Nonce verification failed."
 msgstr ""
 
-#: admin/class-power-coupons-admin-settings.php:869
+#: admin/class-power-coupons-admin-settings.php:904
 msgid "Invalid data."
 msgstr ""
 
@@ -759,7 +770,7 @@ msgid "Copy Code"
 msgstr ""
 
 #: public/class-power-coupons-frontend.php:134
-#: views/points/cart-redeem-widget.php:57
+#: views/points/cart-redeem-widget.php:58
 msgid "Remove"
 msgstr ""
 
@@ -867,11 +878,11 @@ msgstr ""
 msgid "This gift card does not expire."
 msgstr ""
 
-#: views/emails/gift-cards/gift-card-received.php:76
+#: views/emails/gift-cards/gift-card-received.php:78
 msgid "Shop Now"
 msgstr ""
 
-#: views/emails/gift-cards/gift-card-received.php:81
+#: views/emails/gift-cards/gift-card-received.php:85
 msgid "To redeem, enter the code at checkout."
 msgstr ""
 
@@ -956,6 +967,7 @@ msgstr ""
 
 #: views/my-account/gift-cards.php:15
 #: admin/assets/build/settings/index.js:4
+#: admin/assets/build/settings/index.js:5
 msgid "Active"
 msgstr ""
 
@@ -1058,33 +1070,33 @@ msgid "Copied!"
 msgstr ""
 
 #. translators: 1: points balance, 2: points label
-#: views/points/cart-redeem-widget.php:32
+#: views/points/cart-redeem-widget.php:33
 #, php-format
 msgid "Your balance: %1$s %2$s"
 msgstr ""
 
 #. translators: 1: discount amount, 2: points used, 3: points label
-#: views/points/cart-redeem-widget.php:46
+#: views/points/cart-redeem-widget.php:47
 #, php-format
 msgid "%1$s discount applied (%2$s %3$s)"
 msgstr ""
 
 #. translators: 1: discount amount, 2: points count, 3: points label
-#: views/points/cart-redeem-widget.php:68
+#: views/points/cart-redeem-widget.php:69
 #, php-format
 msgid "Use %1$s %2$s for a %3$s discount"
 msgstr ""
 
-#: views/points/cart-redeem-widget.php:80
-#: views/points/cart-redeem-widget.php:101
+#: views/points/cart-redeem-widget.php:81
+#: views/points/cart-redeem-widget.php:109
 msgid "Apply"
 msgstr ""
 
-#: views/points/cart-redeem-widget.php:94
+#: views/points/cart-redeem-widget.php:102
 msgid "Enter credits"
 msgstr ""
 
-#: views/points/cart-redeem-widget.php:95
+#: views/points/cart-redeem-widget.php:103
 msgid "Credits to apply"
 msgstr ""
 
@@ -1329,6 +1341,7 @@ msgid "Enabled"
 msgstr ""
 
 #: admin/assets/build/settings/index.js:1
+#: admin/assets/build/settings/index.js:5
 msgid "Disabled"
 msgstr ""
 
@@ -1351,6 +1364,82 @@ msgstr ""
 
 #: admin/assets/build/settings/index.js:1
 msgid "No categories found"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:1
+msgid "Looking to unlock more advanced coupon features?"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:1
+msgid "Upgrade to Power Coupons Pro to unlock BOGO offers, advanced discount rules, loyalty points, and more."
+msgstr ""
+
+#: admin/assets/build/settings/index.js:1
+msgid "Upgrade now"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:1
+msgid "Upgrade Now"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:1
+msgid "Boost AOV with a Cart Progress Bar"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:1
+msgid "Encourage shoppers to add more to their cart by showing a live progress indicator toward rewards like free shipping or discounts."
+msgstr ""
+
+#: admin/assets/build/settings/index.js:1
+msgid "Set dynamic milestones tied to cart total or item count"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:1
+msgid "Customise bar colours, messaging, and success states to match your brand"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:1
+msgid "Displayed on cart and checkout pages with smooth animations"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:1
+msgid "Reward loyal customers with Points & Rewards"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:1
+msgid "Give shoppers credit for every order, nudge repeat purchases, and let them redeem points for discounts — all on autopilot."
+msgstr ""
+
+#: admin/assets/build/settings/index.js:1
+msgid "Automatically award points on purchases with configurable earn rates"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:1
+msgid "Let customers redeem points as cart discounts at checkout"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:1
+msgid "Run time-boxed campaigns, control expiry, and view each customer’s balance"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:1
+msgid "Sell Gift Cards and grow revenue"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:1
+msgid "Let customers buy gift cards for friends and family. Perfect for holidays, launches, and recovering lost sales."
+msgstr ""
+
+#: admin/assets/build/settings/index.js:1
+msgid "Offer preset and custom gift card amounts with branded designs"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:1
+msgid "Redeem gift cards as discount credits at checkout"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:1
+msgid "Restrict redemption by product or category for full control"
 msgstr ""
 
 #: admin/assets/build/settings/index.js:1
@@ -1590,7 +1679,7 @@ msgstr ""
 
 #: admin/assets/build/settings/index.js:4
 #: admin/assets/build/settings/index.js:5
-msgid "Optional. Leave blank to start immediately."
+msgid "Leave blank to start immediately."
 msgstr ""
 
 #: admin/assets/build/settings/index.js:4
@@ -1605,7 +1694,7 @@ msgstr ""
 
 #: admin/assets/build/settings/index.js:4
 #: admin/assets/build/settings/index.js:5
-msgid "Optional. Leave blank to run indefinitely."
+msgid "Leave blank to never expire."
 msgstr ""
 
 #: admin/assets/build/settings/index.js:4
@@ -1704,11 +1793,6 @@ msgstr ""
 
 #: admin/assets/build/settings/index.js:4
 msgid "Progress Bar"
-msgstr ""
-
-#: admin/assets/build/settings/index.js:4
-#: admin/assets/build/settings/index.js:9
-msgid "Cart Progress Bar"
 msgstr ""
 
 #: admin/assets/build/settings/index.js:4
@@ -1978,6 +2062,14 @@ msgid "Boost your sales and increase average order value by creating powerful Bu
 msgstr ""
 
 #: admin/assets/build/settings/index.js:5
+msgid "Loyalty Rewards is enabled"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:5
+msgid "Loyalty Rewards is disabled"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:5
 msgid "Award credits when a customer completes an order."
 msgstr ""
 
@@ -2060,7 +2152,7 @@ msgid "Verified Purchases Only"
 msgstr ""
 
 #: admin/assets/build/settings/index.js:5
-msgid "Only award credits to customers who have purchased the reviewed product."
+msgid "Only award credits to customers who have actually purchased the reviewed product."
 msgstr ""
 
 #: admin/assets/build/settings/index.js:5
@@ -2093,7 +2185,11 @@ msgid "Min Order Total"
 msgstr ""
 
 #: admin/assets/build/settings/index.js:5
-msgid "Minimum order amount to earn credits. 0 = no minimum."
+msgid "No minimum"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:5
+msgid "Leave blank for no minimum order requirement."
 msgstr ""
 
 #: admin/assets/build/settings/index.js:5
@@ -2101,11 +2197,15 @@ msgid "Max Credits Cap"
 msgstr ""
 
 #: admin/assets/build/settings/index.js:5
-msgid "Maximum credits per order. 0 = unlimited."
+msgid "No cap"
 msgstr ""
 
 #: admin/assets/build/settings/index.js:5
-msgid "Lower number = higher priority. When multiple campaigns match, the highest priority wins."
+msgid "Leave blank for no cap on credits per order."
+msgstr ""
+
+#: admin/assets/build/settings/index.js:5
+msgid "Lower number = higher priority. The highest priority campaign wins when multiple match."
 msgstr ""
 
 #: admin/assets/build/settings/index.js:5
@@ -2146,7 +2246,19 @@ msgid "Campaign Navigation"
 msgstr ""
 
 #: admin/assets/build/settings/index.js:5
-msgid "Birthday"
+msgid "e.g. 2 credits per $1 spent."
+msgstr ""
+
+#: admin/assets/build/settings/index.js:5
+msgid "Award credits once when a new user registers."
+msgstr ""
+
+#: admin/assets/build/settings/index.js:5
+msgid "e.g. 100 credits on signup."
+msgstr ""
+
+#: admin/assets/build/settings/index.js:5
+msgid "e.g. 50 credits per review."
 msgstr ""
 
 #: admin/assets/build/settings/index.js:5
@@ -2177,6 +2289,10 @@ msgstr ""
 #: admin/assets/build/settings/index.js:6
 #: admin/assets/build/settings/index.js:9
 msgid "Create New Campaign"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:5
+msgid "You can run multiple campaigns simultaneously — Priority decides which one wins when more than one matches."
 msgstr ""
 
 #: admin/assets/build/settings/index.js:5
@@ -2236,7 +2352,11 @@ msgid "Create Your First Credits Campaign"
 msgstr ""
 
 #: admin/assets/build/settings/index.js:6
-msgid "Reward your customers with credits for purchases, signups, reviews, and more. Credits can be redeemed for discounts to drive repeat sales."
+msgid "Reward customers with credits they can redeem for discounts. Choose from the program types below — and run as many as you like at once."
+msgstr ""
+
+#: admin/assets/build/settings/index.js:6
+msgid "Available reward program types"
 msgstr ""
 
 #: admin/assets/build/settings/index.js:6
@@ -2372,6 +2492,18 @@ msgstr ""
 
 #: admin/assets/build/settings/index.js:9
 msgid "Logs"
+msgstr ""
+
+#: admin/assets/build/settings/index.js:9
+msgid "Loyalty Rewards is currently disabled."
+msgstr ""
+
+#: admin/assets/build/settings/index.js:9
+msgid "Customers won't earn or redeem credits even when campaigns are marked Active. Turn on the master toggle to start running your program."
+msgstr ""
+
+#: admin/assets/build/settings/index.js:9
+msgid "Open settings"
 msgstr ""
 
 #: admin/assets/build/settings/index.js:9

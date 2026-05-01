@@ -61,16 +61,6 @@ function Header( props ) {
 								}
 							>
 								{ menu.name }
-								{ ! window.powerCouponsSettings.is_pro_active &&
-									'bogo' === menu.path && (
-										<Badge
-											label="PRO"
-											size="xxs"
-											type="pill"
-											variant="inverse"
-											className="ml-1.5"
-										/>
-									) }
 							</Link>
 						</Topbar.Item>
 					) ) }

@@ -22,6 +22,7 @@ import {
 import { format } from 'date-fns';
 import { RenderIcon } from '../common/Utils';
 import ConfirmationModal from '../common/ConfirmationModal';
+import LoyaltyStatusPill from './LoyaltyStatusPill';
 
 const ACTION_LABELS = {
 	order_earn: __( 'Order Earning', 'power-coupons' ),
@@ -427,9 +428,12 @@ function PointsHistory( { toast, tabSelector } ) {
 	return (
 		<>
 			<div className="bg-background-primary rounded-xl border border-border-subtle p-4 flex flex-col gap-4">
-				<h2 className="m-0 text-xl font-semibold text-text-primary">
-					{ __( 'Loyalty Rewards', 'power-coupons' ) }
-				</h2>
+				<div className="flex items-center gap-2 flex-wrap">
+					<h2 className="m-0 text-xl font-semibold text-text-primary">
+						{ __( 'Loyalty Rewards', 'power-coupons' ) }
+					</h2>
+					<LoyaltyStatusPill />
+				</div>
 				{ /* Header */ }
 				<div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
 					<div className="flex items-center gap-4">

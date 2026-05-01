@@ -71,6 +71,35 @@
 
 				const balance =
 					parseInt( powerCouponsPointsData.balance, 10 ) || 0;
+				const minPoints =
+					parseInt(
+						powerCouponsPointsData.min_points_to_redeem,
+						10
+					) || 0;
+				const maxPerOrder =
+					parseInt(
+						powerCouponsPointsData.max_credits_per_order,
+						10
+					) || 0;
+
+				if ( minPoints > 0 && points < minPoints ) {
+					PCPoints.showNotice(
+						powerCouponsPointsData.i18n.below_minimum,
+						'error'
+					);
+					$input.trigger( 'focus' );
+					return;
+				}
+
+				if ( maxPerOrder > 0 && points > maxPerOrder ) {
+					PCPoints.showNotice(
+						powerCouponsPointsData.i18n.exceeds_max,
+						'error'
+					);
+					$input.trigger( 'focus' );
+					return;
+				}
+
 				if ( balance > 0 && points > balance ) {
 					PCPoints.showNotice(
 						powerCouponsPointsData.i18n.exceeds_balance,

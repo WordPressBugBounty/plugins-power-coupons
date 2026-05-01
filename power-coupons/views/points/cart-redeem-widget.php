@@ -3,16 +3,17 @@
  * Cart/checkout points credit redemption widget.
  *
  * @package Power_Coupons
- * @var int    $balance          User's current points balance.
- * @var string $label            Points label.
- * @var bool   $can_redeem       Whether user meets minimum points threshold.
- * @var int    $redemption_ratio Points per 1 currency unit of discount.
- * @var string $coupon_code      Virtual coupon code for this user.
- * @var bool   $credit_applied   Whether a credit is currently applied.
+ * @var int    $balance               User's current points balance.
+ * @var string $label                 Points label.
+ * @var bool   $can_redeem            Whether user meets minimum points threshold.
+ * @var int    $redemption_ratio      Points per 1 currency unit of discount.
+ * @var string $coupon_code           Virtual coupon code for this user.
+ * @var bool   $credit_applied        Whether a credit is currently applied.
  * @var array{points: int, discount: float}|null $credit_data Session credit data if applied.
- * @var string $redemption_mode  'full' or 'max_limit'.
- * @var float  $full_discount    Pre-calculated discount amount in full mode.
- * @var int    $full_points      Points that will be used in full mode.
+ * @var string $redemption_mode       'full' or 'max_limit'.
+ * @var float  $full_discount         Pre-calculated discount amount in full mode.
+ * @var int    $full_points           Points that will be used in full mode.
+ * @var int    $max_credits_per_order Per-order cap (max_limit mode); 0 means no cap.
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -82,15 +83,22 @@ if ( ! is_user_logged_in() || $balance <= 0 ) {
 				</div>
 			</div>
 		<?php else : ?>
+			<?php
+			$input_max = $balance;
+			if ( $max_credits_per_order > 0 ) {
+				$input_max = min( $balance, $max_credits_per_order );
+			}
+			?>
 			<div class="power-coupons-points-credit-form">
 				<div class="power-coupons-points-credit-input-row">
 					<input
-						type="number"
+						type="text"
+						inputmode="numeric"
+						pattern="[0-9]*"
 						class="power-coupons-points-credit-input"
 						id="power-coupons-points-credit-input"
-						min="1"
-						max="<?php echo esc_attr( (string) $balance ); ?>"
-						step="1"
+						data-min="1"
+						data-max="<?php echo esc_attr( (string) $input_max ); ?>"
 						placeholder="<?php esc_attr_e( 'Enter credits', 'power-coupons' ); ?>"
 						aria-label="<?php esc_attr_e( 'Credits to apply', 'power-coupons' ); ?>"
 					/>

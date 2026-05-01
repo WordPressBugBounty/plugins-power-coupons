@@ -1,17 +1,58 @@
 import { __, sprintf } from '@wordpress/i18n';
 import { useState, useEffect, useRef } from '@wordpress/element';
 import { Button, Container, Switch, Table, Tooltip } from '@bsf/force-ui';
-import { TrashIcon, PencilIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import {
+	TrashIcon,
+	PencilIcon,
+	XMarkIcon,
+	ShoppingBagIcon,
+	UserPlusIcon,
+	ChatBubbleBottomCenterTextIcon,
+	InformationCircleIcon,
+} from '@heroicons/react/24/outline';
 import { RenderIcon } from '../common/Utils';
 import ConfirmationModal from '../common/ConfirmationModal';
+import LoyaltyStatusPill from './LoyaltyStatusPill';
 import ModalCreateCampaign from './ModalCreateCampaign';
 
 const ACTION_TYPE_LABELS = {
 	order_earn: __( 'Order Earning', 'power-coupons' ),
 	signup: __( 'Signup Bonus', 'power-coupons' ),
 	review: __( 'Product Review', 'power-coupons' ),
-	birthday: __( 'Birthday', 'power-coupons' ),
 };
+
+const PROGRAM_TYPE_CARDS = [
+	{
+		key: 'order_earn',
+		Icon: ShoppingBagIcon,
+		label: __( 'Order Earning', 'power-coupons' ),
+		description: __(
+			'Award credits when a customer completes an order.',
+			'power-coupons'
+		),
+		example: __( 'e.g. 2 credits per $1 spent.', 'power-coupons' ),
+	},
+	{
+		key: 'signup',
+		Icon: UserPlusIcon,
+		label: __( 'Signup Bonus', 'power-coupons' ),
+		description: __(
+			'Award credits once when a new user registers.',
+			'power-coupons'
+		),
+		example: __( 'e.g. 100 credits on signup.', 'power-coupons' ),
+	},
+	{
+		key: 'review',
+		Icon: ChatBubbleBottomCenterTextIcon,
+		label: __( 'Product Review', 'power-coupons' ),
+		description: __(
+			'Award credits when a customer leaves an approved product review.',
+			'power-coupons'
+		),
+		example: __( 'e.g. 50 credits per review.', 'power-coupons' ),
+	},
+];
 
 const EARN_TYPE_LABELS = {
 	fixed: __( 'Fixed', 'power-coupons' ),
@@ -329,7 +370,7 @@ function CampaignsList( { toast, tabSelector } ) {
 					/>
 				) }
 
-				<div className="bg-background-primary rounded-xl border border-border-subtle p-8 flex flex-col items-center text-center gap-4">
+				<div className="bg-background-primary rounded-xl border border-border-subtle p-8 flex flex-col items-center text-center gap-5">
 					<div className="self-start">{ tabSelector }</div>
 					<h2 className="m-0 font-semibold text-xl">
 						{ __(
@@ -337,12 +378,39 @@ function CampaignsList( { toast, tabSelector } ) {
 							'power-coupons'
 						) }
 					</h2>
-					<p className="m-0 text-text-secondary text-sm max-w-md">
+					<p className="m-0 text-text-secondary text-sm max-w-xl">
 						{ __(
-							'Reward your customers with credits for purchases, signups, reviews, and more. Credits can be redeemed for discounts to drive repeat sales.',
+							'Reward customers with credits they can redeem for discounts. Choose from the program types below — and run as many as you like at once.',
 							'power-coupons'
 						) }
 					</p>
+					<div
+						className="grid w-full max-w-3xl grid-cols-1 sm:grid-cols-3 gap-3 mt-1"
+						aria-label={ __(
+							'Available reward program types',
+							'power-coupons'
+						) }
+					>
+						{ PROGRAM_TYPE_CARDS.map( ( card ) => (
+							<div
+								key={ card.key }
+								className="flex flex-col items-start gap-2 p-4 rounded-lg border border-solid border-border-subtle bg-background-secondary text-left"
+							>
+								<div className="inline-flex items-center justify-center h-9 w-9 rounded-md bg-orange-50 text-orange-600">
+									<card.Icon className="h-5 w-5" />
+								</div>
+								<strong className="text-sm font-semibold text-text-primary">
+									{ card.label }
+								</strong>
+								<p className="m-0 text-xs text-text-secondary leading-snug">
+									{ card.description }
+								</p>
+								<p className="m-0 text-xs text-text-tertiary leading-snug">
+									{ card.example }
+								</p>
+							</div>
+						) ) }
+					</div>
 					<button
 						type="button"
 						onClick={ () => toggleModalOpen() }
@@ -368,9 +436,12 @@ function CampaignsList( { toast, tabSelector } ) {
 			) }
 
 			<div className="bg-background-primary rounded-xl border border-border-subtle p-4 flex flex-col gap-4">
-				<h2 className="m-0 text-xl font-semibold text-text-primary">
-					{ __( 'Loyalty Rewards', 'power-coupons' ) }
-				</h2>
+				<div className="flex items-center gap-2 flex-wrap">
+					<h2 className="m-0 text-xl font-semibold text-text-primary">
+						{ __( 'Loyalty Rewards', 'power-coupons' ) }
+					</h2>
+					<LoyaltyStatusPill />
+				</div>
 				{ /* Header */ }
 				<div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
 					<div className="flex items-center gap-4">
@@ -462,6 +533,21 @@ function CampaignsList( { toast, tabSelector } ) {
 						</button>
 					</div>
 				</div>
+
+				{ campaigns.length > 0 && (
+					<div className="flex items-start gap-2 px-3 py-2 rounded-md bg-blue-50 text-blue-900 text-xs leading-snug">
+						<InformationCircleIcon
+							aria-hidden="true"
+							className="h-4 w-4 mt-0.5 text-blue-600 flex-shrink-0"
+						/>
+						<p className="m-0">
+							{ __(
+								'You can run multiple campaigns simultaneously — Priority decides which one wins when more than one matches.',
+								'power-coupons'
+							) }
+						</p>
+					</div>
+				) }
 
 				{ /* Table */ }
 				{ loading ? (
