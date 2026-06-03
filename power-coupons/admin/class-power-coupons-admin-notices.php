@@ -76,6 +76,14 @@ class Power_Coupons_Admin_Notices {
 			return;
 		}
 
+		// Gate the notice on a real, successful outcome: the 14-day install delay
+		// has elapsed AND a Power Coupons coupon has been redeemed in a placed order.
+		// Both conditions are enforced here, so Astra's own display delay is disabled
+		// below (otherwise it would start a second clock once show_if turns true).
+		if ( ! $this->is_review_notice_ready() ) {
+			return;
+		}
+
 		$logo_url = esc_url( POWER_COUPONS_URL . 'admin/assets/images/logo.svg' );
 
 		\Astra_Notices::add_notice(
@@ -99,7 +107,7 @@ class Power_Coupons_Admin_Notices {
 							</a>
 							<a href="#" data-repeat-notice-after="%6$s" class="astra-notice-close astra-review-notice">
 								<span class="dashicons dashicons-calendar"></span>
-								%7$s
+								<u>%7$s</u>
 							</a>
 							<a href="#" class="astra-notice-close astra-review-notice">
 								<span class="dashicons dashicons-smiley"></span>
@@ -117,9 +125,38 @@ class Power_Coupons_Admin_Notices {
 					esc_html__( 'I already did', 'power-coupons' )
 				),
 				'repeat-notice-after'  => MONTH_IN_SECONDS,
-				'display-notice-after' => 2 * WEEK_IN_SECONDS,
+				// Delay is enforced via is_review_notice_ready() (measured from install,
+				// independent of redemption), so Astra must not add its own delay.
+				'display-notice-after' => false,
 			)
 		);
+	}
+
+	/**
+	 * Whether the 5-star review notice is eligible to display.
+	 *
+	 * Requires BOTH conditions to be true:
+	 *  1. The 14-day delay since install has elapsed (independent of redemption).
+	 *  2. A coupon created using Power Coupons has been redeemed in a placed order.
+	 *
+	 * @since 1.0.2
+	 * @return bool
+	 */
+	private function is_review_notice_ready() {
+		// Condition 2: a Power Coupons coupon was redeemed in a placed order.
+		if ( ! get_option( 'power_coupons_first_coupon_redeemed' ) ) {
+			return false;
+		}
+
+		// Condition 1: the 14-day install delay has elapsed.
+		$raw_time     = get_option( 'power_coupons_usage_installed_time', 0 );
+		$install_time = is_numeric( $raw_time ) ? (int) $raw_time : 0;
+
+		if ( $install_time <= 0 ) {
+			return false;
+		}
+
+		return ( time() - $install_time ) >= ( 2 * WEEK_IN_SECONDS );
 	}
 
 	/**

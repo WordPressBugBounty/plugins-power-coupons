@@ -56,6 +56,10 @@
 .power-coupons-5-star .astra-review-notice.button-primary {
 	background-color: #ee5a2f;
 	border-color: #ee5a2f;
+	/* Reset WP core .button-primary sizing so the primary matches the secondary button. */
+	line-height: 24px;
+	min-height: 0;
+	box-sizing: border-box;
 }
 
 .power-coupons-5-star .astra-review-notice.button-primary:hover {
@@ -70,10 +74,19 @@
 	gap: 6px;
 	padding: 4px 10px;
 	border-radius: 6px;
+	/* Drop the default link underline so it doesn't run under the icon; the
+	   text label is underlined explicitly via its <u> wrapper instead. */
+	text-decoration: none;
 }
 
-.power-coupons-5-star .astra-review-notice .dashicons-calendar {
-	margin-top: -2px;
+.power-coupons-5-star .astra-review-notice .dashicons {
+	width: 16px;
+	height: 16px;
+	font-size: 16px;
+	line-height: 1;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
 }
 
 .power-coupons-5-star .astra-review-notice:last-child {
@@ -89,5 +102,6 @@
 }
 
 .power-coupons-5-star .astra-review-notice-container .dashicons::before {
-	vertical-align: middle;
+	display: block;
+	line-height: 1;
 }

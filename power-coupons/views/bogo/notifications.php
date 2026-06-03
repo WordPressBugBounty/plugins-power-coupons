@@ -24,7 +24,13 @@ if ( empty( $notifications ) ) {
 			$wrapper_class .= ' power-coupons-bogo-offer-unclaimed';
 		}
 		?>
-	<div class="<?php echo esc_attr( $wrapper_class ); ?>" data-coupon-code="<?php echo esc_attr( $notification['coupon_code'] ); ?>">
+		<?php
+		$variable_products = isset( $notification['variable_get_products'] ) && is_array( $notification['variable_get_products'] ) ? $notification['variable_get_products'] : array();
+		?>
+	<div
+		class="<?php echo esc_attr( $wrapper_class ); ?>"
+		data-coupon-code="<?php echo esc_attr( $notification['coupon_code'] ); ?>"
+	>
 		<img src="<?php echo esc_url( $notification['product_image_url'] ); ?>" alt="<?php echo esc_attr( $notification['offer_name'] ); ?>">
 
 		<div class="power-coupons-bogo-offer-right">
@@ -71,8 +77,28 @@ if ( empty( $notifications ) ) {
 			<span class="power-coupons-bogo-offer-applied-text">
 				<?php esc_html_e( 'This offer has been applied to your cart', 'power-coupons' ); ?>
 			</span>
+				<?php if ( ! empty( $variable_products ) ) : ?>
+				<button class="power-coupons-bogo-offer-button power-coupons-bogo-change-options" data-coupon="<?php echo esc_attr( $notification['coupon_code'] ); ?>">
+					<?php esc_html_e( 'Change gift options', 'power-coupons' ); ?>
+				</button>
+				<?php endif; ?>
 			<?php endif; ?>
 		</div>
+
+		<?php
+		// Variable "get" products need a variation picker. Render the modal markup here so the
+		// frontend script can clone it instead of building it in JS. It is rendered both for the
+		// unapplied "apply" state and the applied "change" state (so the customer can swap their
+		// auto-added gift). The modal mode + current selection are passed through for pre-fill.
+		$show_variation_modal = ! empty( $variable_products )
+			&& ( $notification['is_applied'] || $notification['eligible'] );
+		if ( $show_variation_modal ) {
+			$coupon_code        = $notification['coupon_code'];
+			$modal_mode         = $notification['is_applied'] ? 'change' : 'apply';
+			$current_selections = isset( $notification['current_selections'] ) && is_array( $notification['current_selections'] ) ? $notification['current_selections'] : array();
+			include __DIR__ . '/variation-modal.php';
+		}
+		?>
 	</div>
 
 	<?php endforeach; ?>

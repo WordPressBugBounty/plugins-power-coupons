@@ -23,6 +23,19 @@ if ( ! defined( 'ABSPATH' ) ) {
 class Power_Coupons_Utilities {
 
 	/**
+	 * Whether a coupon is currently being applied programmatically rather than by
+	 * an explicit user action (e.g. auto-apply, or a PRO offer flow).
+	 *
+	 * Callers that apply coupons in code should wrap the apply in
+	 * `self::$applying_coupon_programmatically = true; ... = false;` so automated
+	 * applies stay out of the user-engagement "coupons applied" KPI.
+	 *
+	 * @since 1.0.4
+	 * @var bool
+	 */
+	public static $applying_coupon_programmatically = false;
+
+	/**
 	 * Check if coupon is expired
 	 *
 	 * Supports both WC_DateTime objects and string dates.
@@ -366,6 +379,52 @@ class Power_Coupons_Utilities {
 		}
 
 		return false;
+	}
+
+	/**
+	 * Determine whether a coupon was created using Power Coupons.
+	 *
+	 * A coupon qualifies when the store owner has intentionally opted into a
+	 * Power Coupons feature on it. Detection is value-based, not presence-based:
+	 * `_power_coupon_auto_apply` and `_power_coupon_show_in_slideout` are written
+	 * ('yes'/'no') on every coupon saved through the WooCommerce coupon editor,
+	 * so only the 'yes' value indicates a deliberate Power Coupons coupon.
+	 *
+	 * Free coverage: auto-apply, slideout display, and rule conditions. The
+	 * `power_coupons_is_power_coupons_coupon` filter lets the PRO plugin augment
+	 * detection for its own coupon types (gift cards, BOGO). The filter is a
+	 * no-op when PRO is inactive.
+	 *
+	 * @since 1.0.2
+	 * @param \WC_Coupon $coupon WooCommerce coupon object.
+	 * @return bool True if the coupon was created using Power Coupons.
+	 */
+	public static function is_power_coupons_coupon( $coupon ) {
+		if ( ! $coupon instanceof \WC_Coupon ) {
+			return false;
+		}
+
+		$coupon_id = $coupon->get_id();
+
+		if ( $coupon_id <= 0 ) {
+			return false;
+		}
+
+		$is_power_coupon = 'yes' === get_post_meta( $coupon_id, '_power_coupon_auto_apply', true )
+			|| 'yes' === get_post_meta( $coupon_id, '_power_coupon_show_in_slideout', true )
+			|| 'yes' === get_post_meta( $coupon_id, '_pc_rule_enable_conditions', true );
+
+		/**
+		 * Filter whether a coupon was created using Power Coupons.
+		 *
+		 * Allows the PRO plugin to mark its own coupon types (gift cards, BOGO)
+		 * as Power Coupons coupons. Returning true short-circuits detection.
+		 *
+		 * @since 1.0.2
+		 * @param bool       $is_power_coupon Whether the coupon is a Power Coupons coupon (free detection).
+		 * @param \WC_Coupon $coupon          WooCommerce coupon object.
+		 */
+		return (bool) apply_filters( 'power_coupons_is_power_coupons_coupon', $is_power_coupon, $coupon );
 	}
 
 	/**

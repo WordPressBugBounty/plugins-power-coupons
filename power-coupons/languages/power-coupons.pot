@@ -2,14 +2,14 @@
 # This file is distributed under the GPL v2 or later.
 msgid ""
 msgstr ""
-"Project-Id-Version: Power Coupons for WooCommerce 1.0.4\n"
+"Project-Id-Version: Power Coupons for WooCommerce 1.0.5\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/power-coupons\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-05-01T09:35:48+00:00\n"
+"POT-Creation-Date: 2026-06-02T10:37:38+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: power-coupons\n"
@@ -80,23 +80,23 @@ msgstr ""
 msgid "No"
 msgstr ""
 
-#: admin/class-power-coupons-admin-notices.php:111
+#: admin/class-power-coupons-admin-notices.php:119
 msgid "Your coupons are converting &mdash; want to help others do the same?"
 msgstr ""
 
-#: admin/class-power-coupons-admin-notices.php:112
+#: admin/class-power-coupons-admin-notices.php:120
 msgid "A quick 5-star review helps other WooCommerce store owners discover Power Coupons. It takes 30 seconds and means a lot to our team."
 msgstr ""
 
-#: admin/class-power-coupons-admin-notices.php:114
+#: admin/class-power-coupons-admin-notices.php:122
 msgid "Ok, you deserve it"
 msgstr ""
 
-#: admin/class-power-coupons-admin-notices.php:116
+#: admin/class-power-coupons-admin-notices.php:124
 msgid "Nope, maybe later"
 msgstr ""
 
-#: admin/class-power-coupons-admin-notices.php:117
+#: admin/class-power-coupons-admin-notices.php:125
 msgid "I already did"
 msgstr ""
 
@@ -797,10 +797,12 @@ msgstr[0] ""
 msgstr[1] ""
 
 #: views/bogo/giveaway-selector.php:74
+#: views/bogo/variation-modal.php:89
 msgid "Choose an option"
 msgstr ""
 
 #: views/bogo/giveaway-selector.php:93
+#: views/bogo/variation-modal.php:106
 msgid "Add Free Gift"
 msgstr ""
 
@@ -812,20 +814,40 @@ msgstr ""
 msgid "Special Offers"
 msgstr ""
 
-#: views/bogo/notifications.php:49
+#: views/bogo/notifications.php:55
 msgid "Offer Applied"
 msgstr ""
 
-#: views/bogo/notifications.php:51
+#: views/bogo/notifications.php:57
 msgid "Available Offer"
 msgstr ""
 
-#: views/bogo/notifications.php:68
+#: views/bogo/notifications.php:74
 msgid "Apply Offer"
 msgstr ""
 
-#: views/bogo/notifications.php:72
+#: views/bogo/notifications.php:78
 msgid "This offer has been applied to your cart"
+msgstr ""
+
+#: views/bogo/variation-modal.php:44
+#: views/bogo/variation-modal.php:53
+msgid "Choose your free gift options"
+msgstr ""
+
+#: views/bogo/variation-modal.php:49
+#: admin/assets/build/settings/index.js:4
+msgid "Close"
+msgstr ""
+
+#: views/bogo/variation-modal.php:57
+msgid "Pick the variation you would like to receive."
+msgstr ""
+
+#: views/bogo/variation-modal.php:103
+#: admin/assets/build/settings/index.js:4
+#: admin/assets/build/settings/index.js:8
+msgid "Cancel"
 msgstr ""
 
 #: views/cart-progress-bar/progress-bar.php:30
@@ -1887,11 +1909,6 @@ msgid "Delete"
 msgstr ""
 
 #: admin/assets/build/settings/index.js:4
-#: admin/assets/build/settings/index.js:8
-msgid "Cancel"
-msgstr ""
-
-#: admin/assets/build/settings/index.js:4
 msgid "Loading…"
 msgstr ""
 
@@ -1949,10 +1966,6 @@ msgstr ""
 
 #: admin/assets/build/settings/index.js:4
 msgid "Custom"
-msgstr ""
-
-#: admin/assets/build/settings/index.js:4
-msgid "Close"
 msgstr ""
 
 #: admin/assets/build/settings/index.js:4

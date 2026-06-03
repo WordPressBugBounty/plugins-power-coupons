@@ -33,19 +33,57 @@ class Power_Coupons_Analytics {
 	private static $events = null;
 
 	/**
+	 * Option key prefix for the daily coupons_applied counter.
+	 *
+	 * The full option key is `power_coupons_kpi_applied_YYYY-MM-DD`. One row
+	 * per day; autoload disabled to keep wp_options light. Old keys are
+	 * garbage-collected in {@see self::gc_old_kpi_options()}.
+	 *
+	 * @since 1.0.4
+	 */
+	private const KPI_OPTION_PREFIX = 'power_coupons_kpi_applied_';
+
+	/**
+	 * Days to retain per-day KPI counter options.
+	 *
+	 * @since 1.0.4
+	 */
+	private const KPI_RETENTION_DAYS = 7;
+
+	/**
 	 * Constructor.
 	 *
+	 * Registrations are split by the context each one needs:
+	 *
+	 * - `woocommerce_applied_coupon` — frontend + admin (cart hook fires wherever cart exists).
+	 * - `bsf_core_stats` — every request, because BSF Analytics runs its
+	 *    `maybe_track_analytics()` on the `init` action and may flush the
+	 *    payload on a frontend or wp-cron request. Omitting this filter in
+	 *    non-admin contexts drops the entire Power Coupons block from those
+	 *    sends. The callback is read-only, so running it outside admin is safe.
+	 * - State-event detection — admin-only, throttled to once per day via transient.
+	 *
 	 * @since 1.0.3
+	 * @since 1.0.4 Frontend bootstrap for cart-level counter; `bsf_core_stats` filter moved outside the admin guard.
 	 */
 	protected function __construct() {
+		// Live cart-apply counter — must register on every request (frontend + admin)
+		// because the hook fires wherever the WC cart exists. The callback itself
+		// checks the `enable_usage_tracking` setting before recording.
+		add_action( 'woocommerce_applied_coupon', array( $this, 'track_coupon_applied' ), 10, 1 );
+
+		// BSF stats payload — must register on every request so frontend/wp-cron-triggered
+		// BSF sends also include the Power Coupons data block. The callback itself checks
+		// `enable_usage_tracking` before appending anything.
+		add_filter( 'bsf_core_stats', array( $this, 'get_stats' ) );
+
 		if ( ! is_admin() ) {
 			return;
 		}
 
-		// Single bsf_core_stats filter — owns the complete Power Coupons payload.
-		add_filter( 'bsf_core_stats', array( $this, 'get_stats' ) );
-
-		// State-based events — throttled to once per day via transient.
+		// State-based events — throttled to once per day via transient. Admin-only
+		// because this is a one-time catch-up path (new events get queued in real
+		// time by the triggering code itself; see views/onboarding/* and PRO flag-setters).
 		if ( false === get_transient( 'power_coupons_state_events_checked' ) ) {
 			$this->detect_state_events();
 		}
@@ -194,6 +232,8 @@ class Power_Coupons_Analytics {
 	/**
 	 * Get KPI tracking data for the last 2 days (excluding today).
 	 *
+	 * Also performs lazy garbage-collection on the per-day counter options.
+	 *
 	 * @since 1.0.3
 	 * @return array<string, array<string, array<string, int>>> KPI records keyed by date.
 	 */
@@ -212,43 +252,111 @@ class Power_Coupons_Analytics {
 			);
 		}
 
+		$this->gc_old_kpi_options();
+
 		return $kpi_data;
 	}
 
 	/**
-	 * Get daily coupon application count for a specific date.
+	 * Increment the daily `coupons_applied` counter.
 	 *
-	 * Counts completed/processing orders that used coupons.
-	 * Supports both classic post-table and HPOS order storage.
+	 * Hooked to `woocommerce_applied_coupon`, which fires every time a coupon
+	 * is successfully applied to the cart. The KPI is meant to measure genuine
+	 * user engagement, so automated applies are excluded: programmatic applies
+	 * (auto-apply, and PRO offer flows that set the programmatic flag) and BOGO
+	 * coupons (applied through the offer flow, never a manual apply). Re-applying
+	 * the same coupon after removal is still a valid engagement signal and is
+	 * counted.
+	 *
+	 * @since 1.0.4
+	 * @param string $coupon_code The applied coupon code.
+	 * @return void
+	 */
+	public function track_coupon_applied( $coupon_code ) {
+		$settings = Power_Coupons_Settings_Helper::get_instance();
+		if ( ! $settings->get( 'general', 'enable_usage_tracking', false ) ) {
+			return;
+		}
+
+		// Don't count automated applies (auto-apply / PRO offer flows) as engagement.
+		if ( Power_Coupons_Utilities::$applying_coupon_programmatically ) {
+			return;
+		}
+
+		// BOGO coupons are applied through the offer flow, not a manual apply.
+		$coupon = new \WC_Coupon( $coupon_code );
+		if ( $coupon->get_id() && 'power_coupons_bogo' === $coupon->get_discount_type() ) {
+			return;
+		}
+
+		$date = wp_date( 'Y-m-d' );
+		if ( false === $date ) {
+			return;
+		}
+
+		$key   = self::KPI_OPTION_PREFIX . $date;
+		$value = get_option( $key, 0 );
+		$count = is_numeric( $value ) ? (int) $value : 0;
+		update_option( $key, $count + 1, false );
+	}
+
+	/**
+	 * Get the daily coupon-application count for a specific date.
+	 *
+	 * Reads from the per-day counter option populated by
+	 * {@see self::track_coupon_applied()}. Returns 0 for days that never
+	 * saw a cart apply (or days before this counter was introduced in
+	 * 1.0.4).
 	 *
 	 * @since 1.0.3
+	 * @since 1.0.4 Reads from per-day option instead of querying orders.
 	 * @param string $date Date in Y-m-d format.
 	 * @return int
 	 */
 	private function get_daily_coupons_applied_count( $date ) {
-		if ( ! class_exists( 'WooCommerce' ) ) {
-			return 0;
+		$value = get_option( self::KPI_OPTION_PREFIX . $date, 0 );
+		return is_numeric( $value ) ? (int) $value : 0;
+	}
+
+	/**
+	 * Garbage-collect per-day counter options older than the retention window.
+	 *
+	 * Runs on the same cadence as the BSF stats cron. Queries wp_options
+	 * directly by prefix because the options are stored with autoload=false
+	 * and WordPress provides no prefixed-lookup helper.
+	 *
+	 * @since 1.0.4
+	 * @return void
+	 */
+	private function gc_old_kpi_options() {
+		global $wpdb;
+
+		$cutoff = wp_date( 'Y-m-d', strtotime( '-' . self::KPI_RETENTION_DAYS . ' days' ) );
+		if ( false === $cutoff ) {
+			return;
 		}
 
-		$args = array(
-			'status'       => array( 'wc-completed', 'wc-processing' ),
-			'date_created' => $date . '...' . $date,
-			'limit'        => -1,
-			'return'       => 'ids',
+		$prefix = self::KPI_OPTION_PREFIX;
+
+		/** @var array<int, string>|null $stale */ // phpcs:ignore Generic.Commenting.DocComment.MissingShort
+		$stale = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$wpdb->prepare(
+				"SELECT option_name FROM {$wpdb->options}
+				 WHERE option_name LIKE %s
+				   AND SUBSTRING(option_name, %d) < %s",
+				$wpdb->esc_like( $prefix ) . '%',
+				strlen( $prefix ) + 1,
+				$cutoff
+			)
 		);
 
-		/** @var array<int, int> $orders */ // phpcs:ignore Generic.Commenting.DocComment.MissingShort
-		$orders = wc_get_orders( $args );
-		$count  = 0;
-
-		foreach ( $orders as $order_id ) {
-			$order = wc_get_order( $order_id );
-			if ( $order && count( $order->get_coupon_codes() ) > 0 ) {
-				++$count;
-			}
+		if ( empty( $stale ) || ! is_array( $stale ) ) {
+			return;
 		}
 
-		return $count;
+		foreach ( $stale as $option_name ) {
+			delete_option( $option_name );
+		}
 	}
 
 	// -------------------------------------------------------------------------

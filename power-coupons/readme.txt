@@ -5,7 +5,7 @@ Tags: discount rules, dynamic discounts, woocommerce discounts, woocommerce coup
 Requires at least: 6.0
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.0.4
+Stable tag: 1.0.5
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -23,6 +23,8 @@ If you've ever run a promotion and still watched shoppers drop off at cart or ch
 * Another discount tool conflicted, and nobody could tell why.
 
 Power Coupons is designed to reduce that friction. Instead of relying on shoppers to enter codes, you can show eligible offers in-cart and apply discounts automatically when conditions are met. The result is a cleaner buying experience and promotions that are easier to manage (and easier to troubleshoot) over time.
+
+[youtube https://www.youtube.com/watch?v=Uj6ZMyXoLug]
 
 = Who is this for? =
 
@@ -168,6 +170,9 @@ React / JavaScript source code:
 The files in `admin/assets/build/` are generated from the corresponding source files in `admin/assets/src/` using standard JavaScript build tools such as `wp-scripts`.
 
 == Changelog ==
+
+= 1.0.5 - Tuesday, 2nd June 2026 =
+* Improvement: Added the compatibility for future release of Power Coupons Pro.
 
 = 1.0.4 - Friday, 1st May 2026 =
 * Improvement: Loyalty Rewards admin now shows a banner and status pill when the master toggle is off, so the program isn't accidentally left disabled.

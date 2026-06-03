@@ -9,6 +9,7 @@
 namespace Power_Coupons\Controllers;
 
 use Power_Coupons\Includes\Power_Coupons_Settings_Helper;
+use Power_Coupons\Includes\Power_Coupons_Utilities;
 use Power_Coupons\Includes\Traits\Power_Coupons_Singleton;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -102,12 +103,20 @@ class Auto_Apply_Controller {
 
 		$auto_coupons = $this->get_auto_apply_coupons();
 
-		foreach ( $auto_coupons as $coupon_code ) {
-			if ( ! $cart->has_discount( $coupon_code ) ) {
-				if ( $this->can_apply_coupon( $coupon_code ) ) {
-					$cart->apply_coupon( $coupon_code );
+		// Flag these as programmatic applies so the analytics KPI doesn't count
+		// auto-applied coupons as user-initiated engagement.
+		Power_Coupons_Utilities::$applying_coupon_programmatically = true;
+
+		try {
+			foreach ( $auto_coupons as $coupon_code ) {
+				if ( ! $cart->has_discount( $coupon_code ) ) {
+					if ( $this->can_apply_coupon( $coupon_code ) ) {
+						$cart->apply_coupon( $coupon_code );
+					}
 				}
 			}
+		} finally {
+			Power_Coupons_Utilities::$applying_coupon_programmatically = false;
 		}
 	}
 

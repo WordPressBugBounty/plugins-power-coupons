@@ -174,6 +174,7 @@ class Power_Coupons_Loader {
 		require_once POWER_COUPONS_DIR . 'controllers/class-power-coupons-cart-controller.php';
 		require_once POWER_COUPONS_DIR . 'controllers/class-power-coupons-display-controller.php';
 		require_once POWER_COUPONS_DIR . 'controllers/class-checkout-drawer-controller.php';
+		require_once POWER_COUPONS_DIR . 'controllers/class-power-coupons-coupon-usage-controller.php';
 
 		// Load admin and public classes.
 		if ( is_admin() ) {

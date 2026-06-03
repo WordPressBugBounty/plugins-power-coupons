@@ -56,6 +56,9 @@ class Power_Coupons_Core {
 		// Initialize analytics events tracking.
 		Power_Coupons_Analytics::get_instance();
 
+		// Track first real redemption of a Power Coupons coupon (value-based prompts).
+		\Power_Coupons\Controllers\Coupon_Usage_Controller::get_instance();
+
 		// Initialize public.
 		\Power_Coupons\Public_Folder\Power_Coupons_Frontend::get_instance();
 	}

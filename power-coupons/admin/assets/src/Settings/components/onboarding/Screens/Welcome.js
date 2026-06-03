@@ -34,9 +34,9 @@ const Welcome = () => {
 			/>
 
 			<Wrapper>
-				{ /* <iframe
+				<iframe
 					className="w-full aspect-video rounded-lg"
-					src="https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=0&mute=1"
+					src="https://www.youtube.com/embed/Uj6ZMyXoLug?autoplay=1&mute=1"
 					title={ __(
 						'Power Coupons YouTube Video',
 						'power-coupons'
@@ -44,7 +44,7 @@ const Welcome = () => {
 					frameBorder="0"
 					allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
 					allowFullScreen
-				></iframe> */ }
+				></iframe>
 
 				<ul className="divide-y divide-gray-200 list-none pl-0 space-y-2">
 					{ features.map( ( feature, index ) => (
