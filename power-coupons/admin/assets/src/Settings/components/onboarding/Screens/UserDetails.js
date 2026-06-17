@@ -69,7 +69,7 @@ const UserDetails = () => {
 							heading: (
 								<span>
 									{ __(
-										'Allow Power Coupons and our other products to track non-sensitive usage tracking data.',
+										'Allow Power Coupons to track non-sensitive usage tracking data.',
 										'power-coupons'
 									) }{ ' ' }
 									<a

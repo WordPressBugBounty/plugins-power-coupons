@@ -25,37 +25,46 @@ const FinalStep = () => {
 					) }
 				</strong>
 
-				<ul className="divide-y divide-gray-200 list-none pl-0 space-y-2">
-					<li className="flex items-center space-x-2 text-field-label text-sm font-medium">
-						{ RenderIcon( 'check' ) }
-						<strong>
-							{ __( 'Effortless discounts:', 'power-coupons' ) }
-						</strong>
+				<ul className="list-none pl-0 m-0 space-y-3">
+					<li className="flex items-start gap-2 text-field-label text-sm font-medium leading-6">
+						<span className="shrink-0 mt-1.5">
+							{ RenderIcon( 'check' ) }
+						</span>
 						<span>
+							<strong>
+								{ __(
+									'Effortless discounts:',
+									'power-coupons'
+								) }
+							</strong>{ ' ' }
 							{ __(
 								'Customers see and apply coupons with a single click.',
 								'power-coupons'
 							) }
 						</span>
 					</li>
-					<li className="flex items-center space-x-2 text-field-label text-sm font-medium">
-						{ RenderIcon( 'check' ) }
-						<strong>
-							{ __( 'Higher conversions:', 'power-coupons' ) }
-						</strong>
+					<li className="flex items-start gap-2 text-field-label text-sm font-medium leading-6">
+						<span className="shrink-0 mt-1.5">
+							{ RenderIcon( 'check' ) }
+						</span>
 						<span>
+							<strong>
+								{ __( 'Higher conversions:', 'power-coupons' ) }
+							</strong>{ ' ' }
 							{ __(
 								'Smart coupon display encourages customers to complete their purchase.',
 								'power-coupons'
 							) }
 						</span>
 					</li>
-					<li className="flex items-center space-x-2 text-field-label text-sm font-medium">
-						{ RenderIcon( 'check' ) }
-						<strong>
-							{ __( 'Peace of mind:', 'power-coupons' ) }
-						</strong>
+					<li className="flex items-start gap-2 text-field-label text-sm font-medium leading-6">
+						<span className="shrink-0 mt-1.5">
+							{ RenderIcon( 'check' ) }
+						</span>
 						<span>
+							<strong>
+								{ __( 'Peace of mind:', 'power-coupons' ) }
+							</strong>{ ' ' }
 							{ __(
 								'Automated coupon rules work in the background so you can focus on growing your business.',
 								'power-coupons'
@@ -76,14 +85,12 @@ const FinalStep = () => {
 				<Button
 					className="text-text-tertiary hover:text-text-primary"
 					onClick={ () =>
-						window.open(
-							'https://developer.brainstormforce.com/',
-							'_blank'
-						)
+						( window.location.href =
+							'admin.php?page=power_coupons_settings&path=settings' )
 					}
 					variant="ghost"
 				>
-					{ __( 'Documentation', 'power-coupons' ) }
+					{ __( 'View coupon settings', 'power-coupons' ) }
 				</Button>
 			</div>
 		</>

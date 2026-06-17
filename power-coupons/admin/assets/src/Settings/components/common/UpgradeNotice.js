@@ -38,7 +38,7 @@ function UpgradeNotice( {
 		);
 	const resolvedButton = buttonLabel || __( 'Upgrade now', 'power-coupons' );
 
-	const pricingUrl = `https://cartflows.com/power-coupons-pricing/?utm_source=dashboard&utm_medium=${ encodeURIComponent(
+	const pricingUrl = `https://cartflows.com/power-coupons-for-woocommerce/pricing/?utm_source=dashboard&utm_medium=${ encodeURIComponent(
 		utmMedium
 	) }&utm_campaign=go-pro`;
 

@@ -2,13 +2,13 @@ import { __ } from '@wordpress/i18n';
 import { Container } from '@bsf/force-ui';
 
 const DEFAULT_PRICING_URL =
-	'https://cartflows.com/power-coupons-pricing/?utm_source=dashboard&utm_medium=free-power-coupons&utm_campaign=go-pro';
+	'https://cartflows.com/power-coupons-for-woocommerce/pricing/?utm_source=dashboard&utm_medium=free-power-coupons&utm_campaign=go-pro';
 
 function buildPricingUrl( utmMedium ) {
 	if ( ! utmMedium ) {
 		return DEFAULT_PRICING_URL;
 	}
-	return `https://cartflows.com/power-coupons-pricing/?utm_source=dashboard&utm_medium=${ encodeURIComponent(
+	return `https://cartflows.com/power-coupons-for-woocommerce/pricing/?utm_source=dashboard&utm_medium=${ encodeURIComponent(
 		utmMedium
 	) }&utm_campaign=go-pro`;
 }

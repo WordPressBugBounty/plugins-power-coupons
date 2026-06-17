@@ -57,9 +57,6 @@ function FieldContainer( { tabKey } ) {
 	}
 
 	const isGeneralTab = tabKey === 'power_coupons_general';
-	const isPluginEnabled = isGeneralTab
-		? data?.general?.enable_plugin ?? true
-		: true;
 
 	if ( hasSubtabs ) {
 		const fields = allFields.filter( ( f ) => f.subtab === activeSubtab );
@@ -181,6 +178,24 @@ function FieldContainer( { tabKey } ) {
 	const showUpgradeNotice =
 		isGeneralTab && ! window.powerCouponsSettings?.is_pro_active;
 
+	// Per-tab master toggle: when its switch is off, every other field in the
+	// tab is rendered disabled (grayed out), mirroring the General tab's
+	// "Enable Plugin" behaviour. Computed here (after the `hasSubtabs` early
+	// return) because only this non-subtab branch reads it — the subtab branch
+	// above uses its own `isFieldDisabled` cascade. A master-toggle tab that
+	// ever gains subtabs would need this wiring moved into that branch.
+	const masterToggleByTab = {
+		power_coupons_general: {
+			field: 'general[enable_plugin]',
+			enabled: data?.general?.enable_plugin ?? true,
+		},
+		power_coupons_url_coupons: {
+			field: 'url_coupon_settings[enable]',
+			enabled: data?.url_coupon_settings?.enable ?? true,
+		},
+	};
+	const masterToggle = masterToggleByTab[ tabKey ];
+
 	return (
 		<>
 			<Title
@@ -194,8 +209,8 @@ function FieldContainer( { tabKey } ) {
 
 			<SectionRenderer
 				fields={ fields }
-				masterDisabled={ ! isPluginEnabled }
-				masterFieldName="general[enable_plugin]"
+				masterDisabled={ masterToggle ? ! masterToggle.enabled : false }
+				masterFieldName={ masterToggle ? masterToggle.field : '' }
 			/>
 
 			{ showUpgradeNotice && (

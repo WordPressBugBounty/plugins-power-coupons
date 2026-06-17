@@ -7,6 +7,7 @@ import ToggleField from '../fields/ToggleField';
 import CouponTemplatePicker from '../fields/CouponTemplatePicker';
 import ProductSearchField from '../fields/ProductSearchField';
 import CategorySearchField from '../fields/CategorySearchField';
+import PageSearchField from '../fields/PageSearchField';
 
 const componentMap = {
 	toggle: ToggleField,
@@ -17,6 +18,7 @@ const componentMap = {
 	coupon_template_picker: CouponTemplatePicker,
 	product_search: ProductSearchField,
 	category_search: CategorySearchField,
+	page_search: PageSearchField,
 };
 
 const getValueFromName = ( name, data ) => {

@@ -7,6 +7,7 @@ import { __ } from '@wordpress/i18n';
 import parse from 'html-react-parser';
 
 import CartFlowsLogo from '../../../../images/logos/cartflows.gif';
+import ModernCartLogo from '../../../../images/logos/modern-cart.svg';
 import WCARLogo from '../../../../images/logos/wcar.gif';
 import SureFormsLogo from '../../../../images/logos/sureforms.gif';
 import SureRankLogo from '../../../../images/logos/surerank.jpg';
@@ -28,6 +29,15 @@ const RecommendedPlugins = [
 		),
 		slug: 'cartflows',
 		logo: CartFlowsLogo,
+	},
+	{
+		name: 'Modern Cart',
+		description: __(
+			'Add a sleek side cart and free shipping bar to keep shoppers buying.',
+			'power-coupons'
+		),
+		slug: 'modern-cart',
+		logo: ModernCartLogo,
 	},
 	{
 		name: 'Cart Abandonment Recovery',

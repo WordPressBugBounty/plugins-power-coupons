@@ -192,7 +192,7 @@ function LicenseSettings() {
 										"Enter your valid license key below to activate Power Coupons Pro. If you don't have a license key yet, you can get it from %1$shere%2$s.",
 										'power-coupons'
 									),
-									'<a href="https://my.cartflows.com/api-keys/" class="text-wpcolor hover:text-wphovercolor no-underline" target="_blank">',
+									'<a href="https://my.cartflows.com/account/api-keys/" class="text-wpcolor hover:text-wphovercolor no-underline" target="_blank">',
 									'</a>'
 								)
 							) }

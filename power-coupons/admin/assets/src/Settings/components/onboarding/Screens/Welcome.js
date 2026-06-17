@@ -61,7 +61,7 @@ const Welcome = () => {
 
 			<NavButtons
 				labels={ {
-					next: __( 'Get Started with Onboarding', 'power-coupons' ),
+					next: __( "Let's Get Started", 'power-coupons' ),
 					skip: null,
 					back: null,
 				} }

@@ -31,6 +31,13 @@ class Power_Coupons_Admin_Settings {
 	const OPTION_KEY = 'power_coupons_settings';
 
 	/**
+	 * Pricing/upgrade URL used by the "Upgrade to Pro" menu item and header button.
+	 *
+	 * @var string
+	 */
+	const UPGRADE_URL = 'https://cartflows.com/power-coupons-for-woocommerce/pricing/?utm_source=dashboard&utm_medium=free-power-coupons&utm_campaign=go-pro';
+
+	/**
 	 * Constructor
 	 *
 	 * @since 1.0.0
@@ -52,6 +59,58 @@ class Power_Coupons_Admin_Settings {
 		add_action( 'wp_ajax_power_coupons_activate_pro', array( $this, 'ajax_activate_pro' ) );
 		add_action( 'wp_ajax_power_coupons_complete_onboarding', array( $this, 'complete_onboarding' ) );
 		add_action( 'wp_ajax_power_coupons_onboarding_skipped', array( $this, 'ajax_onboarding_skipped' ) );
+
+		// One-shot guard for the page load right after onboarding. Plugins installed during
+		// onboarding (e.g. Cart Abandonment Recovery) queue a post-activation redirect that
+		// hijacks the "Go To Dashboard" navigation. Rather than skip their activation hooks,
+		// we let them run normally and reclaim the redirect target back to our dashboard.
+		add_action( 'admin_init', array( $this, 'maybe_reclaim_post_onboarding_redirect' ), 0 );
+
+		// Highlight the "Upgrade to Pro" submenu and open it in a new tab (free plugin only).
+		// Hooked on admin_footer so the #adminmenu DOM already exists when the script runs.
+		if ( ! defined( 'POWER_COUPONS_PRO_VERSION' ) ) {
+			add_action( 'admin_footer', array( $this, 'highlight_upgrade_menu' ) );
+		}
+	}
+
+	/**
+	 * Style the "Upgrade to Pro" admin submenu item and force it to open in a new tab.
+	 *
+	 * @since 1.0.6
+	 * @return void
+	 */
+	public function highlight_upgrade_menu() {
+		?>
+		<style>
+			#adminmenu li a.power-coupons-upgrade-link {
+				color: #16a34a !important;
+				font-weight: 600;
+			}
+			#adminmenu li a.power-coupons-upgrade-link:hover,
+			#adminmenu li a.power-coupons-upgrade-link:focus {
+				color: #15803d !important;
+			}
+		</style>
+		<script>
+			( function() {
+				// Match the href in JS rather than via an attribute selector: the URL contains
+				// "://", "?" and "&", which are invalid in an unquoted CSS attribute value and
+				// would make querySelector throw a SyntaxError. wp_json_encode() yields a
+				// safely-escaped JS string literal to compare against. Styling is applied via a
+				// CSS class (see <style> above) rather than injecting the URL into CSS.
+				var url  = <?php echo wp_json_encode( self::UPGRADE_URL ); ?>;
+				var link = Array.prototype.find.call(
+					document.querySelectorAll( '#adminmenu a' ),
+					function( a ) { return a.getAttribute( 'href' ) === url; }
+				);
+				if ( link ) {
+					link.classList.add( 'power-coupons-upgrade-link' );
+					link.setAttribute( 'target', '_blank' );
+					link.setAttribute( 'rel', 'noopener noreferrer' );
+				}
+			} )();
+		</script>
+		<?php
 	}
 
 	/**
@@ -112,6 +171,15 @@ class Power_Coupons_Admin_Settings {
 						'callback'   => array( $this, 'render_settings_page' ),
 						'position'   => 15,
 					),
+					'upgrade'     => ! defined( 'POWER_COUPONS_PRO_VERSION' ) ? array(
+						'parent'     => 'power_coupons_settings',
+						'page_title' => __( 'Upgrade to Pro', 'power-coupons' ),
+						'menu_title' => __( 'Upgrade to Pro', 'power-coupons' ),
+						'capability' => 'manage_options',
+						'menu_slug'  => self::UPGRADE_URL,
+						'callback'   => null,
+						'position'   => 999,
+					) : null,
 				),
 			),
 			self::get_instance(),
@@ -506,7 +574,7 @@ class Power_Coupons_Admin_Settings {
 				'description' => sprintf(
 					/* translators: %1$s: link html start, %2$s: link html end. */
 					__( 'Allow Power Coupons and our other products to track non-sensitive usage tracking data. %1$sLearn More%2$s', 'power-coupons' ),
-					'<a href="https://store.brainstormforce.com/usage-tracking/?utm_source=dashboard&utm_medium=power-coupons&utm_campaign=docs" class="text-wpcolor hover:text-wphovercolor no-underline" target="_blank">',
+					'<a href="https://store.brainstormforce.com/usage-tracking/?utm_source=dashboard&utm_medium=power-coupons&utm_campaign=docs" class="text-wpcolor hover:text-wphovercolor no-underline" target="_blank" rel="noopener noreferrer">',
 					'</a>'
 				),
 				'type'        => 'toggle',
@@ -825,6 +893,7 @@ class Power_Coupons_Admin_Settings {
 			),
 			3 => array(
 				'cartflows'                     => true,
+				'modern-cart'                   => true,
 				'woo-cart-abandonment-recovery' => true,
 				'sureforms'                     => true,
 				'surerank'                      => true,
@@ -1031,9 +1100,12 @@ class Power_Coupons_Admin_Settings {
 			foreach ( $installed_plugins as $plugin_file => $plugin_data ) {
 				if ( strpos( $plugin_file, $slug . '/' ) === 0 ) {
 					$is_installed = true;
-					// Activate if not active.
+					// Activate normally so the plugin's activation hooks run (DB tables, default
+					// options, cron schedules). The post-activation redirect those plugins queue is
+					// neutralised separately by maybe_reclaim_post_onboarding_redirect().
 					if ( ! is_plugin_active( $plugin_file ) ) {
 						activate_plugin( $plugin_file );
+						self::guard_post_onboarding_redirect();
 					}
 					break;
 				}
@@ -1065,12 +1137,64 @@ class Power_Coupons_Admin_Settings {
 				$installed_plugins = get_plugins();
 				foreach ( $installed_plugins as $plugin_file => $plugin_data ) {
 					if ( strpos( $plugin_file, $slug . '/' ) === 0 ) {
+						// Activate normally so the plugin initialises itself fully; the queued
+						// activation redirect is reclaimed by maybe_reclaim_post_onboarding_redirect().
 						activate_plugin( $plugin_file );
+						self::guard_post_onboarding_redirect();
 						break;
 					}
 				}
 			}
 		}
+	}
+
+	/**
+	 * Arm the one-shot guard that reclaims the post-onboarding redirect.
+	 *
+	 * Set after activating a plugin during onboarding. It survives to the next real admin
+	 * page load (admin-ajax.php does not redirect), where it is consumed once.
+	 *
+	 * @since 1.0.6
+	 * @return void
+	 */
+	private static function guard_post_onboarding_redirect() {
+		set_transient( 'power_coupons_onboarding_redirect_guard', 1, 15 * MINUTE_IN_SECONDS );
+	}
+
+	/**
+	 * Reclaim the redirect on the first admin page load after onboarding installs.
+	 *
+	 * Sibling plugins installed during onboarding queue a post-activation redirect on
+	 * admin_init. Instead of skipping their activation hooks (which would leave them
+	 * half-installed), we let them run and rewrite any redirect on this single page load
+	 * to the Power Coupons dashboard, preserving the plugin's own exit() while keeping the
+	 * user on the expected screen. The guard is consumed once so later redirects work normally.
+	 *
+	 * @since 1.0.6
+	 * @return void
+	 */
+	public function maybe_reclaim_post_onboarding_redirect() {
+		// admin-ajax.php fires admin_init on every AJAX request (e.g. WP Heartbeat). Skip
+		// those so the one-shot guard isn't consumed before the user's real "Go To Dashboard"
+		// page load — the only request where a sibling plugin actually performs its redirect.
+		if ( wp_doing_ajax() ) {
+			return;
+		}
+
+		if ( ! get_transient( 'power_coupons_onboarding_redirect_guard' ) ) {
+			return;
+		}
+
+		// Consume immediately so this only affects the first page load after onboarding.
+		delete_transient( 'power_coupons_onboarding_redirect_guard' );
+
+		add_filter(
+			'wp_redirect',
+			static function () {
+				return admin_url( 'admin.php?page=power_coupons_settings' );
+			},
+			PHP_INT_MAX
+		);
 	}
 
 }

@@ -5,7 +5,7 @@ Tags: discount rules, dynamic discounts, woocommerce discounts, woocommerce coup
 Requires at least: 6.0
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.0.5
+Stable tag: 1.0.6
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -170,6 +170,11 @@ React / JavaScript source code:
 The files in `admin/assets/build/` are generated from the corresponding source files in `admin/assets/src/` using standard JavaScript build tools such as `wp-scripts`.
 
 == Changelog ==
+
+= 1.0.6 - Wednesday, 17th June 2026 =
+* Improvement: Onboarding now keeps you on the Power Coupons dashboard after activating sibling plugins, instead of being redirected away.
+* Fix: Onboarding final screen — fixed text alignments.
+* Fix: "Get a license key here" link on the License settings tab now points to the correct URL.
 
 = 1.0.5 - Tuesday, 2nd June 2026 =
 * Improvement: Added the compatibility for future release of Power Coupons Pro.
