@@ -49,7 +49,7 @@ function DummyPointsTable() {
 				</h2>
 				<button
 					type="button"
-					className="flex items-center gap-2 px-4 py-2 text-white bg-orange-500 rounded-md border-none cursor-default whitespace-nowrap"
+					className="flex items-center gap-2 px-4 py-2 text-white bg-wpcolor rounded-md border-none cursor-default whitespace-nowrap"
 					tabIndex={ -1 }
 				>
 					<span>

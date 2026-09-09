@@ -1,18 +1,37 @@
 import { __, sprintf } from '@wordpress/i18n';
-import { useState, useEffect, useRef } from '@wordpress/element';
+import {
+	useState,
+	useEffect,
+	useRef,
+	useCallback,
+	useMemo,
+	memo,
+} from '@wordpress/element';
 import bogoEnvelop from '../../../../images/bogo-envelop.svg';
-import { createExcerpt, getBOGOPresetData, RenderIcon } from '../common/Utils';
+import {
+	actionLabel,
+	createExcerpt,
+	getBOGOPresetData,
+	RenderIcon,
+} from '../common/Utils';
 import ModalCreateOffers from '../bogo/ModalCreateOffers';
-import { Button, Container, Switch, Table, Tooltip } from '@bsf/force-ui';
+import { Button, Container, Input, Switch, Table } from '@bsf/force-ui';
 import {
 	TrashIcon,
 	PencilIcon,
 	XMarkIcon,
 	EyeIcon,
 	DocumentDuplicateIcon,
+	CheckIcon,
 } from '@heroicons/react/24/outline';
 import ConfirmationModal from '../common/ConfirmationModal';
 import ModalPreviewOffer from '../bogo/ModalPreviewOffer';
+import LazyTooltip from '../common/LazyTooltip';
+import SkeletonRows, {
+	SkeletonActions,
+	SkeletonLine,
+	SkeletonToggle,
+} from '../common/TableSkeleton';
 
 const features = [
 	__(
@@ -28,6 +47,136 @@ const features = [
 		'power-coupons'
 	),
 ];
+
+/**
+ * One row of the offers table.
+ *
+ * Memoised, and handed callbacks that keep their identity across renders, so
+ * selecting a single offer re-renders that row instead of the whole table.
+ *
+ * @param {Object} props
+ */
+const OfferRow = memo( function OfferRow( {
+	offer,
+	isSelected,
+	isCloning,
+	portalRoot,
+	onSelectionChange,
+	onEdit,
+	onPreview,
+	onClone,
+	onDelete,
+	onToggleStatus,
+} ) {
+	return (
+		<Table.Row
+			value={ offer }
+			selected={ isSelected }
+			onChangeSelection={ onSelectionChange }
+		>
+			{ /* The name is the row's subject, so it carries the primary
+			     color and weight; every other cell stays secondary. */ }
+			<Table.Cell className="text-sm">
+				<button
+					type="button"
+					className="bg-transparent border-none p-0 m-0 cursor-pointer text-text-primary hover:text-wpcolor hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-wpcolor rounded-sm text-sm font-normal text-left"
+					onClick={ () => onEdit( offer.id ) }
+				>
+					{ createExcerpt( offer.name, 50, '…' ) }
+				</button>
+			</Table.Cell>
+			{ /* Description and type are the widest, least scannable columns.
+			     Below md they are dropped so name, status and the actions fit
+			     the viewport instead of sitting behind a horizontal scroll. */ }
+			<Table.Cell className="hidden md:table-cell text-text-secondary text-sm font-normal">
+				{ createExcerpt( offer.description, 50, '…' ) }
+			</Table.Cell>
+			<Table.Cell className="hidden lg:table-cell text-text-secondary text-sm font-normal">
+				{ getBOGOPresetData( offer.offer_type )?.title ||
+					__( 'Custom', 'power-coupons' ) }
+			</Table.Cell>
+			<Table.Cell>
+				<Switch
+					aria-label={ sprintf(
+						/* translators: %s: offer name */
+						__( 'Enable %s', 'power-coupons' ),
+						offer.name
+					) }
+					className="[&>input]:!border-none"
+					defaultValue={ offer.status === 'active' }
+					onChange={ ( checked ) =>
+						onToggleStatus(
+							offer.id,
+							checked ? 'active' : 'inactive'
+						)
+					}
+					size="sm"
+				/>
+			</Table.Cell>
+			<Table.Cell>
+				<Container
+					align="center"
+					className="gap-1 sm:gap-2"
+					justify="end"
+				>
+					<LazyTooltip content="Preview" portalRoot={ portalRoot }>
+						<Button
+							onClick={ () => onPreview( offer ) }
+							variant="ghost"
+							icon={ <EyeIcon /> }
+							size="xs"
+							className="text-icon-secondary hover:text-icon-primary"
+							aria-label={ actionLabel(
+								__( 'Preview', 'power-coupons' ),
+								offer.name
+							) }
+						/>
+					</LazyTooltip>
+					<LazyTooltip content="Edit" portalRoot={ portalRoot }>
+						<Button
+							onClick={ () => onEdit( offer.id ) }
+							variant="ghost"
+							icon={ <PencilIcon /> }
+							size="xs"
+							className="text-icon-secondary hover:text-icon-primary"
+							aria-label={ actionLabel(
+								__( 'Edit', 'power-coupons' ),
+								offer.name
+							) }
+						/>
+					</LazyTooltip>
+					<LazyTooltip content="Clone" portalRoot={ portalRoot }>
+						<Button
+							onClick={ () => onClone( offer.id ) }
+							variant="ghost"
+							icon={ <DocumentDuplicateIcon /> }
+							size="xs"
+							className="text-icon-secondary hover:text-icon-primary"
+							aria-label={ actionLabel(
+								__( 'Clone', 'power-coupons' ),
+								offer.name
+							) }
+							disabled={ isCloning }
+						/>
+					</LazyTooltip>
+					<LazyTooltip content="Delete" portalRoot={ portalRoot }>
+						<Button
+							onClick={ () => onDelete( offer.id ) }
+							variant="ghost"
+							icon={ <TrashIcon /> }
+							size="xs"
+							className="text-icon-secondary hover:text-icon-primary"
+							aria-label={ actionLabel(
+								__( 'Delete', 'power-coupons' ),
+								offer.name
+							) }
+						/>
+					</LazyTooltip>
+				</Container>
+			</Table.Cell>
+		</Table.Row>
+	);
+} );
 
 function BOGO( { toast } ) {
 	const [ openModal, setOpenModal ] = useState( false );
@@ -299,13 +448,46 @@ function BOGO( { toast } ) {
 
 	const [ selected, setSelected ] = useState( [] );
 
-	const handleCheckboxChange = ( checked, value ) => {
-		if ( checked ) {
-			setSelected( [ ...selected, value.id ] );
-		} else {
-			setSelected( selected.filter( ( item ) => item !== value.id ) );
-		}
+	// Membership is looked up once per row on every render, so keep it O(1).
+	const selectedIds = useMemo( () => new Set( selected ), [ selected ] );
+
+	const handleCheckboxChange = useCallback( ( checked, value ) => {
+		setSelected( ( current ) =>
+			checked
+				? [ ...current, value.id ]
+				: current.filter( ( item ) => item !== value.id )
+		);
+	}, [] );
+
+	// Rows are memoised, so the callbacks they get have to keep their
+	// identity. They read the current handlers through a ref rather than
+	// closing over them, which would change on every render.
+	const handlersRef = useRef( null );
+	handlersRef.current = {
+		toggleModalOpen,
+		toggleOfferStatus,
+		handleCloneOffer,
+		setPreviewOffer,
+		setDeleteModal,
 	};
+
+	const rowHandlers = useMemo(
+		() => ( {
+			onEdit: ( id ) => handlersRef.current.toggleModalOpen( false, id ),
+			onPreview: ( offer ) =>
+				handlersRef.current.setPreviewOffer( offer ),
+			onClone: ( id ) => handlersRef.current.handleCloneOffer( id ),
+			onDelete: ( id ) =>
+				handlersRef.current.setDeleteModal( {
+					isOpen: true,
+					type: 'single',
+					id,
+				} ),
+			onToggleStatus: ( id, status ) =>
+				handlersRef.current.toggleOfferStatus( id, status ),
+		} ),
+		[]
+	);
 
 	const toggleSelectAll = ( checked ) => {
 		if ( checked ) {
@@ -331,51 +513,104 @@ function BOGO( { toast } ) {
 					/>
 				) }
 
-				<div className="h-auto px-6 bg-background-primary rounded-[6px] shadow-sm flex justify-between gap-[121px]">
-					{ /* Section left */ }
-					<div className="py-[32px]">
-						<h2 className="m-0 font-semibold text-xl">
+				{ /* Same card frame as the populated list, so arriving at the
+				     first offer and returning to a full one read as one screen.
+				     The card swaps in where skeleton rows were, so it rises the
+				     one time it appears rather than snapping into place. */ }
+				<div className="bg-background-primary rounded-xl border border-solid border-border-subtle p-8 md:p-10 animate-rise-in motion-reduce:animate-none">
+					{ /* Capped and centred: left to fill the card, the copy and
+					     the illustration end up 787px apart on a 1920 screen and
+					     stop reading as one composition.
+
+					     One grid, two arrangements. Stacked, the source order is
+					     the reading order — headline, illustration, promise,
+					     then the capabilities and the button. From lg the
+					     illustration moves to a second column spanning both text
+					     rows, so the copy is never squeezed by it, and the row
+					     gap tightens to the 8px the headline and its paragraph
+					     want once nothing sits between them. */ }
+					<div className="mx-auto w-full max-w-[1040px] grid gap-x-12 gap-y-5 lg:gap-y-2 lg:grid-cols-[minmax(0,640px)_auto]">
+						<h2 className="m-0 min-w-0 font-semibold text-2xl leading-8 text-text-primary lg:col-start-1 lg:row-start-1">
 							{ __(
 								"Let's Setup Your First BOGO Offer",
 								'power-coupons'
 							) }
 						</h2>
 
-						<p>
-							{ __(
-								'Boost your sales and increase average order value by creating powerful Buy One Get One offers in your store. Reward customers automatically and drive conversions with flexible, fully customizable BOGO promotions.',
-								'power-coupons'
-							) }
-						</p>
+						{ /* Decorative. width/height match the file's own 280x280
+						     viewBox so the box is right before it paints.
 
-						<ul className="divide-y divide-gray-200 list-none pl-0 space-y-2">
-							{ features.map( ( feature, index ) => (
-								<li
-									key={ feature + index }
-									className="flex items-center space-x-2 text-field-label text-sm font-normal"
-								>
-									{ RenderIcon( 'check' ) }
-									<span className="text-[#111827]">
-										{ feature }{ ' ' }
-									</span>
-								</li>
-							) ) }
-						</ul>
+						     The artwork only fills 226x197 of that box — inset
+						     38px top and 46px bottom — so stacked it needs
+						     negative margins to sit on the same optical rhythm
+						     as the text instead of floating in its own padding.
+						     The values are that inset scaled to each rendered
+						     width; side by side from lg the box's padding stops
+						     mattering, so they reset.
 
-						<button
-							type="button"
-							onClick={ toggleModalOpen }
-							className="flex items-center gap-[8px] p-[10px] mt-[24px] cursor-pointer no-underline text-white hover:text-white bg-wpcolor hover:bg-wphovercolor rounded-md box-content outline-0 hover:outline-0 focus:ring-0 focus-visible:ring-1 ring-0 border-none"
-						>
-							{ RenderIcon( 'plus' ) }
-							<span>
+						     Left and right insets are within 1.4px of each
+						     other, so centring the box centres the artwork. */ }
+						<img
+							src={ bogoEnvelop }
+							alt=""
+							aria-hidden="true"
+							width="280"
+							height="280"
+							className="w-full max-w-[220px] sm:max-w-[260px] lg:w-[240px] lg:max-w-none xl:w-[300px] 2xl:w-[320px] h-auto shrink-0 select-none justify-self-center lg:justify-self-auto -mt-7 -mb-8 sm:-mt-8 sm:-mb-10 lg:m-0 lg:col-start-2 lg:row-start-1 lg:row-span-2 lg:self-center"
+						/>
+
+						<div className="min-w-0 lg:col-start-1 lg:row-start-2">
+							{ /* The promise is the supporting layer; the three
+							     capabilities below it are the scannable facts
+							     that decide whether to press the button, so
+							     they carry the darker text. */ }
+							<p className="m-0 max-w-prose text-sm leading-6 text-text-secondary">
+								{ __(
+									'Boost your sales and increase average order value by creating powerful Buy One Get One offers in your store. Reward customers automatically and drive conversions with flexible, fully customizable BOGO promotions.',
+									'power-coupons'
+								) }
+							</p>
+
+							{ /* eslint-disable-next-line jsx-a11y/no-redundant-roles */ }
+							<ul
+								role="list"
+								className="list-none pl-0 mt-5 mb-0 space-y-2.5"
+							>
+								{ features.map( ( feature, index ) => (
+									<li
+										key={ feature + index }
+										className="flex items-start gap-2.5 text-sm font-normal leading-6 text-text-primary"
+									>
+										{ /* Heroicons, like every other icon on
+										     this screen — the shared RenderIcon
+										     tick is an SVG string with an
+										     off-palette #566A86 baked in. The
+										     mt keeps it on the item's first
+										     line when the text wraps. */ }
+										<CheckIcon
+											aria-hidden="true"
+											className="shrink-0 mt-1 size-4 text-wpcolor"
+											strokeWidth={ 2 }
+										/>
+										<span>{ feature }</span>
+									</li>
+								) ) }
+							</ul>
+
+							<Button
+								variant="primary"
+								size="md"
+								tag="button"
+								type="button"
+								className="mt-8 whitespace-nowrap"
+								icon={ RenderIcon( 'plus' ) }
+								iconPosition="left"
+								onClick={ toggleModalOpen }
+							>
 								{ __( 'Create New Offer', 'power-coupons' ) }
-							</span>
-						</button>
+							</Button>
+						</div>
 					</div>
-
-					{ /* Section Right. */ }
-					<img src={ bogoEnvelop } alt="" />
 				</div>
 			</>
 		);
@@ -411,7 +646,10 @@ function BOGO( { toast } ) {
 				/>
 			) }
 
-			<div className="bg-background-primary rounded-xl border border-border-subtle p-4 flex flex-col gap-4">
+			{ /* border-solid is explicit: Tailwind's preflight border-style
+			     reset does not win here, so a bare `border` computes to
+			     `0px none` and the card edge never renders. */ }
+			<div className="bg-background-primary rounded-xl border border-solid border-border-subtle p-4 flex flex-col gap-4">
 				{ /* Header */ }
 				<div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
 					<div className="flex items-center gap-4">
@@ -420,22 +658,22 @@ function BOGO( { toast } ) {
 						</h2>
 
 						{ ! loading && selected.length > 0 && (
-							<div className="flex gap-4 items-center border-0 border-l border-solid border-gray-200">
+							<div className="flex gap-4 pl-4 items-center border-0 border-l border-solid border-border-subtle">
 								<Button
 									variant="ghost"
 									icon={
-										<XMarkIcon className="h-6 w-6 text-gray-500" />
+										<XMarkIcon className="h-6 w-6 text-field-placeholder" />
 									}
 									size="xs"
 									className="text-icon-secondary hover:text-icon-primary"
 									onClick={ handleCancelSelect }
 								/>
-								<span className="text-sm font-normal text-gray-500">
+								<span className="text-sm font-normal text-field-placeholder whitespace-nowrap">
 									{ selected.length }{ ' ' }
 									{ __( 'Selected', 'power-coupons' ) }
 								</span>
 								<Button
-									className="py-2 px-4 bg-red-50 text-red-600 outline-red-600 hover:bg-red-50 hover:outline-red-600"
+									className="py-2 px-4 bg-badge-background-red text-support-error outline-support-error hover:bg-badge-background-red hover:outline-support-error"
 									size="sm"
 									tag="button"
 									type="button"
@@ -450,295 +688,172 @@ function BOGO( { toast } ) {
 						) }
 					</div>
 					<div className="flex items-center gap-3 sm:gap-4 w-full sm:w-auto">
-						<div className="relative flex-1 sm:flex-none">
-							{ /* Search icon or in-progress spinner */ }
-							<div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-								{ searching ? (
-									<svg
-										className="h-4 w-4 animate-spin"
-										viewBox="0 0 100 100"
-									>
-										<circle
-											fill="none"
-											strokeWidth="10"
-											className="stroke-current opacity-40"
-											cx="50"
-											cy="50"
-											r="40"
-										></circle>
-										<circle
-											fill="none"
-											strokeWidth="10"
-											className="stroke-current"
-											strokeDasharray="250"
-											strokeDashoffset="210"
-											cx="50"
-											cy="50"
-											r="40"
-										></circle>
-									</svg>
-								) : (
-									RenderIcon( 'search' )
-								) }
-							</div>
-							<input
-								type="text"
-								className="block w-full sm:w-64 pl-10 pr-3 py-2 border border-border-subtle rounded-md text-sm placeholder-text-tertiary focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+						<div className="flex-1 sm:flex-none sm:w-64">
+							<Input
+								type="search"
+								size="sm"
+								className="[&_input]:h-8 [&_input]:min-h-0 [&_input]:py-0"
+								value={ searchQuery }
+								onChange={ setSearchQuery }
 								placeholder={ __(
 									'Search offers…',
 									'power-coupons'
 								) }
-								value={ searchQuery }
-								onChange={ ( e ) =>
-									setSearchQuery( e.target.value )
+								prefix={
+									searching ? (
+										<svg
+											className="h-4 w-4 animate-spin"
+											viewBox="0 0 100 100"
+										>
+											<circle
+												fill="none"
+												strokeWidth="10"
+												className="stroke-current opacity-40"
+												cx="50"
+												cy="50"
+												r="40"
+											></circle>
+											<circle
+												fill="none"
+												strokeWidth="10"
+												className="stroke-current"
+												strokeDasharray="250"
+												strokeDashoffset="210"
+												cx="50"
+												cy="50"
+												r="40"
+											></circle>
+										</svg>
+									) : (
+										<span className="flex text-field-placeholder">
+											{ RenderIcon( 'search' ) }
+										</span>
+									)
 								}
 							/>
 						</div>
-						<button
+						<Button
+							variant="primary"
+							size="sm"
+							tag="button"
 							type="button"
+							className="whitespace-nowrap"
+							icon={ RenderIcon( 'plus' ) }
+							iconPosition="left"
 							onClick={ toggleModalOpen }
-							className="flex items-center gap-2 px-4 py-2 text-white bg-orange-500 hover:bg-orange-600 rounded-md border-none cursor-pointer whitespace-nowrap"
 						>
-							{ RenderIcon( 'plus' ) }
-							<span>
-								{ __( 'Create New Offer', 'power-coupons' ) }
-							</span>
-						</button>
+							{ __( 'Create New Offer', 'power-coupons' ) }
+						</Button>
 					</div>
 				</div>
 
 				{ /* Table */ }
-				{ loading ? (
-					<div className="p-6 text-center">
-						<div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-orange-500"></div>
-						<p className="mt-2 text-text-tertiary">
-							{ __( 'Loading offers…', 'power-coupons' ) }
-						</p>
-					</div>
-				) : (
-					<div>
-						<Table
-							checkboxSelection={ offers.length > 0 }
-							className="whitespace-nowrap sm:whitespace-normal"
+				<div>
+					{ /* Offer names wrap rather than forcing the table wider than
+					     the viewport; only the status and action columns, which
+					     have no wrap point, are held on one line. Cell padding
+					     tightens below sm so the four row actions still land
+					     inside a 390px screen. */ }
+					<Table
+						checkboxSelection={ loading || offers.length > 0 }
+						className="whitespace-normal [&_td:nth-last-child(-n+2)]:whitespace-nowrap [&_th:nth-last-child(-n+2)]:whitespace-nowrap [&_td]:px-2 [&_th:not(:first-child)]:px-2 sm:[&_td]:px-3 sm:[&_th:not(:first-child)]:px-3 [&_th:first-child]:box-border [&_td:first-child]:box-border [&_tbody_tr:not(.bg-background-secondary):hover]:bg-misc-dropdown-hover [&_tbody_tr.bg-background-secondary]:bg-wphovercolorfaded"
+					>
+						<Table.Head
+							selected={ selected.length > 0 }
+							onChangeSelection={ toggleSelectAll }
+							indeterminate={
+								selected.length > 0 &&
+								selected.length < offers.length
+							}
 						>
-							<Table.Head
-								selected={ selected.length > 0 }
-								onChangeSelection={ toggleSelectAll }
-								indeterminate={
-									selected.length > 0 &&
-									selected.length < offers.length
-								}
-							>
-								<Table.HeadCell>
-									{ __( 'Offer Name', 'power-coupons' ) }
-								</Table.HeadCell>
-								<Table.HeadCell>
-									{ __( 'Description', 'power-coupons' ) }
-								</Table.HeadCell>
-								<Table.HeadCell>
-									{ __( 'Offer Type', 'power-coupons' ) }
-								</Table.HeadCell>
-								<Table.HeadCell>
-									{ __( 'Status', 'power-coupons' ) }
-								</Table.HeadCell>
-								<Table.HeadCell>
-									<Container
-										align="center"
-										className="gap-2"
-										justify="end"
+							<Table.HeadCell>
+								{ __( 'Offer Name', 'power-coupons' ) }
+							</Table.HeadCell>
+							<Table.HeadCell className="hidden md:table-cell">
+								{ __( 'Description', 'power-coupons' ) }
+							</Table.HeadCell>
+							<Table.HeadCell className="hidden lg:table-cell">
+								{ __( 'Offer Type', 'power-coupons' ) }
+							</Table.HeadCell>
+							<Table.HeadCell>
+								{ __( 'Status', 'power-coupons' ) }
+							</Table.HeadCell>
+							<Table.HeadCell>
+								<Container
+									align="center"
+									className="gap-2"
+									justify="end"
+								>
+									{ __( 'Actions', 'power-coupons' ) }
+								</Container>
+							</Table.HeadCell>
+						</Table.Head>
+						<Table.Body aria-busy={ loading }>
+							{ loading && (
+								<SkeletonRows
+									cells={ [
+										{
+											className:
+												'text-text-secondary text-sm font-normal',
+											content: (
+												<SkeletonLine width="w-56" />
+											),
+										},
+										{
+											className:
+												'hidden md:table-cell text-text-secondary text-sm font-normal',
+											content: (
+												<SkeletonLine width="w-72" />
+											),
+										},
+										{
+											className:
+												'hidden lg:table-cell text-text-secondary text-sm font-normal',
+											content: (
+												<SkeletonLine width="w-40" />
+											),
+										},
+										{ content: <SkeletonToggle /> },
+										{
+											content: (
+												<SkeletonActions count={ 4 } />
+											),
+										},
+									] }
+								/>
+							) }
+							{ ! loading && 0 === offers.length && (
+								<Table.Row>
+									<Table.Cell
+										colSpan={ 5 }
+										className="w-full text-center text-text-tertiary py-8"
 									>
-										{ __( 'Actions', 'power-coupons' ) }
-									</Container>
-								</Table.HeadCell>
-							</Table.Head>
-							<Table.Body>
-								{ offers.length === 0 ? (
-									<Table.Row>
-										<Table.Cell
-											colSpan={ 5 }
-											className="w-full text-center text-text-tertiary py-8"
-										>
-											{ __(
-												'No offers found matching your search.',
-												'power-coupons'
-											) }
-										</Table.Cell>
-									</Table.Row>
-								) : (
-									offers.map( ( offer ) => (
-										<Table.Row
-											key={ offer.id }
-											value={ offer }
-											selected={ selected.includes(
-												offer.id
-											) }
-											onChangeSelection={
-												handleCheckboxChange
-											}
-										>
-											<Table.Cell className="text-text-secondary text-sm font-normal">
-												<button
-													type="button"
-													className="bg-transparent border-none p-0 m-0 cursor-pointer text-text-secondary hover:text-orange-600 hover:underline text-sm font-normal text-left"
-													onClick={ () =>
-														toggleModalOpen(
-															false,
-															offer.id
-														)
-													}
-												>
-													{ createExcerpt(
-														offer.name
-													) }
-												</button>
-											</Table.Cell>
-											<Table.Cell className="text-text-secondary text-sm font-normal">
-												{ createExcerpt(
-													offer.description
-												) }
-											</Table.Cell>
-											<Table.Cell className="text-text-secondary text-sm font-normal">
-												{ getBOGOPresetData(
-													offer.offer_type
-												)?.title ||
-													__(
-														'Custom',
-														'power-coupons'
-													) }
-											</Table.Cell>
-											<Table.Cell>
-												<Switch
-													aria-label="Switch Element"
-													className="[&>input]:!border-none"
-													defaultValue={
-														offer.status ===
-														'active'
-													}
-													onChange={ ( checked ) =>
-														toggleOfferStatus(
-															offer.id,
-															checked
-																? 'active'
-																: 'inactive'
-														)
-													}
-													size="sm"
-												/>
-											</Table.Cell>
-											<Table.Cell>
-												<Container
-													align="center"
-													className="gap-2"
-													justify="end"
-												>
-													<Tooltip
-														content="Preview"
-														arrow
-														placement="top"
-														tooltipPortalRoot={
-															portalRootRef.current
-														}
-													>
-														<Button
-															onClick={ () =>
-																setPreviewOffer(
-																	offer
-																)
-															}
-															variant="ghost"
-															icon={ <EyeIcon /> }
-															size="xs"
-															className="text-icon-secondary hover:text-icon-primary"
-															aria-label="Preview"
-														/>
-													</Tooltip>
-													<Tooltip
-														content="Edit"
-														arrow
-														placement="top"
-														tooltipPortalRoot={
-															portalRootRef.current
-														}
-													>
-														<Button
-															onClick={ () =>
-																toggleModalOpen(
-																	false,
-																	offer.id
-																)
-															}
-															variant="ghost"
-															icon={
-																<PencilIcon />
-															}
-															size="xs"
-															className="text-icon-secondary hover:text-icon-primary"
-															aria-label="Edit"
-														/>
-													</Tooltip>
-													<Tooltip
-														content="Clone"
-														arrow
-														placement="top"
-														tooltipPortalRoot={
-															portalRootRef.current
-														}
-													>
-														<Button
-															onClick={ () =>
-																handleCloneOffer(
-																	offer.id
-																)
-															}
-															variant="ghost"
-															icon={
-																<DocumentDuplicateIcon />
-															}
-															size="xs"
-															className="text-icon-secondary hover:text-icon-primary"
-															aria-label="Clone"
-															disabled={
-																cloningId ===
-																offer.id
-															}
-														/>
-													</Tooltip>
-													<Tooltip
-														content="Delete"
-														arrow
-														placement="top"
-														tooltipPortalRoot={
-															portalRootRef.current
-														}
-													>
-														<Button
-															onClick={ () =>
-																setDeleteModal(
-																	{
-																		isOpen: true,
-																		type: 'single',
-																		id: offer.id,
-																	}
-																)
-															}
-															variant="ghost"
-															icon={
-																<TrashIcon />
-															}
-															size="xs"
-															className="text-icon-secondary hover:text-icon-primary"
-															aria-label="Delete"
-														/>
-													</Tooltip>
-												</Container>
-											</Table.Cell>
-										</Table.Row>
-									) )
-								) }
-							</Table.Body>
-						</Table>
-					</div>
-				) }
+										{ __(
+											'No offers found matching your search.',
+											'power-coupons'
+										) }
+									</Table.Cell>
+								</Table.Row>
+							) }
+							{ ! loading &&
+								offers.map( ( offer ) => (
+									<OfferRow
+										key={ offer.id }
+										offer={ offer }
+										isSelected={ selectedIds.has(
+											offer.id
+										) }
+										isCloning={ cloningId === offer.id }
+										portalRoot={ portalRootRef.current }
+										onSelectionChange={
+											handleCheckboxChange
+										}
+										{ ...rowHandlers }
+									/>
+								) ) }
+						</Table.Body>
+					</Table>
+				</div>
 			</div>
 
 			{ previewOffer && (

@@ -1,8 +1,11 @@
-$labelTextColor: #111827;
-$descriptionTextColor: #4b5563;
-$separatorColor: #c2c3c6;
+// Colours below that are not theme() tokens are WordPress core admin values
+// (notice yellows, #135e96 link blue, #949494 control borders) and are kept
+// verbatim so this screen matches the surrounding coupon edit UI.
+$labelTextColor: theme( "colors.text-primary" );
+$descriptionTextColor: theme( "colors.text-secondary" );
+$separatorColor: theme( "colors.border-subtle" );
 $tipIconColor: #666;
-$tipBubbleBg: #1e1e1e;
+$tipBubbleBg: theme( "colors.background-inverse" );
 $checkboxDescColor: #555;
 
 // Everything is nested under the panel id so these rules win over
@@ -86,7 +89,7 @@ $checkboxDescColor: #555;
 			padding: 8px 10px;
 			border-radius: 4px;
 			background: $tipBubbleBg;
-			color: #fff;
+			color: theme( "colors.text-inverse" );
 			font-size: 12px;
 			font-weight: 400;
 			font-style: normal;
@@ -279,7 +282,7 @@ $checkboxDescColor: #555;
 			padding: 0 12px;
 			border: 1px solid #949494;
 			border-radius: 4px;
-			background: #fff;
+			background: theme( "colors.background-primary" );
 			color: $labelTextColor;
 			font-size: 13px;
 			line-height: 18px;

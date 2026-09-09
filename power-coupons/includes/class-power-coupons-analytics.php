@@ -182,7 +182,6 @@ class Power_Coupons_Analytics {
 	 */
 	private function get_numeric_data_stats() {
 		$coupon_counts = wp_count_posts( 'shop_coupon' );
-		$rule_counts   = wp_count_posts( 'power_coupon' );
 
 		// Count non-default text customizations.
 		$settings     = Power_Coupons_Settings_Helper::get_instance();
@@ -200,9 +199,45 @@ class Power_Coupons_Analytics {
 
 		return array(
 			'total_coupons'             => isset( $coupon_counts->publish ) ? (int) $coupon_counts->publish : 0,
-			'total_rules'               => isset( $rule_counts->publish ) ? (int) $rule_counts->publish : 0,
+			'total_rules'               => self::count_rule_enabled_coupons(),
 			'text_customizations_count' => $text_customs,
 		);
+	}
+
+	/**
+	 * Count published coupons that have conditional rules switched on.
+	 *
+	 * This metric used to read `wp_count_posts( 'power_coupon' )`. That post type
+	 * was registered inside the activation hook and nowhere else, so it did not
+	 * exist at runtime and the metric reported 0 for every store. Rules live in
+	 * coupon meta, so count the coupons that actually carry them.
+	 *
+	 * Lives here rather than in the admin analytics class because this one is
+	 * loaded on every request, while `Power_Coupons\Admin\Power_Coupons_Bsf_Analytics`
+	 * is only required under `is_admin()` — so admin can call into here, but not
+	 * the other way round. That class delegates to this method.
+	 *
+	 * @since 1.0.7
+	 * @return int
+	 */
+	public static function count_rule_enabled_coupons() {
+		$query = new \WP_Query(
+			array(
+				'post_type'      => 'shop_coupon',
+				'post_status'    => 'publish',
+				'meta_query'     => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- Required for count.
+					array(
+						'key'   => '_pc_rule_enable_conditions',
+						'value' => 'yes',
+					),
+				),
+				'fields'         => 'ids',
+				'posts_per_page' => 1,
+				'no_found_rows'  => false,
+			)
+		);
+
+		return (int) $query->found_posts;
 	}
 
 	/**
@@ -294,10 +329,61 @@ class Power_Coupons_Analytics {
 			return;
 		}
 
-		$key   = self::KPI_OPTION_PREFIX . $date;
-		$value = get_option( $key, 0 );
-		$count = is_numeric( $value ) ? (int) $value : 0;
-		update_option( $key, $count + 1, false );
+		self::increment_counter( self::KPI_OPTION_PREFIX . $date );
+	}
+
+	/**
+	 * Increment a per-day counter option atomically.
+	 *
+	 * This runs on `woocommerce_applied_coupon`, which fires on public cart
+	 * requests, so two shoppers can hit it at the same moment. A read-modify-write
+	 * through the options API loses one of those increments whenever they
+	 * interleave; a single UPDATE lets the database do the addition instead.
+	 *
+	 * The option is deliberately not autoloaded — it is written far more often
+	 * than it is read, and only the telemetry payload ever reads it.
+	 *
+	 * @since 1.0.7
+	 * @param string $key Option name holding the counter.
+	 * @return void
+	 */
+	private static function increment_counter( $key ) {
+		global $wpdb;
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$updated = $wpdb->query(
+			$wpdb->prepare(
+				"UPDATE {$wpdb->options} SET option_value = option_value + 1 WHERE option_name = %s",
+				$key
+			)
+		);
+
+		if ( ! $updated ) {
+			/*
+			 * First apply of the day: the row does not exist yet. `add_option()`
+			 * returns false if a concurrent request created it first, in which
+			 * case the increment is retried rather than lost.
+			 */
+			if ( ! add_option( $key, '1', '', false ) ) {
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+				$wpdb->query(
+					$wpdb->prepare(
+						"UPDATE {$wpdb->options} SET option_value = option_value + 1 WHERE option_name = %s",
+						$key
+					)
+				);
+			}
+		}
+
+		/*
+		 * The UPDATE went around the options API, so drop this option's cached
+		 * value. Deliberately not touching the shared `notoptions` cache:
+		 * `add_option()` already removes the key from it, and in the UPDATE path
+		 * the row existed so it was never in there. Deleting it wholesale would
+		 * force a fresh DB lookup for every missing-option read site-wide under
+		 * a persistent object cache.
+		 */
+		wp_cache_delete( $key, 'options' );
 	}
 
 	/**

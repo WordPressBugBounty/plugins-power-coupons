@@ -274,14 +274,21 @@ class Power_Coupons_Rules_Registry {
 	 * @return array<string, mixed>|false Sanitized rule or false if invalid.
 	 */
 	private static function sanitize_rule( $rule ) {
+		/*
+		 * Read every key through an isset() guard. The array below used to
+		 * re-read $rule['rule_id'] and friends unguarded, which raises
+		 * "Undefined array key" warnings on PHP 8 for any rule missing one —
+		 * and a rule arriving without an operator is exactly the malformed
+		 * input this method exists to clean up.
+		 */
 		$rule_id  = isset( $rule['rule_id'] ) && is_scalar( $rule['rule_id'] ) ? sanitize_text_field( (string) $rule['rule_id'] ) : '';
 		$type     = isset( $rule['type'] ) && is_scalar( $rule['type'] ) ? sanitize_text_field( (string) $rule['type'] ) : '';
 		$operator = isset( $rule['operator'] ) && is_scalar( $rule['operator'] ) ? sanitize_text_field( (string) $rule['operator'] ) : '';
 
 		$sanitized_rule = array(
-			'rule_id'  => sanitize_text_field( is_string( $rule['rule_id'] ) ? $rule['rule_id'] : '' ),
-			'type'     => sanitize_text_field( is_string( $rule['type'] ) ? $rule['type'] : '' ),
-			'operator' => sanitize_text_field( is_string( $rule['operator'] ) ? $rule['operator'] : '' ),
+			'rule_id'  => $rule_id,
+			'type'     => $type,
+			'operator' => $operator,
 			'value'    => '',
 		);
 
@@ -291,6 +298,8 @@ class Power_Coupons_Rules_Registry {
 			return false;
 		}
 
+		$sanitized_rule['operator'] = self::normalize_operator( $sanitized_rule['type'], $sanitized_rule['operator'] );
+
 		// Sanitize value based on rule type.
 		switch ( $sanitized_rule['type'] ) {
 			case 'cart_total':
@@ -298,15 +307,108 @@ class Power_Coupons_Rules_Registry {
 				$sanitized_rule['value'] = is_numeric( $raw_value ) ? floatval( $raw_value ) : '';
 				break;
 
-			case 'products':
 			case 'cart_items':
-			case 'product_categories':
 				$raw_value               = isset( $rule['value'] ) ? $rule['value'] : '';
 				$sanitized_rule['value'] = is_numeric( $raw_value ) ? absint( $raw_value ) : '';
+				break;
+
+			case 'products':
+			case 'product_categories':
+				/*
+				 * The rule editor is a single select, so this is normally one ID
+				 * and is stored as one. A list is preserved rather than thrown
+				 * away, because imported and legacy rules hold one and silently
+				 * flattening it to '' turns a configured restriction into no
+				 * restriction at all. Frontend_Rules accepts both shapes.
+				 */
+				$raw_value               = isset( $rule['value'] ) ? $rule['value'] : '';
+				$sanitized_rule['value'] = self::sanitize_id_value( $raw_value );
 				break;
 		}
 
 		return $sanitized_rule;
+	}
+
+	/**
+	 * Coerce a rule's operator into one that is valid for its type.
+	 *
+	 * The rule editor resets the operator whenever the type changes, so nothing
+	 * that ships produces a mismatch. Stored meta can still hold one — from an
+	 * import, a crafted request, or an older version — and since
+	 * `Utilities::compare_numeric()` and the list validators now fail *closed*,
+	 * an operator that no branch understands would silently and permanently
+	 * stop the coupon from ever applying.
+	 *
+	 * So repair the cases that map *confidently* — case and whitespace
+	 * differences, which are the likeliest import artefacts, and the legacy
+	 * alias names — and leave anything still unrecognised exactly as it is.
+	 *
+	 * Deliberately no fallback to "the first valid operator for this type".
+	 * The list types have exactly two operators that mean opposite things, so
+	 * that fallback silently rewrites `NOT_IN_LIST` — a case difference — into
+	 * `in_list`, turning *exclude product 42* into *require product 42* and
+	 * persisting the inverse of the merchant's intent. Granting a discount that
+	 * should have been blocked is a worse and much quieter failure than the
+	 * fail-closed-plus-log behaviour it would replace, so an operator we cannot
+	 * confidently map is left for the runtime to reject and log.
+	 *
+	 * @since 1.0.7
+	 * @param string $type     Rule type, already validated by the caller.
+	 * @param string $operator Raw operator from the request or stored meta.
+	 * @return string A valid operator where one can be derived, else $operator unchanged.
+	 */
+	private static function normalize_operator( $type, $operator ) {
+		$candidate = strtolower( trim( $operator ) );
+
+		$legacy_aliases = array(
+			'equals'     => 'equal_to',
+			'not_equals' => 'not_equal_to',
+		);
+
+		if ( isset( $legacy_aliases[ $candidate ] ) ) {
+			$candidate = $legacy_aliases[ $candidate ];
+		}
+
+		if ( self::is_valid_operator( $type, $candidate ) ) {
+			return $candidate;
+		}
+
+		return $operator;
+	}
+
+	/**
+	 * Sanitize a product or category rule value.
+	 *
+	 * Keeps the stored shape the same as the shape that came in: a single ID
+	 * stays a single ID, a list stays a list. Anything that is not a positive
+	 * ID is dropped, and a value with nothing usable left becomes '' — the
+	 * "not configured yet" marker the validators treat as "no restriction".
+	 *
+	 * Cast with `(int)`, never `absint()`, for the same reason as
+	 * `Frontend_Rules::normalize_id_list()`: `absint( -3 )` is `3`, so a
+	 * malformed value would be stored as a restriction on a different, real
+	 * product rather than discarded.
+	 *
+	 * @param mixed $raw_value Raw value from the request or from stored meta.
+	 * @return int|string|array<int, int> Sanitized value.
+	 */
+	private static function sanitize_id_value( $raw_value ) {
+		if ( is_array( $raw_value ) ) {
+			$ids = array();
+			foreach ( $raw_value as $candidate ) {
+				if ( is_scalar( $candidate ) && is_numeric( $candidate ) && (int) $candidate > 0 ) {
+					$ids[] = (int) $candidate;
+				}
+			}
+
+			return empty( $ids ) ? '' : array_values( array_unique( $ids ) );
+		}
+
+		if ( ! is_numeric( $raw_value ) || (int) $raw_value <= 0 ) {
+			return '';
+		}
+
+		return (int) $raw_value;
 	}
 
 	/**

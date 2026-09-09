@@ -117,8 +117,77 @@ class Power_Coupons_Utilities {
 				return $actual >= $expected;
 
 			default:
-				return true; // Unknown operator always passes.
+				/*
+				 * Fail closed.
+				 *
+				 * This used to return true. An operator that is not one of the
+				 * above can only come from stored rule meta that the rule editor
+				 * did not write — a typo, an import, or an operator left behind by
+				 * an older version — and passing it turned a *restricted* coupon
+				 * into a universally available one. A rule nobody can evaluate is
+				 * a rule that has not been satisfied.
+				 */
+				self::log_unknown_operator( $operator );
+				return false;
 		}
+	}
+
+	/**
+	 * Record rule meta that no branch here understands.
+	 *
+	 * Reaching one of these means a coupon that used to apply has stopped
+	 * applying, and the only cause is stored rule meta the rule editor did not
+	 * write — imported data, or something left behind by an older version.
+	 * Silently failing closed would swap one hard-to-diagnose behaviour for
+	 * another, so this goes to the WooCommerce log where a merchant or support
+	 * can actually find it (WooCommerce → Status → Logs, source
+	 * `power-coupons`), falling back to `error_log()` only when WooCommerce's
+	 * logger is unavailable.
+	 *
+	 * Deduplicated per distinct problem per request: these branches are reached
+	 * once per coupon per cart evaluation, so an affected store would otherwise
+	 * fill its log with the same line on every page view.
+	 *
+	 * @since 1.0.7
+	 * @param string $key     Dedupe key identifying the specific problem.
+	 * @param string $message Human-readable description.
+	 * @return void
+	 */
+	public static function log_rule_anomaly( $key, $message ) {
+		static $already_logged = array();
+
+		if ( isset( $already_logged[ $key ] ) ) {
+			return;
+		}
+		$already_logged[ $key ] = true;
+
+		if ( function_exists( 'wc_get_logger' ) ) {
+			wc_get_logger()->warning( $message, array( 'source' => 'power-coupons' ) );
+			return;
+		}
+
+		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+			error_log( 'Power Coupons: ' . $message ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Fallback when WooCommerce's logger is unavailable.
+		}
+	}
+
+	/**
+	 * Record an operator that no comparison branch understands.
+	 *
+	 * @param string $operator The unrecognised operator.
+	 * @return void
+	 */
+	private static function log_unknown_operator( $operator ) {
+		$operator = (string) $operator;
+
+		$message = '' === $operator
+			? 'A conditional rule has no operator set. The rule was treated as not satisfied, so any coupon using it will not apply. Re-save the coupon\'s rules to repair it.'
+			: sprintf(
+				'Unknown conditional-rule operator "%s" in coupon rule meta. The rule was treated as not satisfied, so any coupon using it will not apply. Re-save the coupon\'s rules to repair it.',
+				$operator
+			);
+
+		self::log_rule_anomaly( 'operator:' . $operator, $message );
 	}
 
 	/**
@@ -212,8 +281,9 @@ class Power_Coupons_Utilities {
 			'power_coupons_filter_coupon_card_templates_array',
 			[
 				'style-1' => [
-					'path' => POWER_COUPONS_DIR . 'views/templates/card-style-1.php',
-					'tags' => [
+					'label' => __( 'Ticket', 'power-coupons' ),
+					'path'  => POWER_COUPONS_DIR . 'views/templates/card-style-1.php',
+					'tags'  => [
 						'{power_coupon.code}'        => 'EUSHDKQO',
 						'{power_coupon.discount}'    => '$10',
 						'{power_coupon.description}' => 'Cart Discount',
@@ -221,8 +291,9 @@ class Power_Coupons_Utilities {
 					],
 				],
 				'style-2' => [
-					'path' => POWER_COUPONS_DIR . 'views/templates/card-style-2.php',
-					'tags' => [
+					'label' => __( 'Card', 'power-coupons' ),
+					'path'  => POWER_COUPONS_DIR . 'views/templates/card-style-2.php',
+					'tags'  => [
 						'{power_coupon.code}'        => 'EUSHDKQO',
 						'{power_coupon.discount}'    => '$10',
 						'{power_coupon.description}' => 'Cart Discount',
@@ -243,6 +314,40 @@ class Power_Coupons_Utilities {
 		}
 
 		return $templates;
+	}
+
+	/**
+	 * Get the display name for each coupon card template.
+	 *
+	 * Kept separate from the rendered markup so the picker can name each option.
+	 * Templates added through `power_coupons_filter_coupon_card_templates_array`
+	 * that declare no label fall back to a numbered name.
+	 *
+	 * @since 1.0.8
+	 * @return array<string, string> Map of template key to display name.
+	 */
+	public static function get_coupon_card_template_labels() {
+		$templates = self::get_coupon_card_templates_array( false );
+		$labels    = array();
+		$position  = 0;
+
+		foreach ( $templates as $key => $template ) {
+			++$position;
+
+			$label = is_array( $template ) && isset( $template['label'] ) && is_string( $template['label'] )
+				? $template['label']
+				: '';
+
+			$labels[ $key ] = '' !== $label
+				? $label
+				: sprintf(
+					/* translators: %d: coupon style number. */
+					__( 'Style %d', 'power-coupons' ),
+					$position
+				);
+		}
+
+		return $labels;
 	}
 
 	/**
@@ -430,15 +535,28 @@ class Power_Coupons_Utilities {
 	/**
 	 * Whether or not to reload current page after coupon is successfully applied.
 	 *
+	 * Defaults to false. Coupon apply/remove and credit redemption refresh the
+	 * cart UI in place through `public/assets/js/cart-refresh.js`, using each
+	 * context's native mechanism (the `wc/store/cart` data store on Cart and
+	 * Checkout Blocks, `update_checkout` on the classic checkout,
+	 * `wc_update_cart` on the classic cart).
+	 *
+	 * A full page reload discards in-page state that multi-step checkout
+	 * plugins such as CartFlows and FunnelKit hold in the browser, sending the
+	 * shopper back to step one. Reloading is therefore opt-in: return true from
+	 * the filter below only for a theme or integration that genuinely cannot
+	 * refresh without one.
+	 *
+	 * @since 1.0.2
 	 * @return bool
 	 */
 	public static function reload_page_after_coupon_is_applied() {
-		$reload = true;
-
-		if ( self::is_cartflows_checkout() ) {
-			$reload = false;
-		}
-
-		return apply_filters( 'power_coupons_reload_page_after_coupon_is_applied', $reload );
+		/**
+		 * Filter whether to reload the page after a coupon is applied.
+		 *
+		 * @since 1.0.2
+		 * @param bool $reload Whether to reload. Default false.
+		 */
+		return (bool) apply_filters( 'power_coupons_reload_page_after_coupon_is_applied', false );
 	}
 }

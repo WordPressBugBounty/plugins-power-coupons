@@ -50,7 +50,17 @@ class Power_Coupons_Core {
 
 		// Initialize BSF Analytics (stats payload + deactivation survey).
 		if ( is_admin() ) {
-			\Power_Coupons\Admin\Power_Coupons_Analytics::get_instance();
+			\Power_Coupons\Admin\Power_Coupons_Bsf_Analytics::get_instance();
+		}
+
+		// Load the shared NPS Survey library (self-instantiates on include).
+		// Must load on ALL requests, not just admin: the survey form submits via a
+		// REST route where is_admin() is false, and this wrapper registers the
+		// `nps_survey_api_endpoint` filter that points submissions at the Power
+		// Coupons webhook. Gating it behind is_admin() drops the filter on submit,
+		// so data would silently go to the default metrics endpoint instead.
+		if ( ! class_exists( 'Power_Coupons_Nps_Survey' ) ) {
+			require_once POWER_COUPONS_DIR . 'lib/class-power-coupons-nps-survey.php';
 		}
 
 		// Initialize analytics events tracking.

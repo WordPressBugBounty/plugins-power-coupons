@@ -34,12 +34,14 @@ function Text( props ) {
 	}
 	return (
 		<Input
-			className="w-full focus:[&>input]:ring-focus"
+			className="w-full min-h-0 [&>input]:min-h-0 focus:[&>input]:ring-focus"
+			id={ props.id }
 			type="text"
 			size="md"
 			name={ props.name }
 			value={ value }
 			onChange={ handleChange }
+			disabled={ props.disabled }
 			min="0"
 			max={ props.max }
 		/>

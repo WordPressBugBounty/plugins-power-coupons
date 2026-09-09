@@ -55,7 +55,7 @@ const Welcome = () => {
 										</button>
 										<button
 											type="button"
-											className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-[0.2rem] text-gray-700 bg-white hover:bg-gray-50 focus:outline-none"
+											className="inline-flex items-center px-4 py-2 border border-border-subtle shadow-sm text-sm font-medium rounded-[0.2rem] text-text-secondary bg-white hover:bg-field-primary-background focus:outline-none"
 										>
 											{ __( 'CTA 2', 'power-coupons' ) }
 										</button>

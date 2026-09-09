@@ -44,11 +44,11 @@ function Points( { toast } ) {
 			{ ! isLoyaltyEnabled && (
 				<div
 					role="alert"
-					className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-lg p-4 bg-amber-50 border border-solid border-amber-300 text-amber-900"
+					className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-lg p-4 bg-alert-background-warning border border-solid border-badge-border-yellow text-badge-color-yellow"
 				>
 					<div className="flex items-start gap-3">
 						<ExclamationTriangleIcon
-							className="h-5 w-5 flex-shrink-0 mt-0.5 text-amber-600"
+							className="h-5 w-5 flex-shrink-0 mt-0.5 text-badge-color-yellow"
 							aria-hidden="true"
 						/>
 						<div>
@@ -58,7 +58,7 @@ function Points( { toast } ) {
 									'power-coupons'
 								) }
 							</p>
-							<p className="m-0 mt-1 text-sm text-amber-800">
+							<p className="m-0 mt-1 text-sm text-badge-color-yellow">
 								{ __(
 									"Customers won't earn or redeem credits even when campaigns are marked Active. Turn on the master toggle to start running your program.",
 									'power-coupons'
@@ -71,7 +71,7 @@ function Points( { toast } ) {
 							pathname: 'admin.php',
 							search: '?page=power_coupons_settings&path=settings&tab=power_coupons_points',
 						} }
-						className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium text-white hover:text-white bg-orange-500 hover:bg-orange-600 no-underline whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
+						className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium text-white hover:text-white bg-wpcolor hover:bg-wphovercolor no-underline whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-wpcolor focus:ring-offset-2"
 					>
 						{ __( 'Open settings', 'power-coupons' ) }
 					</Link>

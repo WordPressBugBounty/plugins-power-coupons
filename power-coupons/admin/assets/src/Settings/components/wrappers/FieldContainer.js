@@ -1,34 +1,18 @@
-import { useState } from 'react';
 import SectionRenderer from '../common/SectionRenderer';
 import { Title } from '@bsf/force-ui';
 import { useStateValue } from '../Data';
-import FieldRenderer from '../common/FieldRenderer';
 import UpgradeNotice from '../common/UpgradeNotice';
 import UpgradeFeatureCard from '../common/UpgradeFeatureCard';
 import getProTabNudges from '../common/ProTabNudges';
+import { getVisibleSubtabs } from '../common/fieldSections';
 
-function sortFieldsByPriority( fields ) {
-	const fieldsArray = Object.values( fields );
-	if ( Array.isArray( fieldsArray ) ) {
-		return [ ...fieldsArray ].sort( ( a, b ) => {
-			const aPriority = typeof a.priority === 'number' ? a.priority : 0;
-			const bPriority = typeof b.priority === 'number' ? b.priority : 0;
-			return aPriority - bPriority;
-		} );
-	}
-	return fieldsArray;
-}
-
-function FieldContainer( { tabKey } ) {
+function FieldContainer( { tabKey, subtab } ) {
 	const tab = powerCouponsSettings.settings_tabs?.[ tabKey ] || {};
 	const title = tab?.title || tab?.name;
 	const allFields = powerCouponsSettings.settings_fields?.[ tabKey ] || [];
 	const [ data ] = useStateValue();
 	const subtabs = tab?.subtabs || [];
 	const hasSubtabs = subtabs.length > 0;
-	const [ activeSubtab, setActiveSubtab ] = useState(
-		hasSubtabs ? subtabs[ 0 ].slug : ''
-	);
 
 	// Render PRO upsell card for tabs flagged as PRO-only placeholders.
 	if ( tab?.is_pro_upsell && ! window.powerCouponsSettings?.is_pro_active ) {
@@ -42,7 +26,7 @@ function FieldContainer( { tabKey } ) {
 						size="md"
 						tag="h2"
 						title={ title }
-						className="mb-6 [&_h2]:text-gray-900 text-xl"
+						className="mb-6 [&_h2]:text-text-primary text-xl"
 					/>
 					<UpgradeFeatureCard
 						title={ nudge.title }
@@ -59,7 +43,27 @@ function FieldContainer( { tabKey } ) {
 	const isGeneralTab = tabKey === 'power_coupons_general';
 
 	if ( hasSubtabs ) {
+		// Sub-pages are navigated from the sidebar and carried in the URL, so
+		// this only has to resolve which one to render. Falling back to the
+		// first populated sub-tab keeps a bare ?tab= link working.
+		const visibleSubtabs = getVisibleSubtabs( tabKey );
+		const activeSubtab = visibleSubtabs.some( ( st ) => st.slug === subtab )
+			? subtab
+			: visibleSubtabs[ 0 ]?.slug ?? '';
 		const fields = allFields.filter( ( f ) => f.subtab === activeSubtab );
+
+		// Sub-pages are their own destinations in the sidebar now, so the
+		// heading names the sub-page rather than repeating the parent — but
+		// only when the sidebar actually shows them. `Settings.js` renders a
+		// submenu at two or more populated sub-tabs; below that the rail is a
+		// single plain row, and naming the sub-page there leaves the heading
+		// with nothing on screen to relate it to (free installs read
+		// "Text Customization" in the rail and "General" above the fields).
+		const heading =
+			( visibleSubtabs.length > 1 &&
+				visibleSubtabs.find( ( st ) => st.slug === activeSubtab )
+					?.title ) ||
+			title;
 
 		// --- Loyalty Rewards (Points) cascading disable ---
 		const isLoyaltyEnabled = data?.points_settings?.enable ?? true;
@@ -136,40 +140,15 @@ function FieldContainer( { tabKey } ) {
 					icon={ null }
 					size="md"
 					tag="h2"
-					title={ title }
-					className="mb-6 [&_h2]:text-gray-900 text-xl"
+					title={ heading }
+					className="mb-6 [&_h2]:text-text-primary text-xl"
 				/>
 
-				<div className="h-auto bg-background-primary rounded-xl">
-					{ /* Sub-tab buttons */ }
-					<div className="flex gap-0 border-0 border-b border-solid border-border-subtle px-6">
-						{ subtabs.map( ( st ) => (
-							<button
-								key={ st.slug }
-								type="button"
-								onClick={ () => setActiveSubtab( st.slug ) }
-								className={ `px-3 py-3 text-sm font-medium border-0 border-b-2 border-solid transition-colors bg-transparent cursor-pointer ${
-									activeSubtab === st.slug
-										? 'border-b-[#f06434] text-[#f06434]'
-										: 'border-b-transparent text-text-tertiary hover:text-text-primary'
-								}` }
-							>
-								{ st.title }
-							</button>
-						) ) }
-					</div>
-
-					{ /* Fields */ }
-					<div className="px-6">
-						{ sortFieldsByPriority( fields ).map( ( field ) => (
-							<FieldRenderer
-								key={ field.name }
-								field={ field }
-								disabled={ isFieldDisabled( field.name ) }
-							/>
-						) ) }
-					</div>
-				</div>
+				<SectionRenderer
+					tabKey={ tabKey }
+					fields={ fields }
+					isFieldDisabled={ isFieldDisabled }
+				/>
 			</>
 		);
 	}
@@ -204,10 +183,11 @@ function FieldContainer( { tabKey } ) {
 				size="md"
 				tag="h2"
 				title={ title }
-				className="mb-6 [&_h2]:text-gray-900 text-xl"
+				className="mb-6 [&_h2]:text-text-primary text-xl"
 			/>
 
 			<SectionRenderer
+				tabKey={ tabKey }
 				fields={ fields }
 				masterDisabled={ masterToggle ? ! masterToggle.enabled : false }
 				masterFieldName={ masterToggle ? masterToggle.field : '' }

@@ -106,7 +106,16 @@ class Power_Coupons_Settings_Helper {
 	 * @return void
 	 */
 	private function init_hooks() {
-		// Clear cache when settings are updated.
+		/*
+		 * Clear the cache on every way the option can change.
+		 *
+		 * `update_option_*` alone is not enough: WordPress fires `add_option_*`
+		 * — not `update_option_*` — the first time an option is written, and the
+		 * option is never seeded on activation. On a fresh install the first
+		 * save is therefore invisible for up to an hour, which in practice means
+		 * the choices made during onboarding appear not to stick.
+		 */
+		add_action( 'add_option_power_coupons_settings', array( $this, 'clear_cache' ) );
 		add_action( 'update_option_power_coupons_settings', array( $this, 'clear_cache' ) );
 	}
 
@@ -155,7 +164,18 @@ class Power_Coupons_Settings_Helper {
 	}
 
 	/**
-	 * Get text settings
+	 * Get text settings, translated for the current request.
+	 *
+	 * Any stored string that still matches the untranslated plugin default is
+	 * swapped for its translation; anything else is returned verbatim, because
+	 * it is the merchant's own copy and there is nothing in the catalogue to
+	 * translate it with. Translation happens here rather than in the cached
+	 * payload — see the note in {@see self::load_settings()}.
+	 *
+	 * The comparison is by value, not by provenance, so a merchant who types
+	 * the English default character-for-character gets the translated string
+	 * on a translated site. That is indistinguishable from not having
+	 * customised it, and is the right outcome either way.
 	 *
 	 * @return array<string, mixed>
 	 */
@@ -167,7 +187,25 @@ class Power_Coupons_Settings_Helper {
 		 * @var mixed $text
 		 */
 		$text = $settings['text'] ?? array();
-		return is_array( $text ) ? $text : array();
+		if ( ! is_array( $text ) ) {
+			return array();
+		}
+
+		$raw_defaults = self::get_default_settings();
+		/** @var array<string, mixed> $untranslated */ // phpcs:ignore Generic.Commenting.DocComment.MissingShort
+		$untranslated = is_array( $raw_defaults['text'] ?? null ) ? $raw_defaults['text'] : array();
+
+		$raw_translated = self::get_default_settings( true );
+		/** @var array<string, mixed> $translated */ // phpcs:ignore Generic.Commenting.DocComment.MissingShort
+		$translated = is_array( $raw_translated['text'] ?? null ) ? $raw_translated['text'] : array();
+
+		foreach ( $untranslated as $key => $default ) {
+			if ( isset( $text[ $key ] ) && $text[ $key ] === $default && isset( $translated[ $key ] ) ) {
+				$text[ $key ] = $translated[ $key ];
+			}
+		}
+
+		return $text;
 	}
 
 	/**
@@ -243,8 +281,20 @@ class Power_Coupons_Settings_Helper {
 		 */
 		$settings = is_array( $raw_settings ) ? $raw_settings : array();
 
-		// Merge with defaults (with translations if available).
-		$defaults = self::get_default_settings( true );
+		/*
+		 * Merge with the UNTRANSLATED defaults.
+		 *
+		 * The merged result goes into an hour-long transient below, and a cached
+		 * translated string is wrong for any multilingual site regardless of when
+		 * it was built: one visitor's locale would be served to the next. Timing
+		 * makes it worse — the first `load_settings()` runs from
+		 * `Core::init()` at `plugins_loaded` priority 20, before `init`, so the
+		 * text domain is not loaded yet and the "translated" strings would be
+		 * English anyway.
+		 *
+		 * Translation happens per-request in `get_text_settings()` instead.
+		 */
+		$defaults = self::get_default_settings();
 		foreach ( $defaults as $section => $section_defaults ) {
 			if ( ! isset( $settings[ $section ] ) || ! is_array( $settings[ $section ] ) ) {
 				$settings[ $section ] = $section_defaults;

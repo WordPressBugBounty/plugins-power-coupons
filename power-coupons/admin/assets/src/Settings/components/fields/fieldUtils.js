@@ -16,6 +16,23 @@ export const parseFieldName = ( name ) => {
 };
 
 /**
+ * Build a stable DOM id for a field's control from its setting name.
+ *
+ * Deterministic on purpose. The controls used to fall back to React's
+ * generated ids, which change on every render, so a `<label for>` could never
+ * be pointed at one and the visible caption stayed a sibling that assistive
+ * tech had no way to connect to the input.
+ *
+ * @param {string} prefix Short control-type prefix, e.g. `input-text`.
+ * @param {string} name   Field name with bracket notation.
+ * @return {string} Stable id, e.g. `input-text-general-show_on_cart`.
+ */
+export const buildControlId = ( prefix, name ) =>
+	`${ prefix }-${ String( name )
+		.replace( /[[\]]/g, '-' )
+		.replace( /-+$/, '' ) }`;
+
+/**
  * Get nested value from object using array of keys
  *
  * @param {Object} obj   Object to get value from

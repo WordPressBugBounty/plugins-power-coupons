@@ -1,5 +1,6 @@
 import Number from '../fields/Number';
 import FieldWrapper from '../wrappers/FieldWrapper';
+import { buildControlId } from './fieldUtils';
 
 function NumberField( props ) {
 	const {
@@ -12,6 +13,7 @@ function NumberField( props ) {
 		type,
 		disabled = false,
 	} = props;
+	const controlId = buildControlId( 'input-number', name );
 
 	return (
 		<FieldWrapper
@@ -19,14 +21,17 @@ function NumberField( props ) {
 			description={ description }
 			badge={ badge }
 			disabled={ disabled }
+			controlId={ controlId }
 		>
 			<div className="power_coupons-input-field-wrapper">
 				<Number
+					id={ controlId }
 					name={ name }
 					val={ value }
 					badge={ badge }
 					min={ min }
 					type={ type }
+					disabled={ disabled }
 				/>
 			</div>
 		</FieldWrapper>

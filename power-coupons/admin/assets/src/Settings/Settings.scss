@@ -3,8 +3,73 @@
 @tailwind utilities;
 
 :root {
-	--heading-font-family: "Figtree";
+	// No @font-face ships with the plugin and Figtree is not a WordPress admin
+	// default, so this needs a real stack behind it — otherwise the fallback is
+	// whatever the browser picks, which is rarely what the rest of the admin
+	// uses.
+	--heading-font-family: "Figtree", -apple-system, blinkmacsystemfont, "Segoe UI", roboto, "Helvetica Neue", arial, sans-serif;
 	--heading-font-style: normal;
+}
+
+// Full-height admin layout without viewport math.
+//
+// The usual approach across our admin apps is `calc(100dvh - 96px)`, where 96px
+// is the WP admin bar plus our own topbar. That constant is wrong the moment any
+// other plugin injects something above the app through `in_admin_header` — the
+// app then overflows the viewport and its bottom controls become unreachable.
+// See brainstormforce/force-ui#487.
+//
+// Instead, turn WordPress's own containers into a flex column on this screen
+// only and let the app claim whatever space is left. Injected banners become
+// ordinary flex items: they take their natural height, the app takes the rest,
+// and dismissing one reflows with no JS. The single remaining constant is
+// `--wp-admin--admin-bar--height`, which WP core owns and keeps correct at both
+// 32px and the 46px mobile size.
+body.toplevel_page_power_coupons_settings {
+	// Deliberately no `padding: 0` here: WP puts a 20px left padding on
+	// #wpcontent that the app's negative margins already account for.
+	#wpcontent,
+	#wpbody,
+	#wpbody-content {
+		display: flex;
+		flex-direction: column;
+	}
+
+	#wpcontent {
+		min-height: calc(100vh - var(--wp-admin--admin-bar--height, 32px));
+	}
+
+	// Each level has to pass the height down, or only #wpcontent has it and the
+	// app still sizes to its own content. `min-height: 0` stops the default
+	// `min-height: auto` on a flex item from refusing to shrink below content.
+	#wpbody,
+	#wpbody-content {
+		flex: 1 1 auto;
+		min-height: 0;
+	}
+
+	#power-coupons-settings {
+		display: flex;
+		flex-direction: column;
+		flex: 1 1 auto;
+		min-height: 0;
+
+		> form {
+			display: flex;
+			flex-direction: column;
+			flex: 1 1 auto;
+			min-height: 0;
+		}
+	}
+}
+
+// The sidebar nav item is a flex row and its icon sits next to a label that
+// takes the remaining width. Without this the icon absorbs the squeeze and the
+// glyph renders narrower than it is tall. It lives here rather than as a
+// wrapper element because Force UI targets the icon with `[&>svg]` rules that
+// only match a direct child.
+.mcw-sidebar li > svg {
+	flex-shrink: 0;
 }
 
 .power-coupons-coupon-code {
@@ -14,7 +79,7 @@
 	overflow: hidden;
 	white-space: nowrap;
 	font-weight: 600;
-	padding: 5.5px 8px;
+	padding: 6px 8px;
 }
 
 html.wp-toolbar.power-coupon-modal-open {
@@ -75,7 +140,7 @@ html.wp-toolbar.power-coupon-modal-open {
 		left: 0;
 		bottom: -1px;
 		height: 1px;
-		background-color: #f06434;
+		background-color: theme('colors.wpcolor');
 	}
 }
 
@@ -121,11 +186,11 @@ html.wp-toolbar.power-coupon-modal-open {
 
 	.power_coupons-color-field .power_coupons-colorpicker-swatch {
 		padding: 0;
-		background: #fafafa;
+		background: theme('colors.field-primary-background');
 		display: inline-block;
 		margin: 0;
-		border-right: 1px solid #ddd;
-		box-shadow: inset 0 0 0 3px #fff;
+		border-right: 1px solid theme('colors.border-subtle');
+		box-shadow: inset 0 0 0 3px theme('colors.background-primary');
 	}
 
 	.power_coupons-color-field .power_coupons-color-picker-popover {
@@ -156,15 +221,19 @@ html.wp-toolbar.power-coupon-modal-open {
 	}
 
 	.power_coupons-color-field .power_coupons-field-data-content .power_coupons-colorpicker-swatch-wrap {
-		border: 1px solid #ddd;
+		border: 1px solid theme('colors.border-subtle');
 		border-radius: 2px;
-		background: #fff;
-		color: #444;
+		background: theme('colors.background-primary');
+		color: theme('colors.text-secondary');
 	}
 
 	.power_coupons-color-field .power_coupons-field-data-content .power_coupons-colorpicker-label {
 		font-weight: 400;
-		padding: 5px 7px;
+		// Was 5px/7px with a 13px font and 13px line-height — the only spacing
+		// off the 4px scale and the only type with leading of exactly 1.0.
+		font-size: 14px;
+		line-height: 20px;
+		padding: 6px 8px;
 	}
 
 	.power_coupons-color-field .power_coupons-field-data-content .power_coupons-colorpicker-reset {
@@ -224,8 +293,8 @@ html.wp-toolbar.power-coupon-modal-open {
 		a.power_coupons-settings--article-link,
 		a:hover,
 		a:active {
-			color: #f06335;
-			border-color: #f06335;
+			color: theme('colors.wpcolor');
+			border-color: theme('colors.wpcolor');
 		}
 	}
 
@@ -236,41 +305,9 @@ html.wp-toolbar.power-coupon-modal-open {
 	}
 }
 
-:is( #power-coupons-settings ) .bg-border-interactive {
-	background-color: #f06434;
-}
-
 // Hide WordPress admin footer on Power Coupons settings and onboarding screens.
 .toplevel_page_power_coupons_settings #wpfooter {
 	display: none !important;
-}
-
-// Override force-ui ProgressSteps brand-primary-600 (purple) to match the plugin's orange theme.
-:is( #power-coupons-settings ) .ring-brand-primary-600 {
-	--tw-ring-color: #f06434 !important;
-}
-
-:is( #power-coupons-settings ) .text-brand-primary-600 {
-	color: #f06434 !important;
-}
-
-:is( #power-coupons-settings ) .bg-brand-primary-600 {
-	background-color: #f06434 !important;
-}
-
-:is( #power-coupons-settings ) .border-brand-primary-600 {
-	border-color: #f06434 !important;
-}
-
-.power-coupons-coupon-style-btn > label {
-	left: 0;
-	min-width: 0 !important;
-	margin: 0;
-	margin-top: 15px;
-}
-
-:is( #power-coupons-settings ) .checked\:border-border-interactive:checked {
-	border-color: rgb( 240 99 53 / var( --tw-bg-opacity, 1 ) ) !important;
 }
 
 /* START: Fix for the admin app sidebar height styling issue. */
@@ -281,7 +318,7 @@ html.wp-toolbar.power-coupon-modal-open {
 	top: 0;
 	width: 420px;
 	height: 100vh;
-	background: #fff;
+	background: theme('colors.background-primary');
 	z-index: -1;
 }
 
@@ -304,12 +341,12 @@ html.wp-toolbar.power-coupon-modal-open {
 }
 /* END: Fix for the admin app sidebar height styling issue. */
 
-// Fix checkbox unchecked border: force-ui uses border-border-strong which is #f06434 (orange)
+// Fix checkbox unchecked border: force-ui uses border-border-strong, which is the brand orange
 // in our theme, but Figma specifies gray for unchecked checkboxes.
 // :not(:checked) ensures the override only applies in unchecked state so the theme
 // orange color (checked:border-border-interactive) still shows when checked.
 :is(#power-coupons-settings) input[type="checkbox"].border-border-strong:not(:checked) {
-	border-color: #6B7280 !important;
+	border-color: theme('colors.field-placeholder') !important;
 }
 
 // Match Figma: reduce table data cell vertical padding from py-3.5 (14px) to 10px per side.
@@ -321,14 +358,14 @@ html.wp-toolbar.power-coupon-modal-open {
 // Override force-ui rounded Tabs to match the reference pill style (orange active state).
 // The .pc-tabs-rounded wrapper is applied to Tabs.Group in Points.js.
 :is(#power-coupons-settings) .pc-tabs-rounded {
-	background-color: #fff !important;
+	background-color: theme('colors.background-primary') !important;
 	padding: 0 !important;
 
 	// Active tab — orange tint background, orange text, orange outline.
 	> button.bg-background-primary {
-		background-color: #fef8f5 !important;
-		color: #e54e1a !important;
-		outline: 1px solid #f6a285 !important;
+		background-color: theme('colors.wphovercolorfaded') !important;
+		color: theme('colors.wphovercolor') !important;
+		outline: 1px solid theme('colors.wpcolor') !important;
 		box-shadow: 0 1px 2px rgb(0 0 0 / 0.05) !important;
 
 		span {
@@ -339,7 +376,7 @@ html.wp-toolbar.power-coupon-modal-open {
 	// Inactive tab — hover to orange text.
 	> button:not(.bg-background-primary) {
 		&:hover {
-			color: #e54e1a !important;
+			color: theme('colors.wphovercolor') !important;
 
 			span {
 				color: inherit !important;
@@ -356,8 +393,8 @@ html.wp-toolbar.power-coupon-modal-open {
 		bottom: calc(100% + 6px);
 		left: 50%;
 		transform: translateX(-50%);
-		background: #111827;
-		color: #fff;
+		background: theme('colors.tooltip-background-dark');
+		color: theme('colors.text-inverse');
 		font-size: 12px;
 		font-weight: 400;
 		line-height: 1.4;
@@ -380,7 +417,7 @@ html.wp-toolbar.power-coupon-modal-open {
 		left: 50%;
 		transform: translateX(-50%);
 		border: 4px solid transparent;
-		border-top-color: #111827;
+		border-top-color: theme('colors.tooltip-background-dark');
 		pointer-events: none;
 		opacity: 0;
 		transition: opacity 0.15s;
@@ -395,28 +432,3 @@ html.wp-toolbar.power-coupon-modal-open {
 	}
 }
 
-// Override force-ui DatePicker brand colors to match plugin's orange theme.
-// force-ui defaults to purple (#6005ff) for primary/brand colors.
-// The .pc-date-picker-popup wrapper is applied to every DatePicker popup in the plugin.
-.pc-date-picker-popup {
-	// Apply button — normal & hover
-	.bg-button-primary { background-color: #f97316 !important; }
-	.hover\:bg-button-primary-hover:hover { background-color: #ea580c !important; }
-	.outline-button-primary { outline-color: #f97316 !important; }
-	.hover\:outline-button-primary-hover:hover { outline-color: #ea580c !important; }
-	.hover\:text-button-primary-hover:hover { color: #ea580c !important; }
-
-	// Selected day circles & today indicator dot
-	.bg-background-brand { background-color: #f97316 !important; }
-	.hover\:bg-background-brand:hover { background-color: #ea580c !important; }
-
-	// Range middle days (light tint between start and end)
-	.bg-brand-background-50 { background-color: #fff7ed !important; } // orange-50
-
-	// Borders, text, and focus ring
-	.border-brand-primary-600 { border-color: #f97316 !important; }
-	.text-brand-primary-600 { color: #ea580c !important; }
-	.ring-brand-primary-600 {
-		--tw-ring-color: rgb(249 115 22 / var(--tw-ring-opacity, 1)) !important;
-	}
-}

@@ -204,10 +204,16 @@ class Power_Coupons_Admin_Rules {
 		delete_transient( 'wc_coupon_' . $coupon_id );
 		delete_transient( 'wc_coupons_' . $coupon_id );
 
-		// Clear the cart to force recalculation (if cart is available).
-		if ( function_exists( 'WC' ) && ! is_null( \WC()->cart ) ) {
-			\WC()->cart->calculate_totals();
-		}
+		/*
+		 * Deliberately no cart recalculation here.
+		 *
+		 * This method only ever runs while an administrator saves a coupon, and
+		 * the cart reachable from that request is the administrator's own — not
+		 * any shopper's. Recalculating it re-ran every coupon and every rule as a
+		 * side effect of saving, and could change what was in that admin's cart.
+		 * Shoppers pick the new rules up on their next request anyway, because
+		 * the coupon caches cleared above are what they read through.
+		 */
 
 		// Trigger action for custom cache clearing.
 		do_action( 'power_coupons_clear_coupon_cache', $coupon_id );

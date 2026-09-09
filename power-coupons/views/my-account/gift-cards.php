@@ -54,7 +54,8 @@ $status_classes = array(
 					<?php foreach ( $received as $gc ) : ?>
 						<tr>
 							<td data-title="<?php esc_attr_e( 'Code', 'power-coupons' ); ?>">
-								<code class="power-coupon-gc-code" data-full-code="<?php echo esc_attr( $gc['code'] ); ?>">
+								<?php // Security: never emit the full code here. It defeated mask_code() and no JS reads it. ?>
+								<code class="power-coupon-gc-code">
 									<?php echo esc_html( $gc['masked_code'] ); ?>
 								</code>
 							</td>

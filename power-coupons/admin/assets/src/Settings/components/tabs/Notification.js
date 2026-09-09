@@ -35,12 +35,12 @@ function Notification( props ) {
 								<div className="flex items-start">
 									<div className="flex-shrink-0">
 										<CheckCircleIcon
-											className="h-6 w-6 text-green-400"
+											className="h-6 w-6 text-support-success-inverse"
 											aria-hidden="true"
 										/>
 									</div>
 									<div className="ml-3 w-0 flex-1 pt-0.5">
-										<p className="text-sm font-medium text-gray-900">
+										<p className="text-sm font-medium text-text-primary">
 											{ __(
 												'Successfully saved!',
 												'power-coupons'
@@ -49,7 +49,7 @@ function Notification( props ) {
 									</div>
 									<div className="ml-4 flex-shrink-0 flex">
 										<button
-											className="bg-white rounded-md inline-flex text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+											className="bg-white rounded-md inline-flex text-text-tertiary hover:text-field-placeholder focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-wpcolor"
 											onClick={ closeNotification }
 										>
 											<span className="sr-only">

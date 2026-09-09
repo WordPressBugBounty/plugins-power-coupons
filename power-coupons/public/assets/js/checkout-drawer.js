@@ -10,15 +10,39 @@
 
 	const PowerCouponsDrawer = {
 		renderedTriggerButton: false,
+		eventsBound: false,
 		lastFocusedElement: null,
 		focusableElements: null,
 		firstFocusableElement: null,
 		lastFocusableElement: null,
 
-		maybeReloadPageOnSuccess() {
+		/**
+		 * Sync every cart-dependent UI after the server-side cart changed.
+		 *
+		 * Delegates to the shared cart-refresh helper so the drawer never
+		 * reloads the page: a reload resets the in-page state that multi-step
+		 * checkout plugins such as CartFlows and FunnelKit hold in the
+		 * browser. Reloading stays available as an opt-in via the
+		 * `power_coupons_reload_page_after_coupon_is_applied` filter.
+		 *
+		 * @since 1.0.6
+		 * @return {Promise} Resolves once the cart UI is in sync.
+		 */
+		syncCartUi() {
 			if ( powerCouponsData.reloadPageAfterCouponApplied ) {
-				window.location.href = window.location.href;
+				window.location.reload();
+
+				// Never resolves: the document is being torn down.
+				return new Promise( function () {} );
 			}
+
+			if ( ! window.PowerCouponsCartRefresh ) {
+				return Promise.resolve( false );
+			}
+
+			return window.PowerCouponsCartRefresh.refresh( {
+				source: 'checkout-drawer',
+			} );
 		},
 
 		/**
@@ -113,10 +137,15 @@
 								tempDiv
 							);
 
-							// Re-initialize events.
-							PowerCouponsDrawer.init();
-
+							// Mark the button as rendered BEFORE re-initialising.
+							// init() can re-enter this filter, and the flag is
+							// what stops the button being injected twice.
 							PowerCouponsDrawer.renderedTriggerButton = true;
+
+							// Re-initialize element references against the
+							// markup we just inserted. Event handlers are
+							// delegated and bound once — see bindEvents().
+							PowerCouponsDrawer.init();
 
 							return defaultValue;
 						},
@@ -127,9 +156,20 @@
 
 		/**
 		 * Bind events
+		 *
+		 * Every handler below is delegated from `document`, so binding twice
+		 * would leave two live handlers per selector and fire two apply/remove
+		 * AJAX requests for a single click. init() is deliberately called more
+		 * than once — the Blocks cart/checkout re-runs it after injecting the
+		 * trigger button — so the guard lives here rather than at the call site.
 		 */
 		bindEvents() {
 			const self = this;
+
+			if ( this.eventsBound ) {
+				return;
+			}
+			this.eventsBound = true;
 
 			// Open drawer - use event delegation to handle dynamically replaced buttons
 			$( document ).on(
@@ -364,12 +404,11 @@
 							'success'
 						);
 
-						PowerCouponsDrawer.maybeReloadPageOnSuccess();
-
-						// Reload coupons to show updated state
-						setTimeout( function () {
+						// Sync cart totals in place, then re-render the
+						// drawer against the fresh cart.
+						self.syncCartUi().then( function () {
 							self.reloadCoupons();
-						}, 500 );
+						} );
 					} else {
 						const errorMessage =
 							response.data && response.data.message
@@ -425,13 +464,11 @@
 							'success'
 						);
 
-						// Trigger WooCommerce cart/checkout updates
-						self.triggerWooCommerceUpdates();
-
-						// Reload coupons to show updated state
-						setTimeout( function () {
+						// Sync cart totals in place, then re-render the
+						// drawer against the fresh cart.
+						self.syncCartUi().then( function () {
 							self.reloadCoupons();
-						}, 500 );
+						} );
 					} else {
 						const errorMessage =
 							response.data && response.data.message
@@ -453,40 +490,6 @@
 					$button.prop( 'disabled', false ).removeClass( 'loading' );
 				},
 			} );
-		},
-
-		/**
-		 * Trigger WooCommerce cart/checkout updates
-		 *
-		 * Triggers appropriate WooCommerce events to refresh cart/checkout
-		 * displays after coupon application or removal.
-		 *
-		 * @since 1.0.0
-		 */
-		triggerWooCommerceUpdates() {
-			// Check if we're on cart page
-			const isCartPage = $( '.woocommerce-cart-form' ).length > 0;
-			const isCheckoutPage =
-				$( 'form.checkout' ).length > 0 ||
-				$( '.wc-block-checkout' ).length > 0;
-
-			if ( isCartPage ) {
-				// Cart page: Trigger cart totals update
-				$( document.body ).trigger( 'updated_cart_totals' );
-				$( document.body ).trigger( 'wc_fragment_refresh' );
-
-				// Also trigger update_checkout if checkout is on same page
-				if ( isCheckoutPage ) {
-					$( document.body ).trigger( 'update_checkout' );
-				}
-			} else if ( isCheckoutPage ) {
-				// Checkout page: Trigger checkout update
-				$( document.body ).trigger( 'update_checkout' );
-			}
-
-			// Always trigger applied_coupon event (WooCommerce standard event)
-			$( document.body ).trigger( 'applied_coupon' );
-			$( document.body ).trigger( 'applied_coupon_in_checkout' );
 		},
 
 		/**

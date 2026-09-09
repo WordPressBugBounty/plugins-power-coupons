@@ -160,7 +160,7 @@ class Checkout_Drawer_Controller {
 		wp_enqueue_script(
 			'power-coupons-drawer',
 			POWER_COUPONS_URL . 'public/assets/js/checkout-drawer.js',
-			array( 'jquery' ),
+			array( 'jquery', 'power-coupons-cart-refresh' ),
 			POWER_COUPONS_VERSION,
 			true
 		);

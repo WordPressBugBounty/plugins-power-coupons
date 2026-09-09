@@ -67,6 +67,13 @@ class Power_Coupons_Ability {
 		$abilities = Power_Coupons_Config_Ability::get_abilities();
 
 		foreach ( $abilities as $ability_name => $ability ) {
+			// Normalize the name to a lowercase, non-falsy string as required by wp_register_ability().
+			$ability_name = strtolower( (string) $ability_name );
+
+			if ( ! $ability_name ) {
+				continue;
+			}
+
 			/**
 			 * Ability configuration array.
 			 *

@@ -1,16 +1,25 @@
 import { __ } from '@wordpress/i18n';
 import { Link } from 'react-router-dom';
-import { Topbar, Badge } from '@bsf/force-ui';
+import { Badge, Topbar } from '@bsf/force-ui';
 
 import Logo from '../../../images/logo.svg';
 
 import { useStateValue } from './Data';
+import VersionBadge from './VersionBadge';
 
 const menus = powerCouponsSettings.admin_header_menus;
+
+// Where the license badge sends an unlicensed site. Matches the sidebar's own
+// route so both land on the same screen.
+const LICENSE_ROUTE = {
+	pathname: 'admin.php',
+	search: '?page=power_coupons_settings&path=settings&tab=power_coupons_license',
+};
 
 function Header( props ) {
 	const { activePath } = props;
 	const [ data ] = useStateValue();
+	const isLicenseActivated = 'Activated' === data?.license_status;
 
 	return (
 		<div className="-ml-2.5 md:-ml-5 power_coupons-header--wrapper">
@@ -40,6 +49,11 @@ function Header( props ) {
 							key={ `?page=power_coupons_settings&path=${ menu.path }` }
 							role="menuitem"
 						>
+							{ /* `focus:shadow-none` used to cancel the only
+							indicator these links had, leaving the first three
+							tab stops on every screen with a fully transparent
+							2px outline and nothing else — invisible to anyone
+							navigating by keyboard. */ }
 							<Link
 								to={ {
 									pathname: 'admin.php',
@@ -51,9 +65,9 @@ function Header( props ) {
 								} }
 								className={ `${
 									activePath === menu.path
-										? ' border-wpcolor hover:text-wphovercolor text-gray-900 inline-flex items-center px-1 border-b-2 text-[0.940rem] font-medium focus:shadow-none'
-										: 'border-transparent text-gray-600 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 border-b-2 text-[0.940rem] font-medium focus:shadow-none'
-								} no-underline h-full border-solid border-0` }
+										? ' border-wpcolor hover:text-wphovercolor text-text-primary inline-flex items-center px-1 border-b-2 text-sm font-medium'
+										: 'border-transparent text-text-secondary hover:border-border-subtle hover:text-text-secondary inline-flex items-center px-1 border-b-2 text-sm font-medium'
+								} no-underline h-full border-solid border-0 focus:shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-wpcolor focus-visible:ring-offset-2 rounded-sm` }
 								aria-current={
 									activePath === menu.path
 										? 'page'
@@ -66,48 +80,56 @@ function Header( props ) {
 					) ) }
 				</Topbar.Middle>
 				<Topbar.Right
-					className="power_coupons-header--content-right p-2 md:p-4 gap-2 md:gap-4"
+					className="power_coupons-header--content-right p-2 md:p-4 gap-2 md:gap-4 min-w-0 shrink"
 					gap="md"
 				>
+					{ /* Activated, this is a status read-out and nothing more.
+					Unactivated, it names the thing the merchant has to go and
+					do, so it becomes the link that takes them there. Note that
+					Force UI's `Badge` renders a bare span and forwards no
+					unknown props, so an `aria-label` on it would be dropped —
+					the accessible name has to live on the link. */ }
 					{ !! data?.pro_version && (
-						<Topbar.Item>
-							{ 'Activated' === data.license_status ? (
-								<span
-									className="inline-flex items-center no-underline gap-1.5 px-3 py-1 border whitespace-nowrap bg-green-50 border-green-200 text-green-600 hover:text-green-600 focus:text-green-600 pointer-events-none disabled rounded text-xs cursor-pointer font-normal"
-									aria-label={ __(
-										'License Status: Valid',
+						<Topbar.Item className="hidden sm:flex">
+							{ isLicenseActivated ? (
+								<Badge
+									size="xs"
+									type="rounded"
+									variant="green"
+									disableHover
+									label={ __(
+										'Valid License',
 										'power-coupons'
 									) }
-								>
-									{ __( 'Valid License', 'power-coupons' ) }
-								</span>
+								/>
 							) : (
-								<span
-									className="inline-flex items-center no-underline gap-1.5 px-3 py-1 border whitespace-nowrap bg-red-50 border-red-200 text-red-600 hover:text-red-600 focus:text-red-600 pointer-events-none disabled rounded text-xs cursor-pointer font-normal"
+								<Link
+									to={ LICENSE_ROUTE }
 									aria-label={ __(
-										'License Status: Not Activated',
+										'Activate your license',
 										'power-coupons'
 									) }
+									className="inline-flex no-underline rounded focus:shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-wpcolor focus-visible:ring-offset-2"
 								>
-									{ __(
-										'Activate License',
-										'power-coupons'
-									) }
-								</span>
+									<Badge
+										size="xs"
+										type="rounded"
+										variant="red"
+										label={ __(
+											'Activate License',
+											'power-coupons'
+										) }
+									/>
+								</Link>
 							) }
 						</Topbar.Item>
 					) }
-					<Topbar.Item>
-						<span title={ powerCouponsSettings.version }>
-							<Badge
-								icon={ null }
-								label={ powerCouponsSettings.version }
-								size="sm"
-								type="pill"
-								variant="neutral"
-								disableHover
-							/>
-						</span>
+					{ /* Version badges are reference information a merchant
+					needs about once. Below `md` they are the widest thing in
+					the header and pushed the bar 107px past a 390px viewport,
+					so they step aside rather than force a horizontal scroll. */ }
+					<Topbar.Item className="hidden md:flex items-center space-x-1 lg:space-x-3">
+						<VersionBadge />
 					</Topbar.Item>
 				</Topbar.Right>
 			</Topbar>

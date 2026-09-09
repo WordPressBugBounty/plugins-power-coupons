@@ -1,4 +1,5 @@
 import {
+	Button,
 	Topbar,
 	Tabs,
 	Input,
@@ -6,13 +7,45 @@ import {
 	Switch,
 	RadioButton,
 } from '@bsf/force-ui';
-import { __ } from '@wordpress/i18n';
-import { useState, useEffect, useRef } from '@wordpress/element';
+import { __, sprintf } from '@wordpress/i18n';
+import { useState, useEffect, useRef, Fragment } from '@wordpress/element';
 import Logo from '../../../../images/logo.svg';
 import { RenderIcon } from '../common/Utils';
-import { CheckCircleIcon } from '@heroicons/react/24/solid';
-import { CalendarIcon, ClockIcon } from '@heroicons/react/24/outline';
+import FieldError from '../common/FieldError';
+import SaveStatus from '../common/SaveStatus';
+import useModalFocus from '../common/hooks/useModalFocus';
+import { CalendarIcon, CheckIcon } from '@heroicons/react/24/outline';
 import { format } from 'date-fns';
+
+// How long the finished wizard stays on screen after a successful save, so the
+// check on the last step is seen before the modal closes itself.
+const SUCCESS_HOLD_MS = 1600;
+
+// Mirrors the outline, radius and focus treatment of a force-ui <Input> so a
+// textarea does not read as a different family of control next to one.
+const TEXTAREA_CLASSES =
+	'w-full font-normal text-sm leading-6 bg-field-secondary-background placeholder-text-tertiary text-text-primary outline outline-1 outline-border-subtle border-none rounded px-3 py-2 resize-y transition-[color,box-shadow,outline] duration-200 hover:outline-border-strong focus:outline-focus-border focus:ring-2 focus:ring-toggle-on focus:ring-offset-2';
+
+/**
+ * Step heading and its one-line explanation.
+ *
+ * Replaces a bare <strong> plus an unstyled <p>, whose default margin left a
+ * gap unrelated to the 24px rhythm the rest of the panel is built on.
+ *
+ * @param {Object} props
+ * @param {string} props.title       Name of the step.
+ * @param {string} props.description What the step is for.
+ */
+const SectionIntro = ( { title, description } ) => (
+	<div>
+		<h4 className="m-0 text-sm font-semibold text-text-primary">
+			{ title }
+		</h4>
+		<p className="m-0 mt-1 text-sm leading-6 text-text-secondary">
+			{ description }
+		</p>
+	</div>
+);
 
 // ─── Date helpers ─────────────────────────────────────────────────────────────
 
@@ -66,8 +99,23 @@ const DateField = ( { id, label, value, placeholder, onChange, helper } ) => {
 
 	const selected = parseDate( value );
 
+	// Escape closes the picker and hands focus back to its button. The wizard
+	// around it also listens for Escape, and leaves this to the picker while
+	// the popup is up.
+	const handleKeyDown = ( event ) => {
+		if ( open && 'Escape' === event.key ) {
+			event.preventDefault();
+			setOpen( false );
+			ref.current?.querySelector( 'button' )?.focus();
+		}
+	};
+
 	return (
-		<div className="flex flex-col gap-1.5" ref={ ref }>
+		<div
+			className="flex flex-col gap-1.5"
+			ref={ ref }
+			onKeyDown={ handleKeyDown }
+		>
 			<label
 				htmlFor={ id }
 				className="text-sm font-medium text-text-primary"
@@ -176,36 +224,68 @@ const EARN_TYPE_OPTIONS = [
 	},
 ];
 
-// ─── Helper text & error display ─────────────────────────────────────────────
-
-const FieldLabel = ( { htmlFor, text } ) => (
-	<label
-		htmlFor={ htmlFor }
-		className="text-sm font-medium text-text-primary"
-	>
-		{ text }
-	</label>
-);
+// ─── Helper text, error and field components ─────────────────────────────────
 
 const HelperText = ( { children } ) => {
 	if ( ! children ) {
 		return null;
 	}
 	return (
-		<p className="m-0 text-xs text-text-tertiary leading-snug">
+		<p className="m-0 text-xs text-text-secondary leading-snug">
 			{ children }
 		</p>
 	);
 };
 
-const FieldError = ( { message } ) => {
+/**
+ * Banner for an error the server reported about the whole form.
+ *
+ * @param {Object} props
+ * @param {string} props.message What went wrong.
+ */
+const FormErrorBanner = ( { message } ) => {
 	if ( ! message ) {
 		return null;
 	}
 	return (
-		<span className="text-red-500 text-xs flex items-center gap-1 mt-0.5">
+		<div
+			role="alert"
+			className="bg-badge-background-red border border-solid border-badge-border-red rounded-md px-4 py-3 text-badge-color-red text-sm leading-6"
+		>
 			{ message }
-		</span>
+		</div>
+	);
+};
+
+/**
+ * Numeric field with its hint and its validation message.
+ *
+ * Four copies of label-plus-input-plus-hint stood here, none of them naming the
+ * field its message belonged to.
+ *
+ * @param {Object} props
+ * @param {string} props.id     Field id; the message id is derived from it.
+ * @param {string} props.error  Validation message, empty when valid.
+ * @param {string} props.helper One line on what the value does.
+ */
+const NumberField = ( { id, error, helper, ...inputProps } ) => {
+	const errorId = `${ id }-error`;
+	return (
+		<div className="flex flex-col gap-1">
+			<Input
+				id={ id }
+				type="number"
+				size="md"
+				error={ !! error }
+				{ ...( error && {
+					'aria-invalid': 'true',
+					'aria-describedby': errorId,
+				} ) }
+				{ ...inputProps }
+			/>
+			<FieldError id={ errorId } message={ error } />
+			<HelperText>{ helper }</HelperText>
+		</div>
 	);
 };
 
@@ -256,20 +336,16 @@ const FormTabs = [
 
 			return (
 				<>
-					<div>
-						<strong>
-							{ __( 'Campaign Basics', 'power-coupons' ) }
-						</strong>
-						<p>
-							{ __(
-								'Define the name, type, and earning rules for this campaign.',
-								'power-coupons'
-							) }
-						</p>
-					</div>
+					<SectionIntro
+						title={ __( 'Campaign Basics', 'power-coupons' ) }
+						description={ __(
+							'Define the name, type, and earning rules for this campaign.',
+							'power-coupons'
+						) }
+					/>
 
-					<div className="flex flex-col gap-5">
-						{ /* Campaign Name */ }
+					<div className="flex flex-col gap-4">
+						{ /* Campaign Name — required */ }
 						<div className="flex flex-col gap-1">
 							<Input
 								value={ formData.title ?? '' }
@@ -277,8 +353,14 @@ const FormTabs = [
 								label={ __( 'Campaign Name', 'power-coupons' ) }
 								size="md"
 								type="text"
+								error={ !! errors.title }
+								{ ...( errors.title && {
+									'aria-invalid': 'true',
+									'aria-describedby':
+										'campaign-input-title-error',
+								} ) }
 								placeholder={ __(
-									'E.g. Order Credits — 1 per $1',
+									'E.g. Order Credits: 1 per $1',
 									'power-coupons'
 								) }
 								onChange={ ( value ) => {
@@ -286,20 +368,23 @@ const FormTabs = [
 									clearError( 'title' );
 								} }
 							/>
-							<FieldError message={ errors.title } />
+							<FieldError
+								id="campaign-input-title-error"
+								message={ errors.title }
+							/>
 						</div>
 
 						{ /* Description */ }
 						<div className="flex flex-col items-start gap-1.5">
 							<label
 								htmlFor="campaign-textarea-description"
-								className="text-sm font-medium"
+								className="text-sm font-medium text-text-primary"
 							>
 								{ __( 'Description', 'power-coupons' ) }
 							</label>
 							<textarea
 								id="campaign-textarea-description"
-								className="!font-normal !text-sm h-20 bg-field-secondary-background font-normal placeholder-text-tertiary text-text-primary w-full outline outline-1 outline-border-subtle border-none transition-[color,box-shadow,outline] duration-200 p-3 py-2 rounded text-xs focus:outline-focus-border focus:ring-2 focus:ring-toggle-on focus:ring-offset-2 hover:outline-border-strong"
+								className={ `${ TEXTAREA_CLASSES } h-20` }
 								placeholder={ __(
 									'Optional description for this campaign',
 									'power-coupons'
@@ -313,10 +398,11 @@ const FormTabs = [
 
 						{ /* Action Type */ }
 						<div className="flex flex-col gap-1.5">
-							<span className="text-sm font-medium">
+							<span className="text-sm font-medium text-text-primary">
 								{ __( 'Action Type', 'power-coupons' ) }
 							</span>
 							<RadioButton.Group
+								className="grid-cols-1 sm:grid-cols-3 [&_p.text-text-tertiary]:text-text-secondary"
 								columns={ 3 }
 								onChange={ ( value ) =>
 									setFormData( 'action_type', value )
@@ -343,14 +429,16 @@ const FormTabs = [
 					</div>
 
 					{ /* Save & Continue button */ }
-					<div className="flex justify-end mt-4">
-						<button
+					<div className="flex justify-end">
+						<Button
+							variant="primary"
+							size="md"
+							tag="button"
 							type="button"
 							onClick={ handleSaveAndContinue }
-							className="flex items-center gap-2 px-5 py-2.5 text-white bg-wpcolor hover:bg-wphovercolor rounded-md border-none cursor-pointer text-sm font-medium"
 						>
 							{ __( 'Save & Continue', 'power-coupons' ) }
-						</button>
+						</Button>
 					</div>
 				</>
 			);
@@ -365,6 +453,7 @@ const FormTabs = [
 			setActiveTab,
 			saveOffer,
 			isLoading,
+			saved,
 			errors,
 			setErrors,
 			clearError,
@@ -417,26 +506,23 @@ const FormTabs = [
 
 			return (
 				<>
-					<div>
-						<strong>
-							{ __( 'Earning Configuration', 'power-coupons' ) }
-						</strong>
-						<p>
-							{ __(
-								'Set the credits value, limits, and schedule for this campaign.',
-								'power-coupons'
-							) }
-						</p>
-					</div>
+					<SectionIntro
+						title={ __( 'Earning Configuration', 'power-coupons' ) }
+						description={ __(
+							'Set the credits value, limits, and schedule for this campaign.',
+							'power-coupons'
+						) }
+					/>
 
-					<div className="flex flex-col gap-5">
+					<div className="flex flex-col gap-4">
 						{ /* Row 1: Earn Type radio buttons (order_earn only) */ }
 						{ isOrderEarn && (
 							<div className="flex flex-col gap-1.5">
-								<span className="text-sm font-medium">
+								<span className="text-sm font-medium text-text-primary">
 									{ __( 'Earn Type', 'power-coupons' ) }
 								</span>
 								<RadioButton.Group
+									className="grid-cols-1 sm:grid-cols-3 [&_p.text-text-tertiary]:text-text-secondary"
 									columns={ 3 }
 									onChange={ ( value ) =>
 										setFormData( 'earn_type', value )
@@ -497,125 +583,87 @@ const FormTabs = [
 
 						{ /* Row 2: Number fields */ }
 						<div
-							className={ `grid gap-4 ${
-								isOrderEarn ? 'grid-cols-4' : 'grid-cols-2'
+							className={ `grid gap-4 grid-cols-1 sm:grid-cols-2 ${
+								isOrderEarn ? 'md:grid-cols-4' : ''
 							}` }
 						>
-							<div className="flex flex-col gap-1">
-								<FieldLabel
-									htmlFor="campaign-input-earn-value"
-									text={ getEarnValueLabel() }
-								/>
-								<Input
-									value={ formData.earn_value ?? '' }
-									id="campaign-input-earn-value"
-									size="md"
-									type="number"
-									placeholder="0"
-									onChange={ ( value ) => {
-										setFormData( 'earn_value', value );
-										clearError( 'earn_value' );
-									} }
-								/>
-								<HelperText>{ getEarnValueHint() }</HelperText>
-								<FieldError message={ errors.earn_value } />
-							</div>
+							<NumberField
+								id="campaign-input-earn-value"
+								label={ getEarnValueLabel() }
+								value={ formData.earn_value ?? '' }
+								placeholder="0"
+								helper={ getEarnValueHint() }
+								error={ errors.earn_value }
+								onChange={ ( value ) => {
+									setFormData( 'earn_value', value );
+									clearError( 'earn_value' );
+								} }
+							/>
 							{ isOrderEarn && (
 								<>
-									<div className="flex flex-col gap-1">
-										<FieldLabel
-											htmlFor="campaign-input-min-order"
-											text={ __(
-												'Min Order Total',
-												'power-coupons'
-											) }
-										/>
-										<Input
-											value={
-												formData.min_order_total ?? ''
-											}
-											id="campaign-input-min-order"
-											size="md"
-											type="number"
-											placeholder={ __(
-												'No minimum',
-												'power-coupons'
-											) }
-											onChange={ ( value ) =>
-												setFormData(
-													'min_order_total',
-													value
-												)
-											}
-										/>
-										<HelperText>
-											{ __(
-												'Leave blank for no minimum order requirement.',
-												'power-coupons'
-											) }
-										</HelperText>
-									</div>
-									<div className="flex flex-col gap-1">
-										<FieldLabel
-											htmlFor="campaign-input-max-points"
-											text={ __(
-												'Max Credits Cap',
-												'power-coupons'
-											) }
-										/>
-										<Input
-											value={
-												formData.max_points_cap ?? ''
-											}
-											id="campaign-input-max-points"
-											size="md"
-											type="number"
-											placeholder={ __(
-												'No cap',
-												'power-coupons'
-											) }
-											onChange={ ( value ) =>
-												setFormData(
-													'max_points_cap',
-													value
-												)
-											}
-										/>
-										<HelperText>
-											{ __(
-												'Leave blank for no cap on credits per order.',
-												'power-coupons'
-											) }
-										</HelperText>
-									</div>
+									<NumberField
+										id="campaign-input-min-order"
+										label={ __(
+											'Min Order Total',
+											'power-coupons'
+										) }
+										value={ formData.min_order_total ?? '' }
+										placeholder={ __(
+											'No minimum',
+											'power-coupons'
+										) }
+										helper={ __(
+											'Leave blank for no minimum order requirement.',
+											'power-coupons'
+										) }
+										onChange={ ( value ) =>
+											setFormData(
+												'min_order_total',
+												value
+											)
+										}
+									/>
+									<NumberField
+										id="campaign-input-max-points"
+										label={ __(
+											'Max Credits Cap',
+											'power-coupons'
+										) }
+										value={ formData.max_points_cap ?? '' }
+										placeholder={ __(
+											'No cap',
+											'power-coupons'
+										) }
+										helper={ __(
+											'Leave blank for no cap on credits per order.',
+											'power-coupons'
+										) }
+										onChange={ ( value ) =>
+											setFormData(
+												'max_points_cap',
+												value
+											)
+										}
+									/>
 								</>
 							) }
-							<div className="flex flex-col gap-1">
-								<FieldLabel
-									htmlFor="campaign-input-priority"
-									text={ __( 'Priority', 'power-coupons' ) }
-								/>
-								<Input
-									value={ formData.priority ?? '10' }
-									id="campaign-input-priority"
-									size="md"
-									type="number"
-									placeholder="10"
-									onChange={ ( value ) =>
-										setFormData( 'priority', value )
-									}
-								/>
-								<HelperText>
-									{ __(
-										'Lower number = higher priority. The highest priority campaign wins when multiple match.',
-										'power-coupons'
-									) }
-								</HelperText>
-							</div>
+							<NumberField
+								id="campaign-input-priority"
+								label={ __( 'Priority', 'power-coupons' ) }
+								value={ formData.priority ?? '10' }
+								placeholder="10"
+								helper={ __(
+									'Lower number = higher priority. The highest priority campaign wins when multiple match.',
+									'power-coupons'
+								) }
+								onChange={ ( value ) =>
+									setFormData( 'priority', value )
+								}
+							/>
 						</div>
 
 						{ /* Row 3: Date fields */ }
-						<div className="grid grid-cols-2 gap-4">
+						<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 							<DateField
 								id="campaign-input-start-date"
 								label={ __( 'Start Date', 'power-coupons' ) }
@@ -651,41 +699,124 @@ const FormTabs = [
 						</div>
 					</div>
 
-					{ formError && (
-						<p className="text-red-500 text-sm mt-2">
-							{ formError }
-						</p>
-					) }
+					{ /* Server-level error banner */ }
+					<FormErrorBanner message={ formError } />
 
 					{ /* Action buttons */ }
-					<div className="flex justify-between mt-4">
-						<button
+					<div className="flex justify-between">
+						<Button
+							variant="outline"
+							size="md"
+							tag="button"
 							type="button"
+							disabled={ saved }
 							onClick={ () => setActiveTab( FormTabs[ 0 ].slug ) }
-							className="flex items-center gap-2 px-5 py-2.5 bg-transparent border border-solid border-border-subtle hover:bg-gray-50 rounded-md cursor-pointer text-sm font-medium text-text-primary"
 						>
-							{ RenderIcon( 'chevronLeft' ) }
 							{ __( 'Back', 'power-coupons' ) }
-						</button>
-						<button
+						</Button>
+						<Button
+							variant="primary"
+							size="md"
+							tag="button"
 							type="button"
+							disabled={ isLoading || saved }
+							loading={ isLoading }
 							onClick={ handleCreate }
-							disabled={ isLoading }
-							className="flex items-center gap-2 px-5 py-2.5 text-white bg-wpcolor hover:bg-wphovercolor rounded-md border-none cursor-pointer text-sm font-medium disabled:opacity-50"
 						>
-							{ /* eslint-disable-next-line no-nested-ternary */ }
+							{ /* eslint-disable no-nested-ternary */ }
 							{ isLoading
-								? __( 'Saving…', 'power-coupons' )
+								? formData.id
+									? __( 'Updating…', 'power-coupons' )
+									: __( 'Creating…', 'power-coupons' )
 								: formData.id
 								? __( 'Update Campaign', 'power-coupons' )
 								: __( 'Create Campaign', 'power-coupons' ) }
-						</button>
+							{ /* eslint-enable no-nested-ternary */ }
+						</Button>
 					</div>
 				</>
 			);
 		},
 	},
 ];
+
+// ─── Stepper ─────────────────────────────────────────────────────────────────
+
+/**
+ * Where a step sits relative to the one being edited.
+ *
+ * @param {number} activeIndex Index of the step currently open.
+ * @param {number} index       Index of the step being drawn.
+ * @return {string} 'done', 'current' or 'upcoming'.
+ */
+const stepState = ( activeIndex, index ) => {
+	if ( activeIndex > index ) {
+		return 'done';
+	}
+	return activeIndex === index ? 'current' : 'upcoming';
+};
+
+/**
+ * Circle at the head of a step: its position until the step is finished, then
+ * a check.
+ *
+ * @param {Object}  props
+ * @param {string}  props.state     One of 'done', 'current' or 'upcoming'.
+ * @param {number}  props.number    1-based position of the step.
+ * @param {boolean} props.celebrate Play the check's entrance, for the step that
+ *                                  completes when the campaign saves.
+ */
+const StepMarker = ( { state, number, celebrate = false } ) => {
+	// box-border: preflight is off here, so a bordered circle would otherwise
+	// measure 31px against its 28px siblings.
+	const shape =
+		'flex items-center justify-center shrink-0 box-border size-7 rounded-full text-xs font-bold';
+
+	if ( 'done' === state ) {
+		return (
+			<span
+				className={ `${ shape } bg-background-primary border-[1.5px] border-solid border-wpcolor text-wpcolor transition-colors duration-300` }
+			>
+				<CheckIcon
+					aria-hidden="true"
+					className={ `size-3.5${
+						celebrate
+							? ' animate-check-pop motion-reduce:animate-none'
+							: ''
+					}` }
+					strokeWidth={ 3 }
+				/>
+			</span>
+		);
+	}
+
+	return (
+		<span
+			className={ `${ shape } ${
+				'current' === state
+					? 'bg-wpcolor text-text-on-color'
+					: 'bg-button-disabled text-text-on-button-disabled'
+			}` }
+		>
+			{ number }
+		</span>
+	);
+};
+
+/**
+ * Type treatment for a step's name.
+ *
+ * @param {string} state One of 'done', 'current' or 'upcoming'.
+ * @return {string} Tailwind classes.
+ */
+const stepLabelClasses = ( state ) => {
+	if ( 'current' === state ) {
+		return 'font-bold text-text-primary';
+	}
+	return 'done' === state
+		? 'font-semibold text-text-primary'
+		: 'font-semibold text-text-secondary';
+};
 
 // ─── Form card ───────────────────────────────────────────────────────────────
 
@@ -694,6 +825,12 @@ const _ModalContentForm = ( { toggleModalOpen, formData, setFormData } ) => {
 	const [ errors, setErrors ] = useState( {} );
 	const [ formError, setFormError ] = useState( '' );
 	const [ isLoading, setIsLoading ] = useState( false );
+	// The campaign is saved and the modal is about to close on its own.
+	const [ saved, setSaved ] = useState( false );
+	const closeTimer = useRef( null );
+
+	// The topbar's close button can unmount this while the hold is running.
+	useEffect( () => () => clearTimeout( closeTimer.current ), [] );
 
 	const tabIndex = FormTabs.findIndex( ( t ) => t.slug === activeTab );
 
@@ -761,7 +898,13 @@ const _ModalContentForm = ( { toggleModalOpen, formData, setFormData } ) => {
 			const result = await response.json();
 
 			if ( result.success ) {
-				toggleModalOpen( true );
+				// Closing here dropped the modal the instant the request
+				// returned, so a save read as the dialog vanishing. Mark the
+				// last step done, let the check land, then close.
+				setSaved( true );
+				closeTimer.current = setTimeout( () => {
+					toggleModalOpen( true );
+				}, SUCCESS_HOLD_MS );
 			} else {
 				setFormError(
 					typeof result.data === 'string'
@@ -786,7 +929,7 @@ const _ModalContentForm = ( { toggleModalOpen, formData, setFormData } ) => {
 		<div className="bg-white w-full max-w-[760px] rounded-md px-4 sm:px-6 py-6 sm:py-8 shadow-[0px_1px_2px_-1px_#0000001A,0px_1px_3px_0px_#0000001A]">
 			{ /* Form Header */ }
 			<div className="flex items-center gap-2">
-				<h3 className="m-0 text-2xl text-[#111827]">
+				<h3 className="m-0 text-xl sm:text-2xl font-semibold text-text-primary">
 					{ formData.id
 						? __( 'Edit Campaign', 'power-coupons' ) +
 						  ': ' +
@@ -795,33 +938,82 @@ const _ModalContentForm = ( { toggleModalOpen, formData, setFormData } ) => {
 				</h3>
 			</div>
 
-			{ /* Form body with tabs */ }
+			{ /* Form body */ }
 			<div className="mt-6">
 				<Tabs activeItem={ activeTab }>
-					<Tabs.Group
-						iconPosition="left"
-						orientation="horizontal"
-						size="md"
-						variant="underline"
-						width="auto"
+					{ /* Numbered circles and connectors, not an underlined tab
+					     strip: the steps only report progress, and the strip
+					     read as tabs that ignored every click. Back and
+					     Save & Continue still do all the moving. */ }
+					<ol
+						aria-label={ __(
+							'Campaign setup steps',
+							'power-coupons'
+						) }
+						className="power-coupons-bogo-steps flex flex-wrap items-center gap-x-5 gap-y-3 lg:gap-x-0 list-none m-0 p-0 pb-[18px] border-0 border-b border-solid border-border-subtle"
 					>
-						{ FormTabs.map( ( tab, index ) => (
-							<Tabs.Tab
-								key={ tab.slug }
-								type="button"
-								icon={
-									tabIndex > index ? (
-										<CheckCircleIcon color="#16A34A" />
-									) : (
-										<ClockIcon color="#737373" />
-									)
-								}
-								className="power-coupons-bogo-form-tab px-2.5 py-4 !cursor-default"
-								slug={ tab.slug }
-								text={ tab.title }
-							/>
-						) ) }
-					</Tabs.Group>
+						{ FormTabs.map( ( tab, index ) => {
+							const state = saved
+								? 'done'
+								: stepState( tabIndex, index );
+							return (
+								<Fragment key={ tab.slug }>
+									{ index > 0 && (
+										// Flexible rather than a fixed 32px, so
+										// the steps and the counter never
+										// overflow the panel.
+										<li
+											aria-hidden="true"
+											className={ `hidden lg:block h-0.5 mx-3 flex-1 min-w-3 max-w-8 rounded-sm ${
+												'upcoming' === state
+													? 'bg-border-subtle'
+													: 'bg-wpcolor'
+											}` }
+										/>
+									) }
+									<li
+										className="flex items-center gap-2.5 shrink-0"
+										aria-current={
+											'current' === state
+												? 'step'
+												: undefined
+										}
+									>
+										<StepMarker
+											state={ state }
+											number={ index + 1 }
+											celebrate={
+												saved && index === tabIndex
+											}
+										/>
+										<span
+											className={ `text-sm whitespace-nowrap ${ stepLabelClasses(
+												state
+											) }` }
+										>
+											{ tab.title }
+										</span>
+									</li>
+								</Fragment>
+							);
+						} ) }
+						<li className="ml-auto pl-6 shrink-0 text-xs font-semibold text-text-secondary whitespace-nowrap">
+							{ sprintf(
+								/* translators: 1: current step number. 2: total number of steps. */
+								__( 'Step %1$d of %2$d', 'power-coupons' ),
+								tabIndex + 1,
+								FormTabs.length
+							) }
+						</li>
+					</ol>
+					<SaveStatus
+						announce={ saved }
+						message={
+							formData.id
+								? __( 'Campaign updated.', 'power-coupons' )
+								: __( 'Campaign created.', 'power-coupons' )
+						}
+					/>
 
 					<div className="py-5 flex flex-col text-left gap-6">
 						{ FormTabs.map( ( tab ) => (
@@ -832,6 +1024,7 @@ const _ModalContentForm = ( { toggleModalOpen, formData, setFormData } ) => {
 									setActiveTab={ setActiveTab }
 									saveOffer={ saveOffer }
 									isLoading={ isLoading }
+									saved={ saved }
 									errors={ errors }
 									setErrors={ setErrors }
 									clearError={ clearError }
@@ -892,13 +1085,33 @@ export default ( { toggleModalOpen, editingCampaign } ) => {
 		setFormDataState( ( prev ) => ( { ...prev, [ key ]: value } ) );
 	};
 
+	// The campaigns list stays mounted underneath this overlay, so without a
+	// trap one Tab press walks out of the dialog into controls it is covering.
+	// Escape closes the wizard the same way the topbar's ✕ does.
+	const dialogRef = useRef( null );
+	useModalFocus( dialogRef, { onEscape: () => toggleModalOpen() } );
+
 	return (
 		<div
+			ref={ dialogRef }
+			tabIndex={ -1 }
 			id="power-coupons-campaign-modal"
-			className="bg-background-secondary absolute top-0 left-0 w-full h-[100vh] z-[999] bg-[#F9FAFB] overflow-y-auto"
+			role="dialog"
+			aria-modal="true"
+			aria-label={
+				editingCampaign
+					? __( 'Edit campaign', 'power-coupons' )
+					: __( 'Create a campaign', 'power-coupons' )
+			}
+			// fixed, not absolute: nothing locks the page behind, so an
+			// absolutely-placed overlay scrolls away and reveals the campaigns
+			// list under it once that page is taller than the viewport.
+			// overscroll-contain stops the same page scrolling once this one
+			// bottoms out.
+			className="bg-field-primary-background fixed inset-0 z-[999] overflow-y-auto overscroll-contain focus:outline-none"
 		>
 			<Topbar
-				className="power_coupons-header--content !absolute h-14 min-h-[unset] p-0 border-0 border-b border-solid border-border-subtle bg-white !fixed items-center z-10 shadow-[0px_1px_2px_0px_#0000000D]"
+				className="power_coupons-header--content !fixed h-14 min-h-[unset] p-0 border-0 border-b border-solid border-border-subtle bg-white items-center z-10 shadow-[0px_1px_2px_0px_#0000000D]"
 				gap={ 0 }
 				role="navigation"
 				aria-label={ __( 'Campaign Navigation', 'power-coupons' ) }
@@ -920,7 +1133,8 @@ export default ( { toggleModalOpen, editingCampaign } ) => {
 						<button
 							type="button"
 							onClick={ () => toggleModalOpen() }
-							className="bg-transparent border-none cursor-pointer"
+							aria-label={ __( 'Close', 'power-coupons' ) }
+							className="flex items-center justify-center size-9 rounded-md bg-transparent border-none cursor-pointer text-icon-secondary transition-colors duration-200 hover:bg-misc-dropdown-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-wpcolor"
 						>
 							{ RenderIcon( 'close' ) }
 						</button>
@@ -928,7 +1142,10 @@ export default ( { toggleModalOpen, editingCampaign } ) => {
 				</Topbar.Right>
 			</Topbar>
 
-			<div className="flex items-start sm:items-center justify-center text-center px-4 sm:px-6 lg:px-0 pt-14 pb-8 min-h-full box-border">
+			{ /* Top-aligned: the topbar is 56px tall and fixed, so the panel
+			     starts clear of it instead of floating in the middle of a tall
+			     viewport. */ }
+			<div className="flex items-start justify-center text-center px-4 sm:px-6 lg:px-0 pt-[88px] pb-12 min-h-full box-border">
 				<_ModalContentForm
 					toggleModalOpen={ toggleModalOpen }
 					formData={ formData }

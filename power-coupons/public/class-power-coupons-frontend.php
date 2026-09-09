@@ -60,7 +60,34 @@ class Power_Coupons_Frontend {
 	 * @return void
 	 */
 	private function init_hooks() {
+		// Registered at an early priority so both plugins can declare it as a
+		// dependency regardless of which enqueue callback runs first.
+		add_action( 'wp_enqueue_scripts', array( $this, 'register_shared_assets' ), 5 );
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_public_assets' ) );
+	}
+
+	/**
+	 * Register assets shared by the free and PRO frontend scripts.
+	 *
+	 * `power-coupons-cart-refresh` is the single place that knows how to sync
+	 * the cart UI after a server-side cart change. Every Power Coupons script
+	 * that mutates the cart depends on it instead of reloading the page, so
+	 * multi-step checkouts (CartFlows, FunnelKit) keep their in-page state.
+	 *
+	 * Registered rather than enqueued: WordPress pulls it in automatically for
+	 * any script that declares it as a dependency.
+	 *
+	 * @since 1.0.6
+	 * @return void
+	 */
+	public function register_shared_assets() {
+		wp_register_script(
+			'power-coupons-cart-refresh',
+			POWER_COUPONS_URL . 'public/assets/js/cart-refresh.js',
+			array( 'jquery' ),
+			POWER_COUPONS_VERSION,
+			true
+		);
 	}
 
 	/**
@@ -87,7 +114,7 @@ class Power_Coupons_Frontend {
 		wp_enqueue_script(
 			'power-coupons-public',
 			POWER_COUPONS_URL . 'public/assets/js/frontend.js',
-			array( 'jquery' ),
+			array( 'jquery', 'power-coupons-cart-refresh' ),
 			POWER_COUPONS_VERSION,
 			true
 		);

@@ -31,6 +31,19 @@
 		},
 
 		/**
+		 * Request timeout, in milliseconds.
+		 *
+		 * activeRequests gates apply/remove/refresh so a double click cannot
+		 * fire twice, and each slot is only released in the request's
+		 * `complete` handler. jQuery does not time a request out on its own, so
+		 * a connection that stalls rather than fails leaves its slot occupied
+		 * and the button inert for as long as the browser holds the socket.
+		 *
+		 * @type {number}
+		 */
+		requestTimeout: 30000,
+
+		/**
 		 * Initialize the Power Coupons functionality
 		 *
 		 * Sets up event handlers and WooCommerce integrations.
@@ -51,10 +64,38 @@
 			this.bindEvents();
 		},
 
-		maybeReloadPageOnSuccess() {
+		/**
+		 * Sync every cart-dependent UI after the server-side cart changed.
+		 *
+		 * Refreshes in place through the shared cart-refresh helper, which
+		 * picks the right mechanism for the current context (Blocks data
+		 * store, classic checkout, classic cart).
+		 *
+		 * A full page reload is opt-in only, via the
+		 * `power_coupons_reload_page_after_coupon_is_applied` filter: reloading
+		 * discards the in-page state that multi-step checkout plugins such as
+		 * CartFlows and FunnelKit hold in the browser, which sends the shopper
+		 * back to step one.
+		 *
+		 * @since 1.0.6
+		 * @return {Promise} Resolves once the cart UI is in sync.
+		 */
+		syncCartUi() {
 			if ( powerCouponsData.reloadPageAfterCouponApplied ) {
-				window.location.href = window.location.href;
+				window.location.reload();
+
+				// Never resolves: the document is being torn down, so no
+				// follow-up UI work should run.
+				return new Promise( function () {} );
 			}
+
+			if ( ! window.PowerCouponsCartRefresh ) {
+				return Promise.resolve( false );
+			}
+
+			return window.PowerCouponsCartRefresh.refresh( {
+				source: 'coupon-list',
+			} );
 		},
 
 		/**
@@ -75,6 +116,205 @@
 			}
 
 			return true;
+		},
+
+		/**
+		 * Escape a value for use inside an attribute selector.
+		 *
+		 * Extracted for readability; the fallback below is belt-and-braces and
+		 * is not expected to run. The audit flagged the bare `CSS.escape` call
+		 * as unpolyfilled, but this file already uses optional chaining and
+		 * `??` and is shipped untranspiled, so any engine old enough to lack
+		 * `CSS.escape` (pre-2016) fails to parse the file long before reaching
+		 * this line — and `.browserslistrc` targets the last four versions of
+		 * each major browser anyway. Keeping the guard costs nothing and makes
+		 * the selector construction explicit.
+		 *
+		 * @since 1.0.7
+		 * @param {string} value Raw value, typically a coupon code.
+		 * @return {string} Value safe to interpolate into a selector.
+		 */
+		escapeForSelector( value ) {
+			const raw = String( value ?? '' );
+
+			if (
+				typeof window.CSS !== 'undefined' &&
+				typeof window.CSS.escape === 'function'
+			) {
+				return window.CSS.escape( raw );
+			}
+
+			return raw.replace( /["'\\\]\[\s]/g, '\\$&' );
+		},
+
+		/**
+		 * Pending deferred refresh timer, if one is queued.
+		 *
+		 * @type {?number}
+		 */
+		refreshTimer: null,
+
+		/**
+		 * Queue a coupon-list refresh to run after the current task.
+		 *
+		 * WooCommerce Blocks calls its checkout filters during render and
+		 * expects them to be pure value transforms. Calling
+		 * ajaxRefreshCouponsHTML() straight from one issued an XHR from inside
+		 * someone else's render pass; deferring by a tick moves the side effect
+		 * out of it, and the single timer collapses any repeat calls within one
+		 * pass into a single request.
+		 *
+		 * Measured on a real block cart, this is request-count neutral for a
+		 * quantity change (8 requests over 4 changes, before and after) — the
+		 * old code's abort-and-retry already collapsed most of the repeats. The
+		 * point of this is the render-pass contract, not throughput.
+		 *
+		 * @since 1.0.7
+		 * @return {void}
+		 */
+		scheduleCouponsRefresh() {
+			if ( null !== PowerCoupons.refreshTimer ) {
+				return;
+			}
+
+			PowerCoupons.refreshTimer = window.setTimeout( function () {
+				PowerCoupons.refreshTimer = null;
+				PowerCoupons.ajaxRefreshCouponsHTML();
+			}, 0 );
+		},
+
+		/**
+		 * Normalise a coupon code so both sources compare equal.
+		 *
+		 * The order review row carries the code as a `coupon-<code>` class run
+		 * through WordPress's `sanitize_title()`, while the cards carry it raw
+		 * in `data-coupon`. A code containing a space or symbol would otherwise
+		 * never match itself and the two views would look permanently out of
+		 * sync.
+		 *
+		 * @since 1.0.7
+		 * @param {string} code Raw or sanitised coupon code.
+		 * @return {string} Comparable form.
+		 */
+		normalizeCouponCode( code ) {
+			return String( code ?? '' )
+				.toLowerCase()
+				.replace( /[^a-z0-9]+/g, '-' )
+				.replace( /^-+|-+$/g, '' );
+		},
+
+		/**
+		 * Coupons the cart says are applied, read from the order review.
+		 *
+		 * Read from the `tr.cart-discount` rows rather than any one plugin's
+		 * remove control: WooCommerce renders
+		 * `a.woocommerce-remove-coupon` and CartFlows renders
+		 * `a.wcf-remove-coupon` inside the same row, but both put the code in a
+		 * `coupon-<code>` class on the row itself.
+		 *
+		 * @since 1.0.7
+		 * @return {string} Sorted, comma-separated coupon codes.
+		 */
+		appliedCouponSignature() {
+			const codes = [];
+
+			document
+				.querySelectorAll( '.cart-discount' )
+				.forEach( function ( row ) {
+					const fromControl = row.querySelector( '[data-coupon]' );
+
+					if ( fromControl && fromControl.dataset.coupon ) {
+						codes.push(
+							PowerCoupons.normalizeCouponCode(
+								fromControl.dataset.coupon
+							)
+						);
+
+						return;
+					}
+
+					row.classList.forEach( function ( className ) {
+						if ( 0 === className.indexOf( 'coupon-' ) ) {
+							codes.push(
+								PowerCoupons.normalizeCouponCode(
+									className.slice( 'coupon-'.length )
+								)
+							);
+						}
+					} );
+				} );
+
+			return PowerCoupons.toSignature( codes );
+		},
+
+		/**
+		 * Coupons the rendered cards currently show as applied.
+		 *
+		 * @since 1.0.7
+		 * @return {string} Sorted, comma-separated coupon codes.
+		 */
+		renderedCouponSignature() {
+			const codes = [];
+
+			document
+				.querySelectorAll(
+					'.power-coupons-apply-coupon-btn[data-coupon-status="applied"]'
+				)
+				.forEach( function ( button ) {
+					if ( button.dataset.coupon ) {
+						codes.push(
+							PowerCoupons.normalizeCouponCode(
+								button.dataset.coupon
+							)
+						);
+					}
+				} );
+
+			return PowerCoupons.toSignature( codes );
+		},
+
+		/**
+		 * Reduce a list of codes to a comparable signature.
+		 *
+		 * @since 1.0.7
+		 * @param {Array<string>} codes Coupon codes.
+		 * @return {string} Sorted, de-duplicated, comma-separated codes.
+		 */
+		toSignature( codes ) {
+			return Array.from( new Set( codes.filter( Boolean ) ) )
+				.sort()
+				.join( ',' );
+		},
+
+		/**
+		 * Re-render the coupon list when it disagrees with the cart.
+		 *
+		 * Compares two live views — what the order review says is applied
+		 * against what the cards show — rather than diffing against a
+		 * remembered value. A remembered baseline goes stale whenever the cart
+		 * changes through a route that does not refresh both, and then
+		 * suppresses the very refresh it exists to trigger. Comparing the two
+		 * current views instead makes this self-correcting: it fires whenever
+		 * they drift apart, however they got there, and stays quiet when they
+		 * agree.
+		 *
+		 * That quiet matters — `updated_checkout` fires on address edits,
+		 * shipping switches and quantity changes, none of which touch coupons.
+		 *
+		 * @since 1.0.7
+		 * @return {void}
+		 */
+		refreshIfCouponsChanged() {
+			if (
+				PowerCoupons.appliedCouponSignature() ===
+				PowerCoupons.renderedCouponSignature()
+			) {
+				return;
+			}
+
+			// No coupon code: take the whole-list branch, because this path
+			// only knows the views drifted, not which coupon moved.
+			PowerCoupons.ajaxRefreshCouponsHTML();
 		},
 
 		/**
@@ -99,6 +339,7 @@
 			PowerCoupons.activeRequests.refresh = $.ajax( {
 				type: 'GET',
 				url: powerCouponsData.ajaxUrl.getCouponsHtml,
+				timeout: PowerCoupons.requestTimeout,
 				data: {
 					nonce: powerCouponsData.nonce,
 					context: dataContext || 'ajax',
@@ -106,22 +347,34 @@
 				},
 				success( response ) {
 					if ( parseInt( response.coupon_id, 10 ) > 0 ) {
-						const couponCards = document.querySelectorAll(
-							`.power-coupons-apply-coupon-btn[data-coupon="${ CSS.escape(
-								response.coupon_code
-							) }"]`
-						);
+						const selector = `.power-coupons-apply-coupon-btn[data-coupon="${ PowerCoupons.escapeForSelector(
+							response.coupon_code
+						) }"]`;
+
+						const couponCards =
+							document.querySelectorAll( selector );
 
 						const template = document.createElement( 'template' );
 						template.innerHTML = response.html.trim();
 
+						// The response is a whole `.power-coupons-list` wrapper
+						// containing just this coupon, but each coupon IS the
+						// button (see views/coupon-list.php), and every button
+						// shares one `.power-coupons-section` parent. Replacing
+						// the button's grandparent therefore swapped the entire
+						// list for a single card and silently dropped every
+						// other coupon — visible in the drawer, which renders
+						// them all. Swap the button itself instead.
+						const freshCard =
+							template.content.querySelector( selector );
+
+						if ( ! freshCard ) {
+							return;
+						}
+
 						couponCards.forEach( function ( couponCard ) {
-							const newNode =
-								template.content.firstElementChild.cloneNode(
-									true
-								);
-							couponCard.parentElement.parentElement.replaceWith(
-								newNode
+							couponCard.replaceWith(
+								freshCard.cloneNode( true )
 							);
 						} );
 
@@ -140,13 +393,13 @@
 					}
 				},
 				error( jqXHR, textStatus ) {
-					// Only reload if request wasn't aborted
 					if ( textStatus !== 'abort' ) {
+						// Leave the stale list in place rather than reloading:
+						// the cart itself is already correct, and a reload
+						// would reset multi-step checkout progress.
 						console.error(
 							'Power Coupons: Failed to refresh coupons list'
 						);
-						// Fallback to page reload as last resort
-						location.reload();
 					}
 				},
 				complete() {
@@ -200,6 +453,22 @@
 				PowerCoupons.ajaxRefreshCouponsHTML
 			);
 
+			// Checkouts that never fire WooCommerce's coupon events.
+			//
+			// CartFlows' step checkout applies and removes coupons through its
+			// own handlers and its own `a.wcf-remove-coupon` control, and on
+			// success triggers only `update_checkout`
+			// (cartflows/assets/js/checkout-template.js). None of the five
+			// events above fire, so removing a coupon from the step's order
+			// summary left the drawer still showing it as applied.
+			//
+			// Watching `updated_checkout` covers any such integration without
+			// needing to know about it, and comparing the applied-coupon set
+			// keeps the ordinary checkout refreshes free.
+			$( 'body' ).on( 'updated_checkout', function () {
+				PowerCoupons.refreshIfCouponsChanged();
+			} );
+
 			// ============================================
 			// WooCommerce Blocks Integration
 			// ============================================
@@ -212,12 +481,27 @@
 				typeof window.wc.blocksCheckout.registerCheckoutFilters ===
 					'function'
 			) {
-				// Register filters for blocks checkout
+				/*
+				 * These are the only signal Blocks gives us that the cart
+				 * changed, but Blocks treats them as pure value transforms and
+				 * calls them during render — `totalValue` once per totals row.
+				 *
+				 * So each one records that a refresh is wanted and returns the
+				 * value untouched. The refresh itself is queued out of the
+				 * render pass by scheduleCouponsRefresh(), which also collapses
+				 * a whole render's worth of calls into a single request.
+				 */
 				window.wc.blocksCheckout.registerCheckoutFilters(
 					'powerCouponsRefreshCoupons',
 					{
+						/**
+						 * Cart totals changed.
+						 *
+						 * @param {string} defaultValue - The formatted total.
+						 * @return {string} The default value (pass through)
+						 */
 						totalValue( defaultValue ) {
-							PowerCoupons.ajaxRefreshCouponsHTML();
+							PowerCoupons.scheduleCouponsRefresh();
 							return defaultValue;
 						},
 
@@ -229,7 +513,7 @@
 						 * @return {boolean} The default value (pass through)
 						 */
 						showApplyCouponNotice( defaultValue ) {
-							PowerCoupons.ajaxRefreshCouponsHTML();
+							PowerCoupons.scheduleCouponsRefresh();
 							return defaultValue;
 						},
 
@@ -241,7 +525,7 @@
 						 * @return {boolean} The default value (pass through)
 						 */
 						showRemoveCouponNotice( defaultValue ) {
-							PowerCoupons.ajaxRefreshCouponsHTML();
+							PowerCoupons.scheduleCouponsRefresh();
 							return defaultValue;
 						},
 					}
@@ -334,6 +618,7 @@
 			self.activeRequests.apply = $.ajax( {
 				type: 'POST',
 				url: powerCouponsData.ajaxUrl.applyCoupon,
+				timeout: PowerCoupons.requestTimeout,
 				data: {
 					coupon_code: couponCode,
 					nonce: powerCouponsData.nonce,
@@ -341,15 +626,11 @@
 				},
 				success( response ) {
 					if ( response.success ) {
-						// Trigger WooCommerce events for cart/checkout updates
-						self.triggerWooCommerceUpdates();
-
-						PowerCoupons.maybeReloadPageOnSuccess();
-
-						// Refresh coupon list after a short delay
-						setTimeout( function () {
+						// Sync cart totals in place, then re-render the
+						// coupon cards against the fresh cart.
+						self.syncCartUi().then( function () {
 							PowerCoupons.ajaxRefreshCouponsHTML();
-						}, 500 );
+						} );
 					} else {
 						// Failed - show error message
 						const errorMessage =
@@ -430,15 +711,18 @@
 			self.activeRequests.remove = $.ajax( {
 				type: 'POST',
 				url: powerCouponsData.ajaxUrl.removeCoupon,
+				timeout: PowerCoupons.requestTimeout,
 				data: {
 					coupon_code: couponCode,
 					nonce: powerCouponsData.nonce,
 				},
 				success( response ) {
 					if ( response.success ) {
-						// Success - reload page to update cart totals
-						// WooCommerce will show its own success message
-						PowerCoupons.maybeReloadPageOnSuccess();
+						// Sync cart totals in place, then re-render the
+						// coupon cards against the fresh cart.
+						self.syncCartUi().then( function () {
+							PowerCoupons.ajaxRefreshCouponsHTML();
+						} );
 					} else {
 						// Failed - show error message
 						const errorMessage =
@@ -480,49 +764,6 @@
 					self.activeRequests.remove = null;
 				},
 			} );
-		},
-
-		/**
-		 * Trigger WooCommerce cart/checkout updates
-		 *
-		 * Triggers appropriate WooCommerce events to refresh cart/checkout
-		 * displays after coupon application.
-		 *
-		 * @since 1.0.0
-		 */
-		triggerWooCommerceUpdates() {
-			const isBlockCart =
-				document.querySelector( '.wc-block-cart' ) !== null;
-			const isBlockCheckout =
-				document.querySelector( '.wc-block-checkout' ) !== null;
-
-			if ( isBlockCart || isBlockCheckout ) {
-				// Block pages: reload to get fresh server-rendered notifications.
-				window.location.reload();
-				return;
-			}
-
-			// Classic cart/checkout pages.
-			const isCartPage = $( '.woocommerce-cart-form' ).length > 0;
-			const isCheckoutPage = $( 'form.checkout' ).length > 0;
-
-			if ( isCartPage ) {
-				// Cart page: Trigger cart totals update
-				$( document.body ).trigger( 'updated_cart_totals' );
-				$( document.body ).trigger( 'wc_fragment_refresh' );
-
-				// Also trigger update_checkout if checkout is on same page
-				if ( isCheckoutPage ) {
-					$( document.body ).trigger( 'update_checkout' );
-				}
-			} else if ( isCheckoutPage ) {
-				// Checkout page: Trigger checkout update
-				$( document.body ).trigger( 'update_checkout' );
-			}
-
-			// Always trigger applied_coupon event (WooCommerce standard event)
-			$( document.body ).trigger( 'applied_coupon' );
-			$( document.body ).trigger( 'applied_coupon_in_checkout' );
 		},
 
 		/**

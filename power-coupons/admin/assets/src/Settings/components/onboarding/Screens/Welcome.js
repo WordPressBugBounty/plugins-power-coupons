@@ -1,6 +1,6 @@
 import { __ } from '@wordpress/i18n';
-import { Header, NavButtons, Wrapper } from '../Components';
-import { RenderIcon } from '../Utils';
+import { Check } from 'lucide-react';
+import { Header, NavButtons } from '../Components';
 
 const features = [
 	__(
@@ -8,7 +8,7 @@ const features = [
 		'power-coupons'
 	),
 	__(
-		'Let customers apply coupons with a single click — no copy-pasting needed.',
+		'Let customers apply coupons with a single click, no copy-pasting needed.',
 		'power-coupons'
 	),
 	__(
@@ -22,52 +22,50 @@ const features = [
 	),
 ];
 
-const Welcome = () => {
-	return (
-		<>
-			<Header
-				heading={ __( 'Welcome to Power Coupons', 'power-coupons' ) }
-				subHeading={ __(
-					'Supercharge your WooCommerce store with powerful, flexible discount features!',
-					'power-coupons'
-				) }
-			/>
+const Welcome = () => (
+	<>
+		<Header
+			size="lg"
+			heading={ __( 'Welcome to Power Coupons', 'power-coupons' ) }
+			badge={ __( '≈ 2 min setup', 'power-coupons' ) }
+			subHeading={ __(
+				'Supercharge your WooCommerce store with powerful, flexible discount features!',
+				'power-coupons'
+			) }
+		/>
 
-			<Wrapper>
-				<iframe
-					className="w-full aspect-video rounded-lg"
-					src="https://www.youtube.com/embed/Uj6ZMyXoLug?autoplay=1&mute=1"
-					title={ __(
-						'Power Coupons YouTube Video',
-						'power-coupons'
-					) }
-					frameBorder="0"
-					allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-					allowFullScreen
-				></iframe>
+		{ /* Muted is required — browsers block autoplay with sound. */ }
+		<div className="rounded-lg overflow-hidden aspect-video">
+			<iframe
+				className="w-full h-full"
+				src="https://www.youtube-nocookie.com/embed/Uj6ZMyXoLug?autoplay=1&mute=1&rel=0&modestbranding=1"
+				title={ __( 'Power Coupons walkthrough', 'power-coupons' ) }
+				frameBorder="0"
+				allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+				allowFullScreen
+			></iframe>
+		</div>
 
-				<ul className="divide-y divide-gray-200 list-none pl-0 space-y-2">
-					{ features.map( ( feature, index ) => (
-						<li
-							key={ feature + index }
-							className="flex items-center space-x-2 text-field-label text-sm font-medium"
-						>
-							{ RenderIcon( 'check' ) }
-							<span className="text-[#566A86]">{ feature }</span>
-						</li>
-					) ) }
-				</ul>
-			</Wrapper>
+		<ul className="list-none pl-0 m-0 space-y-2.5">
+			{ features.map( ( feature ) => (
+				<li
+					key={ feature }
+					className="flex items-start gap-2 text-sm font-medium text-text-secondary"
+				>
+					<Check
+						className="size-4 text-support-success shrink-0 mt-0.5"
+						aria-hidden="true"
+					/>
+					<span>{ feature }</span>
+				</li>
+			) ) }
+		</ul>
 
-			<NavButtons
-				labels={ {
-					next: __( "Let's Get Started", 'power-coupons' ),
-					skip: null,
-					back: null,
-				} }
-			/>
-		</>
-	);
-};
+		<NavButtons
+			nextFullWidth
+			nextLabel={ __( 'Set Up My Coupons', 'power-coupons' ) }
+		/>
+	</>
+);
 
 export default Welcome;

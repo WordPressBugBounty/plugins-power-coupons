@@ -8,6 +8,11 @@ const ProductSelector = ( {
 	value = [],
 	onChange,
 	portalId = 'power-coupons-bogo-modal',
+	inputId,
+	labelledBy,
+	error = false,
+	describedBy,
+	disabled = false,
 } ) => {
 	const [ selectedProducts, setSelectedProducts ] = useState( [] );
 	const [ searchTerm, setSearchTerm ] = useState( '' );
@@ -67,8 +72,8 @@ const ProductSelector = ( {
 			if ( result.success && result.data.length > 0 ) {
 				setSelectedProducts( result.data );
 			}
-		} catch ( error ) {
-			console.error( 'Error fetching products by IDs:', error );
+		} catch ( fetchError ) {
+			console.error( 'Error fetching products by IDs:', fetchError );
 		}
 	};
 
@@ -94,8 +99,8 @@ const ProductSelector = ( {
 				console.error( 'Search failed:', result );
 				setProducts( [] );
 			}
-		} catch ( error ) {
-			console.error( 'Error searching products:', error );
+		} catch ( searchError ) {
+			console.error( 'Error searching products:', searchError );
 			setProducts( [] );
 		}
 		setLoading( false );
@@ -112,6 +117,9 @@ const ProductSelector = ( {
 	};
 
 	const removeProduct = ( productId ) => {
+		if ( disabled ) {
+			return;
+		}
 		const newSelected = selectedProducts.filter(
 			( p ) => p.id !== productId
 		);
@@ -121,26 +129,60 @@ const ProductSelector = ( {
 
 	return (
 		<div className="flex flex-col gap-2">
-			{ /* eslint-disable-next-line jsx-a11y/label-has-associated-control */ }
-			<label className="text-sm font-medium">{ label }</label>
+			{ label && (
+				<label
+					className="text-sm font-medium text-text-primary"
+					htmlFor={ inputId }
+				>
+					{ label }
+				</label>
+			) }
 
 			<SearchBox
 				variant="secondary"
 				closeAfterSelect={ false }
 				loading={ loading }
 				setOpen={ setOpen }
-				open={ open }
+				// A disabled row is `inert`, which older browsers ignore; the
+				// control carries its own disabled state so it holds there too.
+				open={ disabled ? false : open }
 				size="md"
 			>
 				<SearchBox.Input
-					className="w-[98%] [&_span]:hidden" // We added "[&_span]:hidden" class here to hide the search icon and shortcut key icon as we don't have props to do that.
+					disabled={ disabled }
+					// [&_span]:hidden removes the built-in search icon and
+					// shortcut hint, which the component exposes no prop for.
+					// The error colour is repeated for the hover and focus-within
+					// variants: the variant's own focus-within:outline-focus-border
+					// would otherwise replace it while the field is focused, and
+					// focus-error-border itself is too faint to read as a state.
+					// The secondary variant only recolours text and outline when
+					// disabled; the field background is what reads as "off".
+					// box-border: preflight is off here, so Force UI's w-full plus
+					// px-3 row is content-box and ran 24px past its column.
+					// min-w-0 on the native input lets flex-grow shrink it below
+					// its intrinsic width instead of pushing the row wider.
+					className={ `w-full box-border [&_input]:min-w-0 [&_span]:hidden${
+						error
+							? ' outline-support-error hover:outline-support-error focus-within:outline-support-error focus-within:hover:outline-support-error'
+							: ''
+					}${ disabled ? ' bg-field-background-disabled' : '' }` }
+					id={ inputId }
+					aria-labelledby={ labelledBy }
+					aria-invalid={ error ? 'true' : undefined }
+					aria-describedby={ describedBy }
 					placeholder={ placeholder }
 					value={ searchTerm }
 					onChange={ setSearchTerm }
 				/>
 				<SearchBox.Portal id={ portalId }>
 					<SearchBox.Content>
-						<SearchBox.List>
+						{ /* Force UI's panel only shrinks to the room left below the
+						     field, so a broad search filled the screen with rows and
+						     ran the wizard onto a scrollbar. Capping the list, not the
+						     panel, leaves Floating UI's own inline max-height in
+						     charge when there is less room than this. */ }
+						<SearchBox.List className="max-h-56 overflow-y-auto">
 							{ products.length > 0 ? (
 								products.map( ( product ) => {
 									const isSelected = selectedProducts.find(
@@ -191,6 +233,7 @@ const ProductSelector = ( {
 					{ selectedProducts.map( ( product ) => (
 						<Badge
 							closable
+							disabled={ disabled }
 							onClose={ () => removeProduct( product.id ) }
 							key={ product.id }
 							label={ product.name }

@@ -34,7 +34,7 @@ function LicenseNotice( props ) {
 							fill="none"
 							viewBox="0 0 24 24"
 							stroke="currentColor"
-							className="h-8 w-8 text-red-500 stroke-1"
+							className="h-8 w-8 text-field-required stroke-1"
 						>
 							<path
 								strokeLinecap="round"
@@ -51,14 +51,14 @@ function LicenseNotice( props ) {
 							'Please activate your license to get access to all features.',
 							'power-coupons'
 						) }
-						className="mb-6 text-center [&_h2]:text-gray-900 [&_p]:!text-text-field-helper text-xl"
+						className="mb-6 text-center [&_h2]:text-text-primary [&_p]:!text-text-field-helper text-xl"
 					/>
 					<Button
 						variant="primary"
 						onClick={ () => {
 							navigate( 'power_coupons_license' );
 						} }
-						className="inline-flex justify-center items-center gap-1.5 rounded px-3 py-2 text-sm font-normal shadow-sm text-wpcolor hover:text-white border border-solid border-wpcolor bg-white hover:bg-wpcolor outline-0 hover:outline-0 focus:ring-0"
+						className="inline-flex justify-center items-center gap-1.5 rounded px-3 py-2 text-sm font-normal shadow-sm text-wpcolor hover:text-white border border-solid border-wpcolor bg-white hover:bg-wpcolor focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-wpcolor focus-visible:ring-offset-2"
 					>
 						{ __( 'Activate License', 'power-coupons' ) }
 					</Button>

@@ -1,6 +1,6 @@
 import { __, sprintf } from '@wordpress/i18n';
 import { useState, useEffect, useRef } from '@wordpress/element';
-import { Button, Container, Switch, Table, Tooltip } from '@bsf/force-ui';
+import { Button, Container, Input, Switch, Table } from '@bsf/force-ui';
 import {
 	TrashIcon,
 	PencilIcon,
@@ -10,10 +10,16 @@ import {
 	ChatBubbleBottomCenterTextIcon,
 	InformationCircleIcon,
 } from '@heroicons/react/24/outline';
-import { RenderIcon } from '../common/Utils';
+import { RenderIcon, actionLabel } from '../common/Utils';
 import ConfirmationModal from '../common/ConfirmationModal';
+import LazyTooltip from '../common/LazyTooltip';
 import LoyaltyStatusPill from './LoyaltyStatusPill';
 import ModalCreateCampaign from './ModalCreateCampaign';
+import SkeletonRows, {
+	SkeletonActions,
+	SkeletonLine,
+	SkeletonToggle,
+} from '../common/TableSkeleton';
 
 const ACTION_TYPE_LABELS = {
 	order_earn: __( 'Order Earning', 'power-coupons' ),
@@ -341,13 +347,13 @@ function CampaignsList( { toast, tabSelector } ) {
 
 		if ( EARN_TYPE_DESCRIPTIONS[ campaign.earn_type ] ) {
 			return (
-				<Tooltip
+				<LazyTooltip
 					content={ EARN_TYPE_DESCRIPTIONS[ campaign.earn_type ] }
 					placement="top"
-					tooltipPortalRoot={ portalRootRef.current }
+					portalRoot={ portalRootRef.current }
 				>
 					<span className="cursor-help">{ label }</span>
-				</Tooltip>
+				</LazyTooltip>
 			);
 		}
 
@@ -370,22 +376,30 @@ function CampaignsList( { toast, tabSelector } ) {
 					/>
 				) }
 
-				<div className="bg-background-primary rounded-xl border border-border-subtle p-8 flex flex-col items-center text-center gap-5">
+				{ /* border-solid is explicit: Tailwind's preflight border-style
+				     reset does not win here, so a bare `border` computes to
+				     `0px none` and the card edge never renders. */ }
+				<div className="bg-background-primary rounded-xl border border-solid border-border-subtle p-8 flex flex-col items-center text-center">
 					<div className="self-start">{ tabSelector }</div>
-					<h2 className="m-0 font-semibold text-xl">
+
+					{ /* Spacing is set per child rather than by one container gap:
+					     the headline needs more room above it than below, and its
+					     promise belongs to it. */ }
+					<h2 className="m-0 mt-8 font-semibold text-2xl leading-8 text-text-primary">
 						{ __(
 							'Create Your First Credits Campaign',
 							'power-coupons'
 						) }
 					</h2>
-					<p className="m-0 text-text-secondary text-sm max-w-xl">
+					<p className="m-0 mt-2 max-w-xl text-sm leading-6 text-text-secondary">
 						{ __(
-							'Reward customers with credits they can redeem for discounts. Choose from the program types below — and run as many as you like at once.',
+							'Reward customers with credits they can redeem for discounts. Choose from the program types below, and run as many as you like at once.',
 							'power-coupons'
 						) }
 					</p>
+
 					<div
-						className="grid w-full max-w-3xl grid-cols-1 sm:grid-cols-3 gap-3 mt-1"
+						className="grid w-full max-w-3xl grid-cols-1 sm:grid-cols-3 gap-4 mt-7"
 						aria-label={ __(
 							'Available reward program types',
 							'power-coupons'
@@ -394,33 +408,45 @@ function CampaignsList( { toast, tabSelector } ) {
 						{ PROGRAM_TYPE_CARDS.map( ( card ) => (
 							<div
 								key={ card.key }
-								className="flex flex-col items-start gap-2 p-4 rounded-lg border border-solid border-border-subtle bg-background-secondary text-left"
+								className="flex flex-col items-start gap-1 p-4 rounded-lg border border-solid border-border-subtle bg-field-primary-background text-left"
 							>
-								<div className="inline-flex items-center justify-center h-9 w-9 rounded-md bg-orange-50 text-orange-600">
-									<card.Icon className="h-5 w-5" />
+								{ /* The brand orange reads 2.8:1 on this tint —
+								     under the 3:1 floor a glyph needs — so the
+								     chip carries the darker end of the ramp. */ }
+								<div className="inline-flex items-center justify-center h-9 w-9 mb-2 rounded-md bg-wpcolorfaded text-wphovercolor">
+									<card.Icon
+										aria-hidden="true"
+										className="h-5 w-5"
+									/>
 								</div>
-								<strong className="text-sm font-semibold text-text-primary">
+								<strong className="text-sm font-semibold leading-5 text-text-primary">
 									{ card.label }
 								</strong>
-								<p className="m-0 text-xs text-text-secondary leading-snug">
+								<p className="m-0 text-xs leading-5 text-text-secondary">
 									{ card.description }
 								</p>
-								<p className="m-0 text-xs text-text-tertiary leading-snug">
+								{ /* Quieter than the description by spacing and by its
+								     own "e.g." wording, not by a lighter grey: the
+								     tertiary token reads 2.5:1 on this panel. */ }
+								<p className="m-0 mt-0.5 text-xs leading-5 text-text-secondary">
 									{ card.example }
 								</p>
 							</div>
 						) ) }
 					</div>
-					<button
+
+					<Button
+						variant="primary"
+						size="md"
+						tag="button"
 						type="button"
+						className="mt-8 whitespace-nowrap"
+						icon={ RenderIcon( 'plus' ) }
+						iconPosition="left"
 						onClick={ () => toggleModalOpen() }
-						className="flex items-center gap-2 px-4 py-2 mt-2 text-white bg-orange-500 hover:bg-orange-600 rounded-md border-none cursor-pointer whitespace-nowrap"
 					>
-						{ RenderIcon( 'plus' ) }
-						<span>
-							{ __( 'Create New Campaign', 'power-coupons' ) }
-						</span>
-					</button>
+						{ __( 'Create New Campaign', 'power-coupons' ) }
+					</Button>
 				</div>
 			</>
 		);
@@ -435,7 +461,10 @@ function CampaignsList( { toast, tabSelector } ) {
 				/>
 			) }
 
-			<div className="bg-background-primary rounded-xl border border-border-subtle p-4 flex flex-col gap-4">
+			{ /* border-solid is explicit: Tailwind's preflight border-style
+			     reset does not win here, so a bare `border` computes to
+			     `0px none` and the card edge never renders. */ }
+			<div className="bg-background-primary rounded-xl border border-solid border-border-subtle p-4 flex flex-col gap-4">
 				<div className="flex items-center gap-2 flex-wrap">
 					<h2 className="m-0 text-xl font-semibold text-text-primary">
 						{ __( 'Loyalty Rewards', 'power-coupons' ) }
@@ -448,22 +477,22 @@ function CampaignsList( { toast, tabSelector } ) {
 						{ tabSelector }
 
 						{ ! loading && selected.length > 0 && (
-							<div className="flex gap-4 items-center border-0 border-l border-solid border-gray-200">
+							<div className="flex gap-4 pl-4 items-center border-0 border-l border-solid border-border-subtle">
 								<Button
 									variant="ghost"
 									icon={
-										<XMarkIcon className="h-6 w-6 text-gray-500" />
+										<XMarkIcon className="h-6 w-6 text-field-placeholder" />
 									}
 									size="xs"
 									className="text-icon-secondary hover:text-icon-primary"
 									onClick={ handleCancelSelect }
 								/>
-								<span className="text-sm font-normal text-gray-500">
+								<span className="text-sm font-normal text-field-placeholder whitespace-nowrap">
 									{ selected.length }{ ' ' }
 									{ __( 'Selected', 'power-coupons' ) }
 								</span>
 								<Button
-									className="py-2 px-4 bg-red-50 text-red-600 outline-red-600 hover:bg-red-50 hover:outline-red-600"
+									className="py-2 px-4 bg-badge-background-red text-support-error outline-support-error hover:bg-badge-background-red hover:outline-support-error"
 									size="sm"
 									tag="button"
 									type="button"
@@ -478,71 +507,74 @@ function CampaignsList( { toast, tabSelector } ) {
 						) }
 					</div>
 					<div className="flex items-center gap-3 sm:gap-4 w-full sm:w-auto">
-						<div className="relative flex-1 sm:flex-none">
-							<div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-								{ searching ? (
-									<svg
-										className="h-4 w-4 animate-spin"
-										viewBox="0 0 100 100"
-									>
-										<circle
-											fill="none"
-											strokeWidth="10"
-											className="stroke-current opacity-40"
-											cx="50"
-											cy="50"
-											r="40"
-										></circle>
-										<circle
-											fill="none"
-											strokeWidth="10"
-											className="stroke-current"
-											strokeDasharray="250"
-											strokeDashoffset="210"
-											cx="50"
-											cy="50"
-											r="40"
-										></circle>
-									</svg>
-								) : (
-									RenderIcon( 'search' )
-								) }
-							</div>
-							<input
-								type="text"
-								className="block w-full sm:w-64 pl-10 pr-3 py-2 border-none outline outline-1 outline-border-subtle rounded-md text-sm placeholder-text-tertiary focus:outline-none focus:ring-2 focus:ring-orange-500"
+						<div className="flex-1 sm:flex-none sm:w-64">
+							<Input
+								type="search"
+								size="sm"
+								className="[&_input]:h-8 [&_input]:min-h-0 [&_input]:py-0"
+								value={ searchQuery }
+								onChange={ setSearchQuery }
 								placeholder={ __(
 									'Search campaigns…',
 									'power-coupons'
 								) }
-								value={ searchQuery }
-								onChange={ ( e ) =>
-									setSearchQuery( e.target.value )
+								prefix={
+									searching ? (
+										<svg
+											className="h-4 w-4 animate-spin"
+											viewBox="0 0 100 100"
+										>
+											<circle
+												fill="none"
+												strokeWidth="10"
+												className="stroke-current opacity-40"
+												cx="50"
+												cy="50"
+												r="40"
+											></circle>
+											<circle
+												fill="none"
+												strokeWidth="10"
+												className="stroke-current"
+												strokeDasharray="250"
+												strokeDashoffset="210"
+												cx="50"
+												cy="50"
+												r="40"
+											></circle>
+										</svg>
+									) : (
+										<span className="flex text-field-placeholder">
+											{ RenderIcon( 'search' ) }
+										</span>
+									)
 								}
 							/>
 						</div>
-						<button
+						<Button
+							variant="primary"
+							size="sm"
+							tag="button"
 							type="button"
+							className="whitespace-nowrap"
+							icon={ RenderIcon( 'plus' ) }
+							iconPosition="left"
 							onClick={ () => toggleModalOpen() }
-							className="flex items-center gap-2 px-4 py-2 text-sm text-white bg-orange-500 hover:bg-orange-600 rounded-md border-none cursor-pointer whitespace-nowrap"
 						>
-							{ RenderIcon( 'plus' ) }
-							<span>
-								{ __( 'Create New Campaign', 'power-coupons' ) }
-							</span>
-						</button>
+							{ __( 'Create New Campaign', 'power-coupons' ) }
+						</Button>
 					</div>
 				</div>
 
 				{ campaigns.length > 0 && (
-					<div className="flex items-start gap-2 px-3 py-2 rounded-md bg-blue-50 text-blue-900 text-xs leading-snug">
+					<div className="flex items-start gap-2 px-3 py-2 rounded-md bg-badge-background-sky text-badge-color-sky text-xs leading-snug">
 						<InformationCircleIcon
 							aria-hidden="true"
-							className="h-4 w-4 mt-0.5 text-blue-600 flex-shrink-0"
+							className="h-4 w-4 mt-0.5 text-badge-color-sky flex-shrink-0"
 						/>
 						<p className="m-0">
 							{ __(
-								'You can run multiple campaigns simultaneously — Priority decides which one wins when more than one matches.',
+								'You can run multiple campaigns simultaneously. Priority decides which one wins when more than one matches.',
 								'power-coupons'
 							) }
 						</p>
@@ -550,193 +582,254 @@ function CampaignsList( { toast, tabSelector } ) {
 				) }
 
 				{ /* Table */ }
-				{ loading ? (
-					<div className="p-6 text-center">
-						<div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-orange-500"></div>
-						<p className="mt-2 text-text-tertiary">
-							{ __( 'Loading campaigns…', 'power-coupons' ) }
-						</p>
-					</div>
-				) : (
-					<div>
-						<Table
-							checkboxSelection={ campaigns.length > 0 }
-							className="whitespace-nowrap sm:whitespace-normal"
+				<div>
+					{ /* Campaign names wrap rather than forcing the table wider
+					     than the viewport; only the status and action columns,
+					     which have no wrap point, are held on one line. Cell
+					     padding tightens below sm, and the checkbox column is
+					     box-sized so its padding fits the 44px it asks for
+					     instead of adding to it. */ }
+					<Table
+						checkboxSelection={ loading || campaigns.length > 0 }
+						className="whitespace-normal [&_td:nth-last-child(-n+2)]:whitespace-nowrap [&_th:nth-last-child(-n+2)]:whitespace-nowrap [&_td]:px-2 [&_th:not(:first-child)]:px-2 sm:[&_td]:px-3 sm:[&_th:not(:first-child)]:px-3 [&_th:first-child]:box-border [&_td:first-child]:box-border [&_tbody_tr:not(.bg-background-secondary):hover]:bg-misc-dropdown-hover [&_tbody_tr.bg-background-secondary]:bg-wphovercolorfaded"
+					>
+						<Table.Head
+							selected={ selected.length > 0 }
+							onChangeSelection={ toggleSelectAll }
+							indeterminate={
+								selected.length > 0 &&
+								selected.length < campaigns.length
+							}
 						>
-							<Table.Head
-								selected={ selected.length > 0 }
-								onChangeSelection={ toggleSelectAll }
-								indeterminate={
-									selected.length > 0 &&
-									selected.length < campaigns.length
-								}
-							>
-								<Table.HeadCell>
-									{ __( 'Title', 'power-coupons' ) }
-								</Table.HeadCell>
-								<Table.HeadCell>
-									{ __( 'Action Type', 'power-coupons' ) }
-								</Table.HeadCell>
-								<Table.HeadCell>
-									{ __( 'Earn Type', 'power-coupons' ) }
-								</Table.HeadCell>
-								<Table.HeadCell>
-									{ __( 'Earn Value', 'power-coupons' ) }
-								</Table.HeadCell>
-								<Table.HeadCell>
-									{ __( 'Priority', 'power-coupons' ) }
-								</Table.HeadCell>
-								<Table.HeadCell>
-									{ __( 'Status', 'power-coupons' ) }
-								</Table.HeadCell>
-								<Table.HeadCell>
-									<Container
-										align="center"
-										className="gap-2"
-										justify="end"
+							<Table.HeadCell>
+								{ __( 'Title', 'power-coupons' ) }
+							</Table.HeadCell>
+							<Table.HeadCell className="hidden md:table-cell">
+								{ __( 'Action Type', 'power-coupons' ) }
+							</Table.HeadCell>
+							<Table.HeadCell className="hidden lg:table-cell">
+								{ __( 'Earn Type', 'power-coupons' ) }
+							</Table.HeadCell>
+							<Table.HeadCell className="hidden lg:table-cell">
+								{ __( 'Earn Value', 'power-coupons' ) }
+							</Table.HeadCell>
+							<Table.HeadCell className="hidden lg:table-cell">
+								{ __( 'Priority', 'power-coupons' ) }
+							</Table.HeadCell>
+							<Table.HeadCell>
+								{ __( 'Status', 'power-coupons' ) }
+							</Table.HeadCell>
+							<Table.HeadCell>
+								<Container
+									align="center"
+									className="gap-2"
+									justify="end"
+								>
+									{ __( 'Actions', 'power-coupons' ) }
+								</Container>
+							</Table.HeadCell>
+						</Table.Head>
+						<Table.Body aria-busy={ loading }>
+							{ loading && (
+								<SkeletonRows
+									cells={ [
+										{
+											className:
+												'text-text-secondary text-sm font-normal',
+											content: (
+												<SkeletonLine width="w-56" />
+											),
+										},
+										{
+											className:
+												'hidden md:table-cell text-text-secondary text-sm font-normal',
+											content: (
+												<SkeletonLine width="w-24" />
+											),
+										},
+										{
+											className:
+												'hidden lg:table-cell text-text-secondary text-sm font-normal',
+											content: (
+												<SkeletonLine width="w-28" />
+											),
+										},
+										{
+											className:
+												'hidden lg:table-cell text-text-secondary text-sm font-normal',
+											content: (
+												<SkeletonLine width="w-10" />
+											),
+										},
+										{
+											className:
+												'hidden lg:table-cell text-text-secondary text-sm font-normal',
+											content: (
+												<SkeletonLine width="w-8" />
+											),
+										},
+										{ content: <SkeletonToggle /> },
+										{
+											content: (
+												<SkeletonActions count={ 2 } />
+											),
+										},
+									] }
+								/>
+							) }
+							{ ! loading && 0 === campaigns.length && (
+								<Table.Row>
+									<Table.Cell
+										colSpan={ 7 }
+										className="w-full text-center text-text-secondary py-8"
 									>
-										{ __( 'Actions', 'power-coupons' ) }
-									</Container>
-								</Table.HeadCell>
-							</Table.Head>
-							<Table.Body>
-								{ campaigns.length === 0 ? (
-									<Table.Row>
-										<Table.Cell
-											colSpan={ 7 }
-											className="w-full text-center text-text-tertiary py-8"
-										>
-											{ __(
-												'No campaigns found matching your search.',
-												'power-coupons'
-											) }
+										{ __(
+											'No campaigns found matching your search.',
+											'power-coupons'
+										) }
+									</Table.Cell>
+								</Table.Row>
+							) }
+							{ ! loading &&
+								campaigns.map( ( campaign ) => (
+									<Table.Row
+										key={ campaign.id }
+										value={ campaign }
+										selected={ selected.includes(
+											campaign.id
+										) }
+										onChangeSelection={
+											handleCheckboxChange
+										}
+									>
+										{ /* The name is the row's subject, so it
+										     carries the primary color; every
+										     other cell stays secondary. */ }
+										<Table.Cell className="text-sm">
+											<button
+												type="button"
+												className="bg-transparent border-none p-0 m-0 cursor-pointer text-text-primary hover:text-wpcolor hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-wpcolor rounded-sm text-sm font-normal text-left"
+												onClick={ () =>
+													toggleModalOpen(
+														false,
+														campaign.id
+													)
+												}
+											>
+												{ campaign.title }
+											</button>
+										</Table.Cell>
+										<Table.Cell className="hidden md:table-cell text-text-secondary text-sm font-normal">
+											{ ACTION_TYPE_LABELS[
+												campaign.action_type
+											] || campaign.action_type }
+										</Table.Cell>
+										<Table.Cell className="hidden lg:table-cell text-text-secondary text-sm font-normal">
+											{ renderEarnType( campaign ) }
+										</Table.Cell>
+										<Table.Cell className="hidden lg:table-cell text-text-secondary text-sm font-normal">
+											{ campaign.earn_value }
+										</Table.Cell>
+										<Table.Cell className="hidden lg:table-cell text-text-secondary text-sm font-normal">
+											{ campaign.priority }
+										</Table.Cell>
+										<Table.Cell>
+											<Switch
+												aria-label={ sprintf(
+													/* translators: %s: campaign name */
+													__(
+														'Enable %s',
+														'power-coupons'
+													),
+													campaign.title
+												) }
+												className="[&>input]:!border-none"
+												defaultValue={
+													campaign.status === 'active'
+												}
+												onChange={ ( checked ) =>
+													toggleCampaignStatus(
+														campaign.id,
+														checked
+															? 'active'
+															: 'inactive'
+													)
+												}
+												size="sm"
+											/>
+										</Table.Cell>
+										<Table.Cell>
+											<Container
+												align="center"
+												className="gap-1 sm:gap-2"
+												justify="end"
+											>
+												<LazyTooltip
+													content={ __(
+														'Edit',
+														'power-coupons'
+													) }
+													portalRoot={
+														portalRootRef.current
+													}
+												>
+													<Button
+														onClick={ () =>
+															toggleModalOpen(
+																false,
+																campaign.id
+															)
+														}
+														variant="ghost"
+														icon={ <PencilIcon /> }
+														size="xs"
+														className="text-icon-secondary hover:text-icon-primary"
+														aria-label={ actionLabel(
+															__(
+																'Edit',
+																'power-coupons'
+															),
+															campaign.title
+														) }
+													/>
+												</LazyTooltip>
+												<LazyTooltip
+													content={ __(
+														'Delete',
+														'power-coupons'
+													) }
+													portalRoot={
+														portalRootRef.current
+													}
+												>
+													<Button
+														onClick={ () =>
+															setDeleteModal( {
+																isOpen: true,
+																type: 'single',
+																id: campaign.id,
+															} )
+														}
+														variant="ghost"
+														icon={ <TrashIcon /> }
+														size="xs"
+														className="text-icon-secondary hover:text-icon-primary"
+														aria-label={ actionLabel(
+															__(
+																'Delete',
+																'power-coupons'
+															),
+															campaign.title
+														) }
+													/>
+												</LazyTooltip>
+											</Container>
 										</Table.Cell>
 									</Table.Row>
-								) : (
-									campaigns.map( ( campaign ) => (
-										<Table.Row
-											key={ campaign.id }
-											value={ campaign }
-											selected={ selected.includes(
-												campaign.id
-											) }
-											onChangeSelection={
-												handleCheckboxChange
-											}
-										>
-											<Table.Cell className="text-text-secondary text-sm font-normal">
-												<button
-													type="button"
-													className="bg-transparent border-none p-0 m-0 cursor-pointer text-text-secondary hover:text-orange-600 hover:underline text-sm font-normal text-left"
-													onClick={ () =>
-														toggleModalOpen(
-															false,
-															campaign.id
-														)
-													}
-												>
-													{ campaign.title }
-												</button>
-											</Table.Cell>
-											<Table.Cell className="text-text-secondary text-sm font-normal">
-												{ ACTION_TYPE_LABELS[
-													campaign.action_type
-												] || campaign.action_type }
-											</Table.Cell>
-											<Table.Cell className="text-text-secondary text-sm font-normal">
-												{ renderEarnType( campaign ) }
-											</Table.Cell>
-											<Table.Cell className="text-text-secondary text-sm font-normal">
-												{ campaign.earn_value }
-											</Table.Cell>
-											<Table.Cell className="text-text-secondary text-sm font-normal">
-												{ campaign.priority }
-											</Table.Cell>
-											<Table.Cell>
-												<Switch
-													aria-label="Switch Element"
-													className="[&>input]:!border-none"
-													defaultValue={
-														campaign.status ===
-														'active'
-													}
-													onChange={ ( checked ) =>
-														toggleCampaignStatus(
-															campaign.id,
-															checked
-																? 'active'
-																: 'inactive'
-														)
-													}
-													size="sm"
-												/>
-											</Table.Cell>
-											<Table.Cell>
-												<Container
-													align="center"
-													className="gap-2"
-													justify="end"
-												>
-													<Tooltip
-														content="Edit"
-														arrow
-														placement="top"
-														tooltipPortalRoot={
-															portalRootRef.current
-														}
-													>
-														<Button
-															onClick={ () =>
-																toggleModalOpen(
-																	false,
-																	campaign.id
-																)
-															}
-															variant="ghost"
-															icon={
-																<PencilIcon />
-															}
-															size="xs"
-															className="text-icon-secondary hover:text-icon-primary"
-															aria-label="Edit"
-														/>
-													</Tooltip>
-													<Tooltip
-														content="Delete"
-														arrow
-														placement="top"
-														tooltipPortalRoot={
-															portalRootRef.current
-														}
-													>
-														<Button
-															onClick={ () =>
-																setDeleteModal(
-																	{
-																		isOpen: true,
-																		type: 'single',
-																		id: campaign.id,
-																	}
-																)
-															}
-															variant="ghost"
-															icon={
-																<TrashIcon />
-															}
-															size="xs"
-															className="text-icon-secondary hover:text-icon-primary"
-															aria-label="Delete"
-														/>
-													</Tooltip>
-												</Container>
-											</Table.Cell>
-										</Table.Row>
-									) )
-								) }
-							</Table.Body>
-						</Table>
-					</div>
-				) }
+								) ) }
+						</Table.Body>
+					</Table>
+				</div>
 			</div>
 
 			<ConfirmationModal

@@ -17,7 +17,7 @@ function GeneralSettings() {
 				size="md"
 				tag="h2"
 				title={ __( 'General', 'power-coupons' ) }
-				className="mb-6 [&_h2]:text-gray-900 text-xl"
+				className="mb-6 [&_h2]:text-text-primary text-xl"
 			/>
 			<div className="h-auto px-6 bg-background-primary rounded-xl shadow-sm">
 				{ fields.map( ( field ) => (

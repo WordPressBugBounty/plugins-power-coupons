@@ -237,6 +237,42 @@
 		},
 
 		/**
+		 * This product's own price element. Mini-cart lines and related-product
+		 * grids also carry .price, so an unscoped lookup rewrites the wrong node.
+		 *
+		 * @return {jQuery} The price element, or an empty set when none matches.
+		 */
+		getPriceElement() {
+			const excluded = [
+				'.wp-block-woocommerce-mini-cart-contents',
+				'.wc-block-grid',
+				'.wc-block-product-template',
+				'.related',
+				'.up-sells',
+				'.cross-sells',
+				'.wcf-fbt-widget',
+			].join( ', ' );
+
+			const selectors = [
+				'.wp-block-woocommerce-product-price',
+				'.product .summary .price',
+				'.product .entry-summary .price',
+				'.product > .price',
+			];
+
+			for ( let i = 0; i < selectors.length; i++ ) {
+				const $found = $( selectors[ i ] ).filter( function () {
+					return ! $( this ).closest( excluded ).length;
+				} );
+				if ( $found.length ) {
+					return $found.first();
+				}
+			}
+
+			return $();
+		},
+
+		/**
 		 * Update the product price display.
 		 *
 		 * @param {number|undefined} amount Amount to display.
@@ -261,7 +297,7 @@
 			}
 
 			const formatted = this.formatPrice( amount );
-			const $priceEl = $( '.product .price' ).first();
+			const $priceEl = this.getPriceElement();
 
 			if ( $priceEl.length ) {
 				$priceEl.html(

@@ -6,16 +6,66 @@ import {
 	RadioButton,
 	Button,
 	Checkbox,
+	Select,
 	Switch,
 } from '@bsf/force-ui';
-import { __ } from '@wordpress/i18n';
-import { useState, useEffect, useRef } from '@wordpress/element';
+import { __, sprintf } from '@wordpress/i18n';
+import { useState, useEffect, useRef, Fragment } from '@wordpress/element';
 import Logo from '../../../../images/logo.svg';
 import { BOGOPresets, getBOGOPresetData, RenderIcon } from '../common/Utils';
-import { CheckCircleIcon } from '@heroicons/react/24/solid';
-import { CalendarIcon, ClockIcon } from '@heroicons/react/24/outline';
+import { CalendarIcon, CheckIcon } from '@heroicons/react/24/outline';
 import { format } from 'date-fns';
 import ProductSelector from './ProductSelector';
+import FieldError from '../common/FieldError';
+import SaveStatus from '../common/SaveStatus';
+import useModalFocus from '../common/hooks/useModalFocus';
+
+// How long the finished wizard stays on screen after a successful save, so the
+// check on the last step is seen before the modal closes itself.
+const SUCCESS_HOLD_MS = 1600;
+
+const PROGRESS_BAR_ICONS = [
+	{ value: 'tag', label: __( 'Tag', 'power-coupons' ) },
+	{ value: 'truck', label: __( 'Truck', 'power-coupons' ) },
+	{ value: 'gift', label: __( 'Gift', 'power-coupons' ) },
+	{ value: 'percent', label: __( 'Percent', 'power-coupons' ) },
+];
+
+// ─── Shared class strings ────────────────────────────────────────────────────
+//
+// Each of these was written out per call site — five copies of the primary
+// button and three different treatments for what is the same textarea. Naming
+// them keeps the wizard's four steps identical to each other and makes a change
+// one edit instead of five.
+
+const PRIMARY_BUTTON_CLASSES =
+	'font-semibold text-sm px-3 py-2 w-fit ml-auto cursor-pointer no-underline text-white hover:text-white bg-wpcolor hover:bg-wphovercolor rounded-md box-content border-none';
+
+// Mirrors the outline, radius and focus treatment of a force-ui <Input> so a
+// textarea does not read as a different family of control next to one.
+const TEXTAREA_CLASSES =
+	'w-full font-normal text-sm leading-6 bg-field-secondary-background placeholder-text-tertiary text-text-primary outline outline-1 outline-border-subtle border-none rounded px-3 py-2 resize-y transition-[color,box-shadow,outline] duration-200 hover:outline-border-strong focus:outline-focus-border focus:ring-2 focus:ring-toggle-on focus:ring-offset-2';
+
+/**
+ * Step heading and its one-line explanation.
+ *
+ * Replaces a bare <strong> plus an unstyled <p>, whose default margin left a
+ * gap unrelated to the 24px rhythm the rest of the panel is built on.
+ *
+ * @param {Object} props
+ * @param {string} props.title       Name of the step.
+ * @param {string} props.description What the step is for.
+ */
+const SectionIntro = ( { title, description } ) => (
+	<div>
+		<h4 className="m-0 text-sm font-semibold text-text-primary">
+			{ title }
+		</h4>
+		<p className="m-0 mt-1 text-sm leading-6 text-text-secondary">
+			{ description }
+		</p>
+	</div>
+);
 
 // ─── Date helpers ────────────────────────────────────────────────────────────
 
@@ -69,8 +119,23 @@ const DateField = ( { id, label, value, placeholder, onChange, helper } ) => {
 
 	const selected = parseDate( value );
 
+	// Escape closes the picker and hands focus back to its button. The wizard
+	// around it also listens for Escape, and leaves this to the picker while
+	// the popup is up.
+	const handleKeyDown = ( event ) => {
+		if ( open && 'Escape' === event.key ) {
+			event.preventDefault();
+			setOpen( false );
+			dateRef.current?.querySelector( 'button' )?.focus();
+		}
+	};
+
 	return (
-		<div className="flex flex-col gap-1.5" ref={ dateRef }>
+		<div
+			className="flex flex-col gap-1.5"
+			ref={ dateRef }
+			onKeyDown={ handleKeyDown }
+		>
 			<label
 				htmlFor={ id }
 				className="text-sm font-medium text-text-primary"
@@ -119,7 +184,7 @@ const DateField = ( { id, label, value, placeholder, onChange, helper } ) => {
 				) }
 			</div>
 			{ helper && (
-				<p className="m-0 text-xs text-text-tertiary leading-snug">
+				<p className="m-0 text-xs text-text-secondary leading-snug">
 					{ helper }
 				</p>
 			) }
@@ -260,39 +325,72 @@ const validateTab3 = ( formData ) => {
 	return errors;
 };
 
-// ─── Inline field error component ────────────────────────────────────────────
+// ─── Error and field components ──────────────────────────────────────────────
 
-const FieldError = ( { message } ) => {
+/**
+ * Banner for an error the server reported about the whole form.
+ *
+ * @param {Object} props
+ * @param {string} props.message What went wrong.
+ */
+const FormErrorBanner = ( { message } ) => {
 	if ( ! message ) {
 		return null;
 	}
 	return (
-		<p className="text-red-500 text-xs mt-1 flex items-center gap-1">
-			<svg
-				width="12"
-				height="12"
-				viewBox="0 0 12 12"
-				fill="none"
-				xmlns="http://www.w3.org/2000/svg"
-				aria-hidden="true"
-			>
-				<path
-					d="M6 1L11 10H1L6 1Z"
-					stroke="currentColor"
-					strokeWidth="1.2"
-					strokeLinecap="round"
-					strokeLinejoin="round"
-				/>
-				<path
-					d="M6 5V7"
-					stroke="currentColor"
-					strokeWidth="1.2"
-					strokeLinecap="round"
-				/>
-				<circle cx="6" cy="9" r="0.5" fill="currentColor" />
-			</svg>
+		<div
+			role="alert"
+			className="bg-badge-background-red border border-solid border-badge-border-red rounded-md px-4 py-3 text-badge-color-red text-sm leading-6"
+		>
 			{ message }
-		</p>
+		</div>
+	);
+};
+
+/**
+ * Classes for the wrapper of an invalid Force UI Input.
+ *
+ * Force UI's own error state only swaps the outline to focus-error-border
+ * (#FECACA), 1.17:1 against the neutral outline beside it, so an invalid field
+ * looked exactly like a valid one. Its className prop lands on a wrapper div,
+ * not the input, so the field is recoloured from outside with the token its
+ * message already uses. The hover and focus variants carry one more selector
+ * than Force UI's, so the state survives both.
+ */
+const ERROR_OUTLINE =
+	'[&_input]:outline-support-error [&_input:hover]:outline-support-error [&_input:focus]:outline-support-error';
+
+/**
+ * Numeric field with its validation message.
+ *
+ * Six near-identical copies of input-plus-error stood here, at two different
+ * sizes, none of them naming the field its message belonged to.
+ *
+ * @param {Object} props
+ * @param {string} props.id    Field id; the message id is derived from it.
+ * @param {string} props.error Validation message, empty when valid.
+ */
+const NumberField = ( { id, error, ...inputProps } ) => {
+	const errorId = `${ id }-error`;
+	return (
+		<div
+			className={ `flex flex-col gap-1${
+				error ? ` ${ ERROR_OUTLINE }` : ''
+			}` }
+		>
+			<Input
+				id={ id }
+				type="number"
+				size="md"
+				error={ !! error }
+				{ ...( error && {
+					'aria-invalid': 'true',
+					'aria-describedby': errorId,
+				} ) }
+				{ ...inputProps }
+			/>
+			<FieldError id={ errorId } message={ error } />
+		</div>
 	);
 };
 
@@ -323,27 +421,33 @@ const FormTabs = [
 
 			return (
 				<>
-					<div>
-						<strong>
-							{ __( 'Offer Basics', 'power-coupons' ) }
-						</strong>
-						<p>
-							{ __(
-								'Define the core settings for your offer.',
-								'power-coupons'
-							) }
-						</p>
-					</div>
+					<SectionIntro
+						title={ __( 'Offer Basics', 'power-coupons' ) }
+						description={ __(
+							'Define the core settings for your offer.',
+							'power-coupons'
+						) }
+					/>
 
 					<div className="flex flex-col gap-4">
 						{ /* Offer Name — required */ }
-						<div className="flex flex-col gap-1">
+						<div
+							className={ `flex flex-col gap-1${
+								errors.name ? ` ${ ERROR_OUTLINE }` : ''
+							}` }
+						>
 							<Input
 								value={ formData.name ?? '' }
 								id="bogo-input-offer-name"
 								label={ __( 'Offer Name', 'power-coupons' ) }
 								size="md"
 								type="text"
+								error={ !! errors.name }
+								{ ...( errors.name && {
+									'aria-invalid': 'true',
+									'aria-describedby':
+										'bogo-input-offer-name-error',
+								} ) }
 								placeholder={ __(
 									'E.g. Buy X Get X @ 10%',
 									'power-coupons'
@@ -353,19 +457,22 @@ const FormTabs = [
 									clearError( 'name' );
 								} }
 							/>
-							<FieldError message={ errors.name } />
+							<FieldError
+								id="bogo-input-offer-name-error"
+								message={ errors.name }
+							/>
 						</div>
 
 						<div className="flex flex-col items-start gap-1.5">
 							<label
 								htmlFor="bogo-textarea-offer-description"
-								className="text-sm font-medium"
+								className="text-sm font-medium text-text-primary"
 							>
 								{ __( 'Description', 'power-coupons' ) }
 							</label>
 							<textarea
 								id="bogo-textarea-offer-description"
-								className="!font-normal !text-sm h-20 bg-field-secondary-background font-normal placeholder-text-tertiary text-text-primary w-full outline outline-1 outline-border-subtle border-none transition-[color,box-shadow,outline] duration-200 p-3 py-2 rounded text-xs focus:outline-focus-border focus:ring-2 focus:ring-toggle-on focus:ring-offset-2 hover:outline-border-strong"
+								className={ `${ TEXTAREA_CLASSES } h-20` }
 								placeholder={ __(
 									'Eg: Buy more, save more! 1 item gets 10% off, 2 items get 20% off, and the savings grow with every item.',
 									'power-coupons'
@@ -383,10 +490,11 @@ const FormTabs = [
 
 						<div className="flex flex-col gap-1.5">
 							{ /* eslint-disable-next-line jsx-a11y/label-has-associated-control */ }
-							<label className="text-sm font-medium">
+							<label className="text-sm font-medium text-text-primary">
 								{ __( 'Activate Offer', 'power-coupons' ) }
 							</label>
 							<RadioButton.Group
+								className="grid-cols-1 sm:grid-cols-2 [&_p.text-text-tertiary]:text-text-secondary"
 								columns={ 2 }
 								onChange={ ( value ) =>
 									setFormData( 'activation_type', value )
@@ -432,7 +540,7 @@ const FormTabs = [
 					</div>
 
 					<Button
-						className="font-semibold text-sm px-3 py-2 w-fit ml-auto cursor-pointer no-underline text-white hover:text-white bg-wpcolor hover:bg-wphovercolor rounded-md box-content outline-0 hover:outline-0 focus:ring-0 focus-visible:ring-1 ring-0 border-none"
+						className={ PRIMARY_BUTTON_CLASSES }
 						size="md"
 						tag="button"
 						type="button"
@@ -468,26 +576,23 @@ const FormTabs = [
 
 			return (
 				<>
-					<div>
-						<strong>
-							{ __( 'Set Offer Conditions', 'power-coupons' ) }
-						</strong>
-						<p>
-							{ __(
-								'Configure when and how your BOGO offer should be applied.',
-								'power-coupons'
-							) }
-						</p>
-					</div>
+					<SectionIntro
+						title={ __( 'Set Offer Conditions', 'power-coupons' ) }
+						description={ __(
+							'Configure when and how your BOGO offer should be applied.',
+							'power-coupons'
+						) }
+					/>
 
 					<div className="flex flex-col gap-4">
 						{ /* Discount Type */ }
 						<div className="flex flex-col gap-1.5">
 							{ /* eslint-disable-next-line jsx-a11y/label-has-associated-control */ }
-							<label className="text-sm font-medium">
+							<label className="text-sm font-medium text-text-primary">
 								{ __( 'Discount Type', 'power-coupons' ) }
 							</label>
 							<RadioButton.Group
+								className="grid-cols-1 sm:grid-cols-3"
 								columns={ 3 }
 								onChange={ ( value ) => {
 									setFormData( 'discount_type', value );
@@ -537,231 +642,132 @@ const FormTabs = [
 							</RadioButton.Group>
 						</div>
 
-						{ /* buy-x-get-x-free quantities */ }
-						{ formData.key === 'buy-x-get-x-free' && (
+						{ /* Quantity thresholds — the three Buy X types share one pair. */ }
+						{ BUY_X_TYPES.includes( formData.key ) && (
 							<>
-								<div className="flex flex-col gap-1">
-									<Input
-										label={ __(
-											'Buy Quantity',
-											'power-coupons'
-										) }
-										type="number"
-										min="1"
-										size="md"
-										defaultValue={
-											formData.buy_quantity || '1'
-										}
-										onChange={ ( value ) => {
-											setFormData(
-												'buy_quantity',
-												value
-											);
-											clearError( 'buy_quantity' );
-										} }
-									/>
-									<FieldError
-										message={ errors.buy_quantity }
-									/>
-								</div>
-								<div className="flex flex-col gap-1">
-									<Input
-										label={ __(
-											'Get Quantity',
-											'power-coupons'
-										) }
-										type="number"
-										min="1"
-										size="md"
-										defaultValue={
-											formData.get_quantity || '1'
-										}
-										onChange={ ( value ) => {
-											setFormData(
-												'get_quantity',
-												value
-											);
-											clearError( 'get_quantity' );
-										} }
-									/>
-									<FieldError
-										message={ errors.get_quantity }
-									/>
-								</div>
+								<NumberField
+									id="bogo-input-buy-quantity"
+									label={ __(
+										'Buy Quantity',
+										'power-coupons'
+									) }
+									min="1"
+									defaultValue={
+										formData.buy_quantity || '1'
+									}
+									error={ errors.buy_quantity }
+									onChange={ ( value ) => {
+										setFormData( 'buy_quantity', value );
+										clearError( 'buy_quantity' );
+									} }
+								/>
+								<NumberField
+									id="bogo-input-get-quantity"
+									label={ __(
+										'Get Quantity',
+										'power-coupons'
+									) }
+									min="1"
+									defaultValue={
+										formData.get_quantity || '1'
+									}
+									error={ errors.get_quantity }
+									onChange={ ( value ) => {
+										setFormData( 'get_quantity', value );
+										clearError( 'get_quantity' );
+									} }
+								/>
 							</>
 						) }
 
-						{ /* buy-x-get-y / buy-x-get-y-at-x-percent-off quantities */ }
-						{ ( formData.key === 'buy-x-get-y' ||
-							formData.key ===
-								'buy-x-get-y-at-x-percent-off' ) && (
+						{ /* Spend threshold */ }
+						{ SPEND_X_TYPES.includes( formData.key ) && (
 							<>
-								<div className="flex flex-col gap-1">
-									<Input
-										label={ __(
-											'Buy Quantity',
-											'power-coupons'
-										) }
-										type="number"
-										min="1"
-										size="md"
-										defaultValue={
-											formData.buy_quantity || '1'
-										}
-										onChange={ ( value ) => {
-											setFormData(
-												'buy_quantity',
-												value
-											);
-											clearError( 'buy_quantity' );
-										} }
-									/>
-									<FieldError
-										message={ errors.buy_quantity }
-									/>
-								</div>
-								<div className="flex flex-col gap-1">
-									<Input
-										label={ __(
-											'Get Quantity',
-											'power-coupons'
-										) }
-										type="number"
-										min="1"
-										size="md"
-										defaultValue={
-											formData.get_quantity || '1'
-										}
-										onChange={ ( value ) => {
-											setFormData(
-												'get_quantity',
-												value
-											);
-											clearError( 'get_quantity' );
-										} }
-										className="font-['Figtree'] font-normal not-italic text-sm leading-5 tracking-[0%]"
-									/>
-									<FieldError
-										message={ errors.get_quantity }
-									/>
-								</div>
-							</>
-						) }
-
-						{ /* spend-x types */ }
-						{ ( formData.key === 'spend-x-get-y-free' ||
-							formData.key === 'spend-x-get-y-at-x-percent-off' ||
-							formData.key === 'spend-x-get-free-shipping' ) && (
-							<>
-								<div className="flex flex-col gap-1">
-									<Input
-										label={ __(
-											'Minimum Spend Amount',
-											'power-coupons'
-										) }
-										type="number"
-										min="0"
-										step="0.01"
-										defaultValue={
-											formData.spend_amount || '50'
-										}
-										onChange={ ( value ) => {
-											setFormData(
-												'spend_amount',
-												value
-											);
-											clearError( 'spend_amount' );
-										} }
-									/>
-									<FieldError
-										message={ errors.spend_amount }
-									/>
-								</div>
+								<NumberField
+									id="bogo-input-spend-amount"
+									label={ __(
+										'Minimum Spend Amount',
+										'power-coupons'
+									) }
+									min="0"
+									step="0.01"
+									defaultValue={
+										formData.spend_amount || '50'
+									}
+									error={ errors.spend_amount }
+									onChange={ ( value ) => {
+										setFormData( 'spend_amount', value );
+										clearError( 'spend_amount' );
+									} }
+								/>
 								{ formData.key !==
 									'spend-x-get-free-shipping' && (
-									<div className="flex flex-col gap-1">
-										<Input
-											label={ __(
-												'Get Quantity',
-												'power-coupons'
-											) }
-											type="number"
-											min="1"
-											defaultValue={
-												formData.get_quantity || '1'
-											}
-											onChange={ ( value ) => {
-												setFormData(
-													'get_quantity',
-													value
-												);
-												clearError( 'get_quantity' );
-											} }
-										/>
-										<FieldError
-											message={ errors.get_quantity }
-										/>
-									</div>
+									<NumberField
+										id="bogo-input-spend-get-quantity"
+										label={ __(
+											'Get Quantity',
+											'power-coupons'
+										) }
+										min="1"
+										defaultValue={
+											formData.get_quantity || '1'
+										}
+										error={ errors.get_quantity }
+										onChange={ ( value ) => {
+											setFormData(
+												'get_quantity',
+												value
+											);
+											clearError( 'get_quantity' );
+										} }
+									/>
 								) }
 							</>
 						) }
 
 						{ /* Discount percentage */ }
 						{ formData.discount_type === 'percentage' && (
-							<div className="flex flex-col gap-1">
-								<Input
-									label={ __(
-										'Discount Percentage (%)',
-										'power-coupons'
-									) }
-									type="number"
-									min="0"
-									max="100"
-									step="0.01"
-									defaultValue={
-										formData.discount_percent || '10'
-									}
-									onChange={ ( value ) => {
-										setFormData(
-											'discount_percent',
-											value
-										);
-										clearError( 'discount_percent' );
-									} }
-								/>
-								<FieldError
-									message={ errors.discount_percent }
-								/>
-							</div>
+							<NumberField
+								id="bogo-input-discount-percent"
+								label={ __(
+									'Discount Percentage (%)',
+									'power-coupons'
+								) }
+								min="0"
+								max="100"
+								step="0.01"
+								defaultValue={
+									formData.discount_percent || '10'
+								}
+								error={ errors.discount_percent }
+								onChange={ ( value ) => {
+									setFormData( 'discount_percent', value );
+									clearError( 'discount_percent' );
+								} }
+							/>
 						) }
 
 						{ /* Fixed discount amount */ }
 						{ formData.discount_type === 'fixed' && (
-							<div className="flex flex-col gap-1">
-								<Input
-									label={ __(
-										'Fixed Discount Amount',
-										'power-coupons'
-									) }
-									type="number"
-									min="0"
-									step="0.01"
-									defaultValue={
-										formData.discount_amount || '5'
-									}
-									onChange={ ( value ) => {
-										setFormData( 'discount_amount', value );
-										clearError( 'discount_amount' );
-									} }
-								/>
-								<FieldError
-									message={ errors.discount_amount }
-								/>
-							</div>
+							<NumberField
+								id="bogo-input-discount-amount"
+								label={ __(
+									'Fixed Discount Amount',
+									'power-coupons'
+								) }
+								min="0"
+								step="0.01"
+								defaultValue={ formData.discount_amount || '5' }
+								error={ errors.discount_amount }
+								onChange={ ( value ) => {
+									setFormData( 'discount_amount', value );
+									clearError( 'discount_amount' );
+								} }
+							/>
 						) }
 
 						{ /* Schedule — Start & End Dates */ }
-						<div className="grid grid-cols-2 gap-4">
+						<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 							<DateField
 								id="bogo-input-start-date"
 								label={ __( 'Start Date', 'power-coupons' ) }
@@ -818,8 +824,7 @@ const FormTabs = [
 
 					<div className="flex gap-2 ml-auto">
 						<Button
-							className="font-semibold text-sm px-3 py-2 cursor-pointer border border-border-subtle text-text-primary hover:text-text-primary bg-transparent hover:bg-field-secondary-background rounded-md"
-							variant="secondary"
+							variant="outline"
 							onClick={ () => {
 								setErrors( {} );
 								setActiveTab( FormTabs[ 0 ].slug );
@@ -828,7 +833,7 @@ const FormTabs = [
 							{ __( 'Back', 'power-coupons' ) }
 						</Button>
 						<Button
-							className="font-semibold text-sm px-3 py-2 w-fit ml-auto cursor-pointer no-underline text-white hover:text-white bg-wpcolor hover:bg-wphovercolor rounded-md box-content outline-0 hover:outline-0 focus:ring-0 focus-visible:ring-1 ring-0 border-none"
+							className={ PRIMARY_BUTTON_CLASSES }
 							variant="primary"
 							onClick={ handleSaveAndContinue }
 						>
@@ -848,6 +853,7 @@ const FormTabs = [
 			setActiveTab,
 			saveOffer,
 			isLoading,
+			saved,
 			errors,
 			setErrors,
 			clearError,
@@ -860,26 +866,23 @@ const FormTabs = [
 
 			return (
 				<>
-					<div>
-						<strong>
-							{ __( 'Select Products', 'power-coupons' ) }
-						</strong>
-						<p>
-							{ __(
-								'Choose which products are eligible for this BOGO offer.',
-								'power-coupons'
-							) }
-						</p>
-					</div>
+					<SectionIntro
+						title={ __( 'Select Products', 'power-coupons' ) }
+						description={ __(
+							'Choose which products are eligible for this BOGO offer.',
+							'power-coupons'
+						) }
+					/>
 
 					<div className="flex flex-col gap-4">
 						{ isBuyXType && (
 							<div className="flex flex-col gap-1.5">
 								{ /* eslint-disable-next-line jsx-a11y/label-has-associated-control */ }
-								<label className="text-sm font-medium">
+								<label className="text-sm font-medium text-text-primary">
 									{ __( 'Trigger Type', 'power-coupons' ) }
 								</label>
 								<RadioButton.Group
+									className="grid-cols-1 sm:grid-cols-2 [&_p.text-text-tertiary]:text-text-secondary"
 									columns={ 2 }
 									onChange={ ( value ) => {
 										setFormData( 'trigger_type', value );
@@ -930,6 +933,7 @@ const FormTabs = [
 						{ showProductsToBuy && (
 							<div className="flex flex-col gap-1">
 								<ProductSelector
+									inputId="bogo-buy-product-ids"
 									label={ __(
 										'Products to Buy',
 										'power-coupons'
@@ -939,6 +943,12 @@ const FormTabs = [
 										'power-coupons'
 									) }
 									value={ formData.buy_product_ids || [] }
+									error={ !! errors.buy_product_ids }
+									describedBy={
+										errors.buy_product_ids
+											? 'bogo-buy-product-ids-error'
+											: undefined
+									}
 									onChange={ ( productIds ) => {
 										setFormData(
 											'buy_product_ids',
@@ -948,6 +958,7 @@ const FormTabs = [
 									} }
 								/>
 								<FieldError
+									id="bogo-buy-product-ids-error"
 									message={ errors.buy_product_ids }
 								/>
 							</div>
@@ -957,6 +968,7 @@ const FormTabs = [
 							formData.key !== 'spend-x-get-free-shipping' && (
 								<div className="flex flex-col gap-1">
 									<ProductSelector
+										inputId="bogo-get-product-ids"
 										label={ __(
 											'Products to Get',
 											'power-coupons'
@@ -966,6 +978,12 @@ const FormTabs = [
 											'power-coupons'
 										) }
 										value={ formData.get_product_ids || [] }
+										error={ !! errors.get_product_ids }
+										describedBy={
+											errors.get_product_ids
+												? 'bogo-get-product-ids-error'
+												: undefined
+										}
 										onChange={ ( productIds ) => {
 											setFormData(
 												'get_product_ids',
@@ -975,77 +993,38 @@ const FormTabs = [
 										} }
 									/>
 									<FieldError
+										id="bogo-get-product-ids-error"
 										message={ errors.get_product_ids }
 									/>
 								</div>
 							) }
 
-						<div>
-							<label
-								htmlFor="bogo-input-usage-limit"
-								className="text-sm font-medium mb-2 block"
-							>
-								{ __(
-									'Usage Limit (Optional)',
-									'power-coupons'
-								) }
-							</label>
-							<input
-								id="bogo-input-usage-limit"
-								type="number"
-								min="0"
-								className="w-full p-2 border border-border-subtle rounded text-sm"
-								placeholder={ __(
-									'Leave empty for unlimited usage',
-									'power-coupons'
-								) }
-								onChange={ ( e ) =>
-									setFormData( 'usage_limit', e.target.value )
-								}
-							/>
-						</div>
+						<Input
+							id="bogo-input-usage-limit"
+							size="md"
+							label={ __(
+								'Usage Limit (Optional)',
+								'power-coupons'
+							) }
+							type="number"
+							min="0"
+							placeholder={ __(
+								'Leave empty for unlimited usage',
+								'power-coupons'
+							) }
+							onChange={ ( value ) =>
+								setFormData( 'usage_limit', value )
+							}
+						/>
 					</div>
 
 					{ /* Server-level error banner */ }
-					{ formError && (
-						<div className="bg-red-50 border border-red-200 rounded-md px-4 py-3 text-red-700 text-sm flex items-start gap-2">
-							<svg
-								className="shrink-0 mt-0.5"
-								width="14"
-								height="14"
-								viewBox="0 0 12 12"
-								fill="none"
-								xmlns="http://www.w3.org/2000/svg"
-								aria-hidden="true"
-							>
-								<path
-									d="M6 1L11 10H1L6 1Z"
-									stroke="currentColor"
-									strokeWidth="1.2"
-									strokeLinecap="round"
-									strokeLinejoin="round"
-								/>
-								<path
-									d="M6 5V7"
-									stroke="currentColor"
-									strokeWidth="1.2"
-									strokeLinecap="round"
-								/>
-								<circle
-									cx="6"
-									cy="9"
-									r="0.5"
-									fill="currentColor"
-								/>
-							</svg>
-							{ formError }
-						</div>
-					) }
+					<FormErrorBanner message={ formError } />
 
 					<div className="flex gap-2 ml-auto">
 						<Button
-							className="font-semibold text-sm px-3 py-2 cursor-pointer border border-border-subtle text-text-primary hover:text-text-primary bg-transparent hover:bg-field-secondary-background rounded-md"
-							variant="secondary"
+							variant="outline"
+							disabled={ saved }
 							onClick={ () => {
 								setErrors( {} );
 								setActiveTab( FormTabs[ 1 ].slug );
@@ -1055,7 +1034,7 @@ const FormTabs = [
 						</Button>
 						{ SPEND_X_TYPES.includes( formData.key ) ? (
 							<Button
-								className="font-semibold text-sm px-3 py-2 w-fit ml-auto cursor-pointer no-underline text-white hover:text-white bg-wpcolor hover:bg-wphovercolor rounded-md box-content outline-0 hover:outline-0 focus:ring-0 focus-visible:ring-1 ring-0 border-none"
+								className={ PRIMARY_BUTTON_CLASSES }
 								variant="primary"
 								onClick={ () => {
 									const tab3Errors = validateTab3( formData );
@@ -1073,7 +1052,7 @@ const FormTabs = [
 							</Button>
 						) : (
 							<Button
-								className="font-semibold text-sm px-3 py-2 w-fit ml-auto cursor-pointer no-underline text-white hover:text-white bg-wpcolor hover:bg-wphovercolor rounded-md box-content outline-0 hover:outline-0 focus:ring-0 focus-visible:ring-1 ring-0 border-none"
+								className={ PRIMARY_BUTTON_CLASSES }
 								variant="primary"
 								onClick={ () => {
 									const tab3Errors = validateTab3( formData );
@@ -1086,7 +1065,7 @@ const FormTabs = [
 									setErrors( {} );
 									saveOffer();
 								} }
-								disabled={ isLoading }
+								disabled={ isLoading || saved }
 							>
 								{ /* eslint-disable no-nested-ternary */ }
 								{ isLoading
@@ -1113,26 +1092,23 @@ const FormTabs = [
 			setActiveTab,
 			saveOffer,
 			isLoading,
+			saved,
 			formError,
 		} ) => {
 			const isSpendType = SPEND_X_TYPES.includes( formData.key );
 
 			return (
 				<>
-					<div>
-						<strong>
-							{ __( 'Cart Progress Bar', 'power-coupons' ) }
-						</strong>
-						<p>
-							{ __(
-								'Configure how this offer appears in the cart progress bar. Only applies to spend-based offers.',
-								'power-coupons'
-							) }
-						</p>
-					</div>
+					<SectionIntro
+						title={ __( 'Cart Progress Bar', 'power-coupons' ) }
+						description={ __(
+							'Configure how this offer appears in the cart progress bar. Only applies to spend-based offers.',
+							'power-coupons'
+						) }
+					/>
 
 					{ ! isSpendType && (
-						<p className="text-sm text-text-tertiary bg-gray-50 border border-border-subtle rounded-md px-4 py-3">
+						<p className="text-sm leading-6 text-text-secondary bg-field-primary-background border border-solid border-border-subtle rounded-md px-4 py-3">
 							{ __(
 								'Progress bar is only available for spend-based offers (Spend $X types). Quantity-based offers do not have a spend threshold.',
 								'power-coupons'
@@ -1156,7 +1132,7 @@ const FormTabs = [
 										)
 									}
 								/>
-								<span className="text-sm font-medium">
+								<span className="text-sm font-medium text-text-primary">
 									{ __(
 										'Enable Progress Bar',
 										'power-coupons'
@@ -1166,42 +1142,54 @@ const FormTabs = [
 
 							<div>
 								{ /* eslint-disable-next-line jsx-a11y/label-has-associated-control */ }
-								<label className="block text-sm font-medium mb-1">
+								<label className="block text-sm font-medium text-text-primary mb-1">
 									{ __( 'Icon', 'power-coupons' ) }
 								</label>
-								<select
+								<Select
+									size="md"
 									value={
 										formData.progress_bar_icon || 'gift'
 									}
-									onChange={ ( e ) =>
+									onChange={ ( value ) =>
 										setFormData(
 											'progress_bar_icon',
-											e.target.value
+											value
 										)
 									}
-									className="block w-full border border-border-subtle rounded-md text-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-orange-500"
 								>
-									<option value="tag">
-										{ __( 'Tag', 'power-coupons' ) }
-									</option>
-									<option value="truck">
-										{ __( 'Truck', 'power-coupons' ) }
-									</option>
-									<option value="gift">
-										{ __( 'Gift', 'power-coupons' ) }
-									</option>
-									<option value="percent">
-										{ __( 'Percent', 'power-coupons' ) }
-									</option>
-								</select>
+									{ /* The settings app is wrapped in a form,
+									so an untyped button would submit it. */ }
+									<Select.Button
+										type="button"
+										className="w-full"
+										aria-label={ __(
+											'Icon',
+											'power-coupons'
+										) }
+										render={ ( value ) =>
+											PROGRESS_BAR_ICONS.find(
+												( icon ) => icon.value === value
+											)?.label
+										}
+									/>
+									<Select.Options>
+										{ PROGRESS_BAR_ICONS.map( ( icon ) => (
+											<Select.Option
+												key={ icon.value }
+												value={ icon.value }
+											>
+												{ icon.label }
+											</Select.Option>
+										) ) }
+									</Select.Options>
+								</Select>
 							</div>
 
-							<Input
+							<NumberField
+								id="bogo-progress-bar-priority"
 								label={ __( 'Priority', 'power-coupons' ) }
-								type="number"
 								min="1"
 								step="1"
-								size="md"
 								defaultValue={
 									formData.progress_bar_priority || '1'
 								}
@@ -1216,7 +1204,7 @@ const FormTabs = [
 							<div>
 								<label
 									htmlFor="bogo-progress-bar-message"
-									className="block text-sm font-medium mb-1"
+									className="block text-sm font-medium text-text-primary mb-1"
 								>
 									{ __(
 										'Progress Message',
@@ -1225,7 +1213,7 @@ const FormTabs = [
 								</label>
 								<textarea
 									id="bogo-progress-bar-message"
-									className="w-full p-2 border border-border-subtle rounded text-sm"
+									className={ TEXTAREA_CLASSES }
 									rows="2"
 									defaultValue={
 										formData.progress_bar_message ||
@@ -1241,7 +1229,7 @@ const FormTabs = [
 										)
 									}
 								/>
-								<p className="mt-1 text-xs text-text-tertiary">
+								<p className="mt-1 text-xs text-text-secondary">
 									{ __(
 										'Placeholders: {remaining}, {threshold}, {coupon_name}',
 										'power-coupons'
@@ -1252,13 +1240,13 @@ const FormTabs = [
 							<div>
 								<label
 									htmlFor="bogo-progress-bar-success-msg"
-									className="block text-sm font-medium mb-1"
+									className="block text-sm font-medium text-text-primary mb-1"
 								>
 									{ __( 'Success Message', 'power-coupons' ) }
 								</label>
 								<textarea
 									id="bogo-progress-bar-success-msg"
-									className="w-full p-2 border border-border-subtle rounded text-sm"
+									className={ TEXTAREA_CLASSES }
 									rows="2"
 									defaultValue={
 										formData.progress_bar_success_msg ||
@@ -1279,54 +1267,21 @@ const FormTabs = [
 					) }
 
 					{ /* Server-level error banner */ }
-					{ formError && (
-						<div className="bg-red-50 border border-red-200 rounded-md px-4 py-3 text-red-700 text-sm flex items-start gap-2">
-							<svg
-								className="shrink-0 mt-0.5"
-								width="14"
-								height="14"
-								viewBox="0 0 12 12"
-								fill="none"
-								xmlns="http://www.w3.org/2000/svg"
-								aria-hidden="true"
-							>
-								<path
-									d="M6 1L11 10H1L6 1Z"
-									stroke="currentColor"
-									strokeWidth="1.2"
-									strokeLinecap="round"
-									strokeLinejoin="round"
-								/>
-								<path
-									d="M6 5V7"
-									stroke="currentColor"
-									strokeWidth="1.2"
-									strokeLinecap="round"
-								/>
-								<circle
-									cx="6"
-									cy="9"
-									r="0.5"
-									fill="currentColor"
-								/>
-							</svg>
-							{ formError }
-						</div>
-					) }
+					<FormErrorBanner message={ formError } />
 
 					<div className="flex gap-2 ml-auto">
 						<Button
-							className="font-semibold text-sm px-3 py-2 cursor-pointer border border-border-subtle text-text-primary hover:text-text-primary bg-transparent hover:bg-field-secondary-background rounded-md"
-							variant="secondary"
+							variant="outline"
+							disabled={ saved }
 							onClick={ () => setActiveTab( FormTabs[ 2 ].slug ) }
 						>
 							{ __( 'Back', 'power-coupons' ) }
 						</Button>
 						<Button
-							className="font-semibold text-sm px-3 py-2 w-fit ml-auto cursor-pointer no-underline text-white hover:text-white bg-wpcolor hover:bg-wphovercolor rounded-md box-content outline-0 hover:outline-0 focus:ring-0 focus-visible:ring-1 ring-0 border-none"
+							className={ PRIMARY_BUTTON_CLASSES }
 							variant="primary"
 							onClick={ saveOffer }
-							disabled={ isLoading }
+							disabled={ isLoading || saved }
 						>
 							{ /* eslint-disable no-nested-ternary */ }
 							{ isLoading
@@ -1347,58 +1302,132 @@ const FormTabs = [
 
 // ─── Preset grid screen ───────────────────────────────────────────────────────
 
-const _ModalContentOffersPresetGrid = ( { setCurrentScreen, setFormData } ) => {
-	const handleClick = ( preset ) => {
-		setCurrentScreen( 'form' );
-		setFormData( 'key', preset.key );
-		setFormData( 'name', preset.title );
-	};
+const _ModalContentOffersPresetGrid = ( { onSelect } ) => {
+	const handleClick = ( preset ) => onSelect( preset );
 
 	return (
-		<div className="flex flex-col gap-6 sm:gap-8 px-3">
-			<h3 className="text-[#111827] text-xl sm:text-[24px] font-[600] m-0">
+		<div className="flex flex-col gap-6 sm:gap-8 px-3 text-left">
+			<h3 className="text-text-primary text-xl sm:text-2xl font-semibold m-0">
 				{ __( 'Select the offer you want to create', 'power-coupons' ) }
 			</h3>
+			{ /* Tiles are left-aligned and sized by their content: centred text
+			     over a fixed 152px box left every tile ragged with a band of
+			     dead space under the two-line descriptions. */ }
 			<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[repeat(3,292px)] gap-4">
 				{ BOGOPresets.map( ( preset ) => (
 					<button
 						key={ preset.key }
 						type="button"
 						onClick={ () => handleClick( preset ) }
-						className="cursor-pointer w-full h-auto min-h-[120px] lg:h-[152px] border-solid border border-[#E5E7EB] hover:outline hover:outline-solid hover:outline-[#ED4D22] bg-white rounded-lg p-3 shadow-[0px_1px_2px_0px_#0000000D]"
+						className="text-left cursor-pointer w-full h-auto min-h-[104px] border-solid border border-border-subtle bg-white rounded-lg p-4 shadow-[0px_1px_2px_0px_#0000000D] transition-[outline-color,box-shadow] duration-200 outline outline-2 outline-offset-0 outline-transparent hover:outline-wpcolor hover:shadow-[0px_2px_6px_0px_#0000001A] focus-visible:outline-wpcolor focus-visible:outline-offset-2"
 					>
-						<h4 className="m-0 font-[600] text-[18px] leading-7 text-[#111827]">
+						<h4 className="m-0 font-semibold text-lg leading-7 text-text-primary">
 							{ preset.title }
 						</h4>
-						<p className="m-0 mt-1 text-[#374151] text-[14px] leading-6">
+						<p className="m-0 mt-1 text-text-secondary text-sm leading-6">
 							{ preset.description }
 						</p>
 					</button>
 				) ) }
 			</div>
-			{ /* We will provide a better way to create from scratch soon */ }
-			{ /* <button
-				type="button"
-				onClick={ () => handleClick( { key: 'scratch' } ) }
-				className="cursor-pointer border-none flex items-center bg-transparent m-[0_auto] text-[#9CA3AF]"
-			>
-				{ __( 'Or Create from Scratch', 'power-coupons' ) }
-				{ RenderIcon( 'arrowRight' ) }
-			</button> */ }
 		</div>
 	);
 };
 
 // ─── Form screen ──────────────────────────────────────────────────────────────
 
+/**
+ * Where a step sits relative to the one being edited.
+ *
+ * @param {number} activeIndex Index of the step currently open.
+ * @param {number} index       Index of the step being drawn.
+ * @return {string} 'done', 'current' or 'upcoming'.
+ */
+const stepState = ( activeIndex, index ) => {
+	if ( activeIndex > index ) {
+		return 'done';
+	}
+	return activeIndex === index ? 'current' : 'upcoming';
+};
+
+/**
+ * Circle at the head of a step: its position until the step is finished, then
+ * a check.
+ *
+ * @param {Object}  props
+ * @param {string}  props.state     One of 'done', 'current' or 'upcoming'.
+ * @param {number}  props.number    1-based position of the step.
+ * @param {boolean} props.celebrate Play the check's entrance, for the step that
+ *                                  completes when the offer saves.
+ */
+const StepMarker = ( { state, number, celebrate = false } ) => {
+	// box-border: preflight is off here, so a bordered circle would otherwise
+	// measure 31px against its 28px siblings.
+	const shape =
+		'flex items-center justify-center shrink-0 box-border size-7 rounded-full text-xs font-bold';
+
+	if ( 'done' === state ) {
+		return (
+			<span
+				className={ `${ shape } bg-background-primary border-[1.5px] border-solid border-wpcolor text-wpcolor transition-colors duration-300` }
+			>
+				<CheckIcon
+					aria-hidden="true"
+					className={ `size-3.5${
+						celebrate
+							? ' animate-check-pop motion-reduce:animate-none'
+							: ''
+					}` }
+					strokeWidth={ 3 }
+				/>
+			</span>
+		);
+	}
+
+	// Upcoming steps take text-secondary, not the disabled-button text token:
+	// that pair is 2.3:1, and this is a 12px digit.
+	return (
+		<span
+			className={ `${ shape } ${
+				'current' === state
+					? 'bg-wpcolor text-text-on-color'
+					: 'bg-button-disabled text-text-secondary'
+			}` }
+		>
+			{ number }
+		</span>
+	);
+};
+
+/**
+ * Type treatment for a step's name.
+ *
+ * @param {string} state One of 'done', 'current' or 'upcoming'.
+ * @return {string} Tailwind classes.
+ */
+const stepLabelClasses = ( state ) => {
+	if ( 'current' === state ) {
+		return 'font-bold text-text-primary';
+	}
+	return 'done' === state
+		? 'font-semibold text-text-primary'
+		: 'font-semibold text-text-secondary';
+};
+
 const _ModalContentForm = ( {
 	setCurrentScreen,
 	formData,
 	setFormData,
 	toggleModalOpen,
+	saved,
+	onSaved,
 } ) => {
 	const [ activeTab, setActiveTabInternal ] = useState( FormTabs[ 0 ].slug );
 	const [ isLoading, setIsLoading ] = useState( false );
+	const closeTimer = useRef( null );
+
+	// The topbar's close button can unmount this while the hold is running.
+	useEffect( () => () => clearTimeout( closeTimer.current ), [] );
 	const [ errors, setErrors ] = useState( {} );
 	const [ formError, setFormError ] = useState( '' );
 
@@ -1523,8 +1552,15 @@ const _ModalContentForm = ( {
 			const result = await response.json();
 
 			if ( result.success ) {
-				setFormData( {} );
-				toggleModalOpen( true );
+				// Closing here dropped the modal the instant the request
+				// returned, so a save read as the dialog vanishing. Mark the
+				// last step done, let the check land, then close.
+				onSaved();
+				// No form reset here: the modal unmounts on close and its
+				// state goes with it.
+				closeTimer.current = setTimeout( () => {
+					toggleModalOpen( true );
+				}, SUCCESS_HOLD_MS );
 			} else if (
 				result.data?.type === 'validation' &&
 				result.data?.errors
@@ -1576,13 +1612,21 @@ const _ModalContentForm = ( {
 				{ ! formData.id && (
 					<button
 						type="button"
-						className="m-0 p-0 bg-transparent border-none cursor-pointer leading-[0]"
+						aria-label={ __(
+							'Back to offer types',
+							'power-coupons'
+						) }
+						// Off during the hold like Back and Submit: leaving the
+						// form then would cancel the close and keep the saved
+						// offer's values for the next one.
+						disabled={ saved }
+						className="flex items-center justify-center shrink-0 -ml-1.5 size-8 rounded-md m-0 p-0 bg-transparent border-none cursor-pointer leading-[0] text-icon-secondary transition-colors duration-200 hover:bg-misc-dropdown-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-wpcolor disabled:cursor-default disabled:opacity-50 disabled:hover:bg-transparent"
 						onClick={ () => setCurrentScreen( 'offers' ) }
 					>
 						{ RenderIcon( 'chevronLeft' ) }
 					</button>
 				) }
-				<h3 className="m-0 text-2xl text-[#111827]">
+				<h3 className="m-0 text-xl sm:text-2xl font-semibold text-text-primary">
 					{ formData.id
 						? __( 'Edit Offer', 'power-coupons' ) +
 						  ': ' +
@@ -1596,30 +1640,84 @@ const _ModalContentForm = ( {
 			{ /* Form body */ }
 			<div className="mt-6">
 				<Tabs activeItem={ activeTab }>
-					<Tabs.Group
-						iconPosition="left"
-						orientation="horizontal"
-						size="md"
-						variant="underline"
-						width="auto"
-					>
-						{ visibleTabs.map( ( tab, index ) => (
-							<Tabs.Tab
-								key={ tab.slug }
-								type="button"
-								icon={
-									tabIndex > index ? (
-										<CheckCircleIcon color="#16A34A" />
-									) : (
-										<ClockIcon color="#737373" />
-									)
-								}
-								className="power-coupons-bogo-form-tab px-2.5 py-4 !cursor-default"
-								slug={ tab.slug }
-								text={ tab.title }
-							/>
-						) ) }
-					</Tabs.Group>
+					{ /* Numbered circles and connectors, not an underlined tab
+					     strip: the steps only report progress, and the strip
+					     read as four tabs that ignored every click. Back and
+					     Save & Continue still do all the moving. */ }
+					<div className="flex items-center pb-[18px] border-0 border-b border-solid border-border-subtle">
+						<ol
+							aria-label={ __(
+								'Offer setup steps',
+								'power-coupons'
+							) }
+							className="power-coupons-bogo-steps flex flex-wrap items-center gap-x-5 gap-y-3 lg:gap-x-0 list-none m-0 p-0 min-w-0 flex-1"
+						>
+							{ visibleTabs.map( ( tab, index ) => {
+								const state = saved
+									? 'done'
+									: stepState( tabIndex, index );
+								return (
+									<Fragment key={ tab.slug }>
+										{ index > 0 && (
+											// Flexible rather than the comp's fixed
+											// 32px: four steps plus the counter
+											// overflow the panel at that width and
+											// push the counter onto its own row.
+											<li
+												aria-hidden="true"
+												className={ `hidden lg:block h-0.5 mx-3 flex-1 min-w-3 max-w-8 rounded-sm ${
+													'upcoming' === state
+														? 'bg-border-subtle'
+														: 'bg-wpcolor'
+												}` }
+											/>
+										) }
+										<li
+											className="flex items-center gap-2.5 shrink-0"
+											aria-current={
+												'current' === state
+													? 'step'
+													: undefined
+											}
+										>
+											<StepMarker
+												state={ state }
+												number={ index + 1 }
+												celebrate={
+													saved && index === tabIndex
+												}
+											/>
+											<span
+												className={ `text-sm whitespace-nowrap ${ stepLabelClasses(
+													state
+												) }` }
+											>
+												{ tab.title }
+											</span>
+										</li>
+									</Fragment>
+								);
+							} ) }
+						</ol>
+						{ /* Not a step, so not in the list: the list should
+						     count only steps. */ }
+						<span className="ml-auto pl-6 shrink-0 text-xs font-semibold text-text-secondary whitespace-nowrap">
+							{ sprintf(
+								/* translators: 1: current step number. 2: total number of steps. */
+								__( 'Step %1$d of %2$d', 'power-coupons' ),
+								tabIndex + 1,
+								visibleTabs.length
+							) }
+						</span>
+					</div>
+					<SaveStatus
+						announce={ saved }
+						message={
+							formData.id
+								? __( 'Offer updated.', 'power-coupons' )
+								: __( 'Offer created.', 'power-coupons' )
+						}
+					/>
 
 					<div className="py-5 flex flex-col text-left gap-6">
 						{ visibleTabs.map( ( tab ) => (
@@ -1632,6 +1730,7 @@ const _ModalContentForm = ( {
 										setActiveTab={ setActiveTab }
 										saveOffer={ saveOffer }
 										isLoading={ isLoading }
+										saved={ saved }
 										errors={ errors }
 										setErrors={ setErrors }
 										clearError={ clearError }
@@ -1649,7 +1748,7 @@ const _ModalContentForm = ( {
 
 // ─── Modal root ───────────────────────────────────────────────────────────────
 
-const ModalContent = ( { toggleModalOpen, editingOffer } ) => {
+const ModalContent = ( { toggleModalOpen, editingOffer, saved, onSaved } ) => {
 	const [ currentScreen, setCurrentScreen ] = useState(
 		editingOffer ? 'form' : 'offers'
 	);
@@ -1691,20 +1790,27 @@ const ModalContent = ( { toggleModalOpen, editingOffer } ) => {
 		setFormData( ( prev ) => ( { ...prev, [ key ]: value } ) );
 	};
 
+	// Replace, not merge: anything left over from an earlier pass through the
+	// form would otherwise pre-fill the next offer.
+	const startOffer = ( preset ) => {
+		setFormData( { key: preset.key, name: preset.title } );
+		setCurrentScreen( 'form' );
+	};
+
+	// Top-aligned: the topbar is 56px tall and fixed, so the panel starts clear
+	// of it instead of floating in the middle of a tall viewport.
 	return (
-		<div className="flex items-start sm:items-center justify-center text-center px-4 sm:px-6 lg:px-0 pt-14 pb-8 min-h-full box-border">
+		<div className="flex items-start justify-center text-center px-4 sm:px-6 lg:px-0 pt-[88px] pb-12 min-h-full box-border">
 			{ 'offers' === currentScreen ? (
-				<_ModalContentOffersPresetGrid
-					setCurrentScreen={ setCurrentScreen }
-					formData={ formData }
-					setFormData={ handleFormData }
-				/>
+				<_ModalContentOffersPresetGrid onSelect={ startOffer } />
 			) : (
 				<_ModalContentForm
 					toggleModalOpen={ toggleModalOpen }
 					setCurrentScreen={ setCurrentScreen }
 					formData={ formData }
 					setFormData={ handleFormData }
+					saved={ saved }
+					onSaved={ onSaved }
 				/>
 			) }
 		</div>
@@ -1712,13 +1818,39 @@ const ModalContent = ( { toggleModalOpen, editingOffer } ) => {
 };
 
 export default ( { toggleModalOpen, editingOffer } ) => {
+	// Set once the offer has saved and the wizard is holding its last step on
+	// screen before closing itself. Owned here so the topbar's close button and
+	// Escape close with the same confirmation the timer would have given,
+	// instead of reading as a cancel.
+	const [ saved, setSaved ] = useState( false );
+	const close = () => toggleModalOpen( saved );
+
+	// The offers list stays mounted underneath this overlay, so without a
+	// trap one Tab press walks out of the dialog into controls it is covering.
+	const dialogRef = useRef( null );
+	useModalFocus( dialogRef, { onEscape: close } );
+
 	return (
 		<div
+			ref={ dialogRef }
+			tabIndex={ -1 }
 			id="power-coupons-bogo-modal"
-			className="bg-background-secondary absolute top-0 left-0 w-full h-[100vh] z-[999] bg-[#F9FAFB] overflow-y-auto"
+			role="dialog"
+			aria-modal="true"
+			aria-label={
+				editingOffer
+					? __( 'Edit BOGO offer', 'power-coupons' )
+					: __( 'Create a BOGO offer', 'power-coupons' )
+			}
+			// fixed, not absolute: nothing locks the page behind, so an
+			// absolutely-placed overlay scrolls away and reveals the offers
+			// list under it once that page is taller than the viewport.
+			// overscroll-contain stops the same page scrolling once this one
+			// bottoms out.
+			className="bg-field-primary-background fixed inset-0 z-[999] overflow-y-auto overscroll-contain focus:outline-none"
 		>
 			<Topbar
-				className="power_coupons-header--content !absolute h-14 min-h-[unset] p-0 border-0 border-b border-solid border-border-subtle bg-white !fixed items-center z-10 shadow-[0px_1px_2px_0px_#0000000D]"
+				className="power_coupons-header--content !fixed h-14 min-h-[unset] p-0 border-0 border-b border-solid border-border-subtle bg-white items-center z-10 shadow-[0px_1px_2px_0px_#0000000D]"
 				gap={ 0 }
 				role="navigation"
 				aria-label={ __( 'Main Navigation', 'power-coupons' ) }
@@ -1739,8 +1871,9 @@ export default ( { toggleModalOpen, editingOffer } ) => {
 					<Topbar.Item>
 						<button
 							type="button"
-							onClick={ () => toggleModalOpen() }
-							className="bg-transparent border-none cursor-pointer"
+							onClick={ close }
+							aria-label={ __( 'Close', 'power-coupons' ) }
+							className="flex items-center justify-center size-9 rounded-md bg-transparent border-none cursor-pointer text-icon-secondary transition-colors duration-200 hover:bg-misc-dropdown-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-wpcolor"
 						>
 							{ RenderIcon( 'close' ) }
 						</button>
@@ -1751,6 +1884,8 @@ export default ( { toggleModalOpen, editingOffer } ) => {
 			<ModalContent
 				toggleModalOpen={ toggleModalOpen }
 				editingOffer={ editingOffer }
+				saved={ saved }
+				onSaved={ () => setSaved( true ) }
 			/>
 		</div>
 	);

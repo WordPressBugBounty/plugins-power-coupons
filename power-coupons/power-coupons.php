@@ -3,7 +3,7 @@
  * Plugin Name: Power Coupons for WooCommerce
  * Plugin URI: https://brainstormforce.com/
  * Description: Power Coupons is an advanced cart discount plugin for WooCommerce that helps you create discount rules, auto-apply coupons, and engaging cart incentives to boost conversions.
- * Version: 1.0.6
+ * Version: 1.0.7
  * Author: Brainstorm Force
  * Author URI: https://www.brainstormforce.com
  * License: GPL v2 or later
@@ -28,7 +28,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Set constants
  */
-define( 'POWER_COUPONS_VERSION', '1.0.6' );
+define( 'POWER_COUPONS_VERSION', '1.0.7' );
 define( 'POWER_COUPONS_FILE', __FILE__ );
 define( 'POWER_COUPONS_BASE', plugin_basename( POWER_COUPONS_FILE ) );
 define( 'POWER_COUPONS_DIR', plugin_dir_path( POWER_COUPONS_FILE ) );
@@ -37,6 +37,10 @@ define( 'POWER_COUPONS_PLUGIN_FILE', POWER_COUPONS_FILE );
 
 if ( ! defined( 'POWER_COUPONS_ONBOARDING_USER_SUB_WORKFLOW_URL' ) ) {
 	define( 'POWER_COUPONS_ONBOARDING_USER_SUB_WORKFLOW_URL', 'https://webhook.ottokit.com/ottokit/ae829303-5da9-4daf-85f5-bbda71586f8c' );
+}
+
+if ( ! defined( 'POWER_COUPONS_NPS_WEBHOOK_URL' ) ) {
+	define( 'POWER_COUPONS_NPS_WEBHOOK_URL', 'https://webhook.ottokit.com/ottokit/04399f32-0e78-40b1-8a93-6452ea18168c' );
 }
 
 /**
@@ -64,35 +68,8 @@ function power_coupons() {
 // Kicking this off by calling 'get_instance()' method.
 power_coupons();
 
-/**
- * Redirect to onboarding page after plugin activation.
- *
- * @since 1.0.3
- * @return void
- */
-function power_coupons_redirect_to_onboarding() {
-	if ( ! get_transient( 'power_coupons_redirect_to_onboarding' ) ) {
-		return;
-	}
-
-	// Avoid redirection in case of ajax calls.
-	if ( wp_doing_ajax() ) {
-		return;
-	}
-
-	$url = add_query_arg(
-		array(
-			'page'       => 'power_coupons_settings',
-			'nonce'      => wp_create_nonce( 'power_coupons_onboarding_nonce' ),
-			'onboarding' => 1,
-		),
-		admin_url( 'admin.php' )
-	);
-
-	delete_transient( 'power_coupons_redirect_to_onboarding' );
-
-	wp_safe_redirect( $url );
-	exit;
-}
-add_action( 'admin_init', 'power_coupons_redirect_to_onboarding' );
+// The post-activation redirect lives in Power_Coupons_Admin_Settings::maybe_redirect_to_onboarding().
+// It used to be duplicated here as well, and because this file is parsed before the class
+// registers its own hook, this copy always ran first on admin_init and consumed the transient —
+// so the capability, bulk-activation and already-completed checks over there never ran at all.
 

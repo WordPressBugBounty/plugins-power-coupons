@@ -34,16 +34,19 @@ function Number( props ) {
 			<Input
 				className={ `${
 					props.badge ? 'w-24 ' : 'w-32 rounded-r-md'
-				} focus:[&>input]:ring-focus` }
+				} min-h-0 [&>input]:min-h-0 focus:[&>input]:ring-focus` }
 				suffix={
 					<span className="text-badge-color-gray p-0.5 text-center text-xs font-medium">
 						{ props.type }
 					</span>
 				}
+				id={ props.id }
+				size="md"
 				type="number"
 				name={ props.name }
 				value={ value }
 				onChange={ handleChange }
+				disabled={ props.disabled }
 				min={ props.min || 0 }
 				step={ props.step || 'any' }
 			/>

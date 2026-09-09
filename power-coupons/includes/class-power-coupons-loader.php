@@ -42,42 +42,24 @@ class Power_Coupons_Loader {
 	}
 
 	/**
-	 * Autoload classes.
-	 *
-	 * @param string $class class name.
-	 * @since 1.0.0
-	 * @return void
-	 */
-	public function autoload( $class ): void {
-		if ( 0 !== strpos( $class, __NAMESPACE__ ) ) {
-			return;
-		}
-
-		$class_to_load = $class;
-
-		$filename = strtolower(
-			(string) preg_replace(
-				array( '/^' . __NAMESPACE__ . '\\\/', '/([a-z])([A-Z])/', '/_/', '/\\\/' ),
-				array( '', '$1-$2', '-', DIRECTORY_SEPARATOR ),
-				$class_to_load
-			)
-		);
-
-		$file = POWER_COUPONS_DIR . $filename . '.php';
-
-		// If the file is readable, include it.
-		if ( is_readable( $file ) ) {
-			require_once $file;
-		}
-	}
-
-	/**
 	 * Constructor
 	 *
 	 * @since 1.0.0
 	 */
 	public function __construct() {
-		spl_autoload_register( array( $this, 'autoload' ) );
+		/*
+		 * There is no autoloader here on purpose.
+		 *
+		 * One used to be registered, but it derived a filename by lowercasing the
+		 * class and swapping separators — `…\Includes\Power_Coupons_Core` became
+		 * `includes/power-coupons-core.php` — while every file in this plugin is
+		 * named with the WordPress `class-` (or `trait-`) prefix. It therefore
+		 * never resolved a single class, and `load_dependencies()` below has
+		 * always been the real loader.
+		 *
+		 * Adding a new class means adding a `require_once` to
+		 * `load_dependencies()`. Nothing loads implicitly.
+		 */
 
 		// Declare WooCommerce compatibility.
 		add_action( 'before_woocommerce_init', array( $this, 'declare_woocommerce_compatibility' ) );
@@ -125,10 +107,8 @@ class Power_Coupons_Loader {
 		// Load dependencies first.
 		$this->load_dependencies();
 
-		// Run pending migrations on admin page loads.
-		if ( is_admin() ) {
-			add_action( 'admin_init', array( '\Power_Coupons\Includes\Power_Coupons_Migration', 'run' ) );
-		}
+		// Register the migration entry points (admin, WP-CLI and cron).
+		\Power_Coupons\Includes\Power_Coupons_Migration::register();
 
 		// Initialize main plugin class.
 		\Power_Coupons\Includes\Power_Coupons_Core::get_instance();
@@ -180,7 +160,7 @@ class Power_Coupons_Loader {
 		if ( is_admin() ) {
 			require_once POWER_COUPONS_DIR . 'admin/class-power-coupons-admin.php';
 			require_once POWER_COUPONS_DIR . 'admin/class-power-coupons-admin-rules.php';
-			require_once POWER_COUPONS_DIR . 'admin/class-power-coupons-analytics.php';
+			require_once POWER_COUPONS_DIR . 'admin/class-power-coupons-bsf-analytics.php';
 		}
 
 		require_once POWER_COUPONS_DIR . 'public/class-power-coupons-frontend.php';

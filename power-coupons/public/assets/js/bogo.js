@@ -1,4 +1,4 @@
-/* global power_coupons_bogo, wc_cart_params, powerCouponsBogoData */
+/* global power_coupons_bogo, wc_cart_params, wc_checkout_params, powerCouponsBogoData */
 /**
  * Power Coupons - BOGO JavaScript
  * Handles giveaway product selection and dynamic updates
@@ -12,6 +12,92 @@
 	'use strict';
 
 	const PowerCouponsBOGO = {
+		/**
+		 * Pending deferred notifications refresh, if one is queued.
+		 *
+		 * @type {?number}
+		 */
+		notificationsRefreshTimer: null,
+
+		/**
+		 * Sync the cart UI after BOGO changed the server-side cart.
+		 *
+		 * Never fires `wc_update_cart` directly: that is a cart-page-only
+		 * event and WooCommerce's `update_wc_div()` hard-reloads the window
+		 * when `.woocommerce-cart-form` is absent, which is the case on every
+		 * checkout page. The shared helper picks the right mechanism instead.
+		 *
+		 * @since 1.0.6
+		 * @return {Promise} Resolves once the cart UI is in sync.
+		 */
+		syncCartUi() {
+			if ( ! window.PowerCouponsCartRefresh ) {
+				return Promise.resolve( false );
+			}
+
+			return window.PowerCouponsCartRefresh.refresh( { source: 'bogo' } );
+		},
+
+		/**
+		 * Re-render the server-rendered BOGO notifications in place.
+		 *
+		 * The notification markup is built in PHP, so refreshing the cart data
+		 * store does not update it. Fetching just this fragment avoids the
+		 * page reload that previously kept it in sync.
+		 *
+		 * @since 1.0.6
+		 * @return {Promise} Resolves once the notifications are replaced.
+		 */
+		refreshNotifications() {
+			const $container = $( '.power-coupons-bogo-notifications' );
+
+			if ( ! $container.length ) {
+				return Promise.resolve( false );
+			}
+
+			return $.ajax( {
+				url: powerCouponsBogoData.ajaxUrl,
+				type: 'GET',
+				data: {
+					action: 'power_coupons_get_bogo_notifications',
+					nonce: powerCouponsBogoData.nonce,
+				},
+			} )
+				.then( function ( response ) {
+					if ( ! response || ! response.success ) {
+						return false;
+					}
+
+					const html = $.trim( response.data.html || '' );
+
+					if ( ! html ) {
+						// No offers apply any more: drop the stale markup.
+						$container.remove();
+						return true;
+					}
+
+					const $fresh = $( $.parseHTML( html ) ).filter(
+						'.power-coupons-bogo-notifications'
+					);
+
+					if ( ! $fresh.length ) {
+						return false;
+					}
+
+					// Replace every instance (cart and checkout can both render one).
+					$container.first().replaceWith( $fresh );
+					$( '.power-coupons-bogo-notifications' )
+						.not( $fresh )
+						.remove();
+
+					return true;
+				} )
+				.catch( function () {
+					// A failed fragment refresh must not reload the page.
+					return false;
+				} );
+		},
+
 		/**
 		 * Initialize
 		 */
@@ -101,7 +187,14 @@
 				'.power-coupons-bogo-modal-select',
 				this.handleModalSelectChange.bind( this )
 			);
-			$form.on( 'submit', this.submitVariationModal.bind( this ) );
+			// A click handler, not a form `submit`: the wrapper is a <div> so that
+			// this markup stays legal when the classic checkout prints it inside
+			// WooCommerce's own <form name="checkout"> (see variation-modal.php).
+			$form.on(
+				'click',
+				'.power-coupons-bogo-modal-submit',
+				this.submitVariationModal.bind( this )
+			);
 			$modal.on(
 				'click',
 				'.power-coupons-bogo-modal-close, .power-coupons-bogo-modal-cancel',
@@ -294,12 +387,11 @@
 				success: ( response ) => {
 					if ( response && response.success ) {
 						this.closeVariationModal();
-						if ( response.data && response.data.reload ) {
-							window.location.reload();
-							return;
-						}
-						$( document.body ).trigger( 'wc_update_cart' );
-						$( document.body ).trigger( 'updated_wc_div' );
+						// The server asks for a refresh after gift options
+						// change; do it in place instead of reloading.
+						this.syncCartUi().then( () => {
+							this.refreshNotifications();
+						} );
 					} else {
 						const message =
 							( response &&
@@ -383,16 +475,72 @@
 				return;
 			}
 
+			/*
+			 * Blocks treats this as a pure value transform and calls it during
+			 * render, so the refresh is queued out of the render pass rather
+			 * than issued from inside it. Same contract, and same reasoning, as
+			 * scheduleCouponsRefresh() in frontend.js. The single timer also
+			 * collapses repeat calls within one pass into one request.
+			 */
 			window.wc.blocksCheckout.registerCheckoutFilters(
 				'powerCouponsBogoRefresh',
 				{
-					showRemoveCouponNotice( defaultValue ) {
-						// Coupon removed in block cart/checkout — reload for fresh BOGO state.
-						window.location.reload();
+					showRemoveCouponNotice: ( defaultValue ) => {
+						// Coupon removed in block cart/checkout: re-render the
+						// BOGO notifications in place rather than reloading.
+						this.scheduleNotificationsRefresh();
 						return defaultValue;
 					},
 				}
 			);
+		},
+
+		/**
+		 * Queue a notifications refresh to run after the current task.
+		 *
+		 * @since 1.0.7
+		 * @return {void}
+		 */
+		scheduleNotificationsRefresh() {
+			if ( null !== this.notificationsRefreshTimer ) {
+				return;
+			}
+
+			this.notificationsRefreshTimer = window.setTimeout( () => {
+				this.notificationsRefreshTimer = null;
+				this.refreshNotifications();
+			}, 0 );
+		},
+
+		/**
+		 * Build a `wc-ajax` endpoint URL without depending on cart.js.
+		 *
+		 * WooCommerce localises `wc_ajax_url` onto `wc_cart_params` (cart.js)
+		 * and `wc_checkout_params` (checkout.js). This script must not force
+		 * cart.js onto checkout pages just to read that value: cart.js binds a
+		 * document-level `a.woocommerce-remove-coupon` handler whose
+		 * `update_wc_div()` hard-reloads any page without
+		 * `.woocommerce-cart-form` — which is every checkout page.
+		 *
+		 * @since 1.0.6
+		 * @param {string} endpoint wc-ajax endpoint name.
+		 * @return {string} Fully qualified endpoint URL.
+		 */
+		wcAjaxUrl( endpoint ) {
+			const params =
+				( 'undefined' !== typeof wc_cart_params && wc_cart_params ) ||
+				( 'undefined' !== typeof wc_checkout_params &&
+					wc_checkout_params ) ||
+				null;
+
+			if ( params && params.wc_ajax_url ) {
+				return params.wc_ajax_url
+					.toString()
+					.replace( '%%endpoint%%', endpoint );
+			}
+
+			// Last resort: WooCommerce's documented wc-ajax entry point.
+			return '/?wc-ajax=' + encodeURIComponent( endpoint );
 		},
 
 		/**
@@ -415,9 +563,7 @@
 
 			// Apply coupon via AJAX
 			$.ajax( {
-				url: wc_cart_params.wc_ajax_url
-					.toString()
-					.replace( '%%endpoint%%', 'apply_coupon' ),
+				url: PowerCouponsBOGO.wcAjaxUrl( 'apply_coupon' ),
 				type: 'POST',
 				data: {
 					coupon_code: couponCode,
@@ -431,8 +577,11 @@
 								power_coupons_bogo.apply_text || 'Apply Offer'
 							);
 					} else {
-						// Trigger cart update
-						$( document.body ).trigger( 'wc_update_cart' );
+						// Sync in place; `wc_update_cart` would hard-reload
+						// on any page without the classic cart form.
+						this.syncCartUi().then( () => {
+							this.refreshNotifications();
+						} );
 					}
 				},
 				error: () => {

@@ -13,6 +13,22 @@
  * kept invisible while inside the wrapper via a scoped CSS rule) and is shown
  * once the clone is mounted on <body>, outside the wrapper.
  *
+ * The fields are wrapped in a <div>, NOT a <form>. On the classic (shortcode)
+ * checkout this markup is printed from `woocommerce_review_order_before_payment`,
+ * which fires inside WooCommerce's own <form name="checkout">. Nested forms are
+ * illegal in HTML, so the parser silently discards the inner <form> start tag --
+ * `bogo.js` then finds nothing to bind its change/submit handlers to and the
+ * submit button stays disabled forever. A <div> is legal in every parent context.
+ * Submission is a click handler on .power-coupons-bogo-modal-submit; the modal
+ * always posted over AJAX, so no real form submit was ever used.
+ *
+ * For the same reason the selects carry `aria-required`, never `required`:
+ * with no <form> of their own their form owner is whatever form encloses
+ * them, so on the classic checkout a `required` empty select made
+ * <form name="checkout"> invalid and blocked order placement outright --
+ * on a display:none control the browser cannot even focus to report it.
+ * bogo.js validates the selections before posting.
+ *
  * No element IDs are used: the dormant copy lives in the document alongside the
  * clone while the modal is open, so labels are associated implicitly (the
  * <select> is nested inside its <label>) to avoid duplicate-ID collisions.
@@ -60,7 +76,7 @@ $current_selections = isset( $current_selections ) && is_array( $current_selecti
 			<?php esc_html_e( 'Pick the variation you would like to receive.', 'power-coupons' ); ?>
 		</p>
 
-		<form
+		<div
 			class="power-coupons-bogo-modal-form"
 			data-coupon-code="<?php echo esc_attr( $coupon_code ); ?>"
 			data-mode="<?php echo esc_attr( $modal_mode ); ?>"
@@ -92,7 +108,7 @@ $current_selections = isset( $current_selections ) && is_array( $current_selecti
 							<select
 								class="power-coupons-bogo-modal-select"
 								data-attr-name="<?php echo esc_attr( $attr_name ); ?>"
-								required
+								aria-required="true"
 							>
 								<option value=""><?php esc_html_e( 'Choose an option', 'power-coupons' ); ?></option>
 								<?php foreach ( $attr_options as $option ) : ?>
@@ -110,7 +126,7 @@ $current_selections = isset( $current_selections ) && is_array( $current_selecti
 				<button type="button" class="power-coupons-bogo-modal-cancel">
 					<?php esc_html_e( 'Cancel', 'power-coupons' ); ?>
 				</button>
-				<button type="submit" class="power-coupons-bogo-modal-submit" disabled>
+				<button type="button" class="power-coupons-bogo-modal-submit" disabled>
 					<?php
 					if ( 'change' === $modal_mode ) {
 						esc_html_e( 'Update gift', 'power-coupons' );
@@ -120,6 +136,6 @@ $current_selections = isset( $current_selections ) && is_array( $current_selecti
 					?>
 				</button>
 			</div>
-		</form>
+		</div>
 	</div>
 </div>

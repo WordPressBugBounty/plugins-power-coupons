@@ -1,5 +1,4 @@
 import { __ } from '@wordpress/i18n';
-import { Container } from '@bsf/force-ui';
 
 const DEFAULT_PRICING_URL =
 	'https://cartflows.com/power-coupons-for-woocommerce/pricing/?utm_source=dashboard&utm_medium=free-power-coupons&utm_campaign=go-pro';
@@ -27,24 +26,19 @@ function UpgradeFeatureCard( {
 	return (
 		<div
 			role="article"
-			className={ `flex flex-col gap-2 p-4 bg-background-primary border border-solid border-border-subtle rounded-xl shadow-sm ${ className }` }
+			className={ `flex flex-col gap-2 p-4 bg-background-primary border-[0.5px] border-solid border-border-subtle rounded-xl shadow-sm ${ className }` }
 		>
-			<Container
-				containerType="flex"
-				direction="row"
-				wrap="wrap"
-				className="gap-2 p-2 bg-background-secondary rounded-lg"
-			>
+			<div className="flex flex-row flex-wrap gap-2 p-2 bg-background-secondary rounded-lg">
 				<div className="flex flex-col sm:flex-row gap-6 p-6 bg-background-primary rounded-md shadow-sm w-full">
 					{ visual && (
 						<div className="flex flex-col gap-2 p-2 shrink-0">
-							<div className="w-56 h-48 rounded flex items-center justify-center bg-wpcolorfaded">
+							<div className="w-full sm:w-64 rounded-lg overflow-hidden bg-wpcolorfaded [&>svg]:block [&>svg]:w-full [&>svg]:h-auto">
 								{ visual }
 							</div>
 						</div>
 					) }
 
-					<div className="flex flex-col justify-center gap-3 flex-1">
+					<div className="flex flex-col justify-center gap-3 flex-1 min-w-0">
 						<div className="flex flex-col gap-2">
 							<h2 className="m-0 text-xl font-semibold text-text-primary leading-[1.4] tracking-tight">
 								{ title }
@@ -82,7 +76,7 @@ function UpgradeFeatureCard( {
 						</div>
 					</div>
 				</div>
-			</Container>
+			</div>
 		</div>
 	);
 }

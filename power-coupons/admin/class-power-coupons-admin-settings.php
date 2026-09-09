@@ -59,12 +59,14 @@ class Power_Coupons_Admin_Settings {
 		add_action( 'wp_ajax_power_coupons_activate_pro', array( $this, 'ajax_activate_pro' ) );
 		add_action( 'wp_ajax_power_coupons_complete_onboarding', array( $this, 'complete_onboarding' ) );
 		add_action( 'wp_ajax_power_coupons_onboarding_skipped', array( $this, 'ajax_onboarding_skipped' ) );
+		add_action( 'wp_ajax_power_coupons_install_plugin', array( $this, 'ajax_install_plugin' ) );
 
 		// One-shot guard for the page load right after onboarding. Plugins installed during
 		// onboarding (e.g. Cart Abandonment Recovery) queue a post-activation redirect that
 		// hijacks the "Go To Dashboard" navigation. Rather than skip their activation hooks,
 		// we let them run normally and reclaim the redirect target back to our dashboard.
 		add_action( 'admin_init', array( $this, 'maybe_reclaim_post_onboarding_redirect' ), 0 );
+		add_action( 'admin_init', array( $this, 'maybe_redirect_to_onboarding' ) );
 
 		// Highlight the "Upgrade to Pro" submenu and open it in a new tab (free plugin only).
 		// Hooked on admin_footer so the #adminmenu DOM already exists when the script runs.
@@ -114,6 +116,33 @@ class Power_Coupons_Admin_Settings {
 	}
 
 	/**
+	 * Build the base64 data URI for the admin menu icon.
+	 *
+	 * `file_get_contents()` returns false for a missing or unreadable file.
+	 * Without `declare(strict_types=1)` — which this file does not use — PHP
+	 * coerces that false to '', so `base64_encode()` does not throw: the menu
+	 * simply gets `data:image/svg+xml;base64,` and renders a blank icon, with
+	 * no warning to explain it. (Verified on PHP 8.2; it would be a TypeError
+	 * only under strict types.) Fall back to a Dashicon instead, so a missing
+	 * asset degrades to something visible.
+	 *
+	 * @since 1.0.7
+	 * @return string Data URI, or a dashicon name.
+	 */
+	private static function get_menu_icon() {
+		$path = POWER_COUPONS_DIR . 'admin/assets/images/logo.svg';
+
+		if ( is_readable( $path ) ) {
+			$svg = file_get_contents( $path ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Local plugin asset, not a remote request.
+			if ( is_string( $svg ) && '' !== $svg ) {
+				return 'data:image/svg+xml;base64,' . base64_encode( $svg ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- Required data URI encoding.
+			}
+		}
+
+		return 'dashicons-tickets-alt';
+	}
+
+	/**
 	 * Add admin menu
 	 *
 	 * @since 1.0.0
@@ -130,7 +159,7 @@ class Power_Coupons_Admin_Settings {
 						'capability' => 'manage_woocommerce',
 						'menu_slug'  => 'power_coupons_settings',
 						'callback'   => array( $this, 'render_settings_page' ),
-						'icon'       => 'data:image/svg+xml;base64,' . base64_encode( file_get_contents( POWER_COUPONS_DIR . 'admin/assets/images/logo.svg' ) ), // phpcs:ignore
+						'icon'       => self::get_menu_icon(),
 						'position'   => 56,
 					),
 				),
@@ -171,6 +200,17 @@ class Power_Coupons_Admin_Settings {
 						'callback'   => array( $this, 'render_settings_page' ),
 						'position'   => 15,
 					),
+					// Only while setup is unfinished — the wizard's exit dialog
+					// promises this entry exists to come back to.
+					'resume'      => 'yes' !== get_option( 'power_coupons_is_onboarding_complete', 'no' ) ? array(
+						'parent'     => 'power_coupons_settings',
+						'page_title' => __( 'Resume Setup', 'power-coupons' ),
+						'menu_title' => __( 'Resume Setup', 'power-coupons' ),
+						'capability' => 'manage_options',
+						'menu_slug'  => self::get_onboarding_url(),
+						'callback'   => null,
+						'position'   => 20,
+					) : null,
 					'upgrade'     => ! defined( 'POWER_COUPONS_PRO_VERSION' ) ? array(
 						'parent'     => 'power_coupons_settings',
 						'page_title' => __( 'Upgrade to Pro', 'power-coupons' ),
@@ -293,27 +333,38 @@ class Power_Coupons_Admin_Settings {
 			'settings_icons'         => $this->get_settings_icons(),
 			'power_coupons_settings' => $settings,
 			'coupon_templates'       => Power_Coupons_Utilities::get_coupon_card_templates_array(),
+			'coupon_template_labels' => Power_Coupons_Utilities::get_coupon_card_template_labels(),
 			'admin_header_menus'     => $this->get_admin_header_menus(),
 			'is_pro_active'          => defined( 'POWER_COUPONS_PRO_VERSION' ),
 			'is_pro_installed'       => file_exists( WP_PLUGIN_DIR . '/power-coupons-pro/power-coupons-pro.php' ),
 			'activate_pro_nonce'     => wp_create_nonce( 'power_coupons_activate_pro' ),
 			'onboarding'             => array(
-				'inProgress' => $is_onboarding,
-				'ajaxUrl'    => add_query_arg(
+				'inProgress'     => $is_onboarding,
+				'ajaxUrl'        => add_query_arg(
 					array(
 						'action' => 'power_coupons_complete_onboarding',
 						'nonce'  => wp_create_nonce( 'power_coupons_onboarding_nonce' ),
 					),
 					admin_url( 'admin-ajax.php' )
 				),
-				'skipUrl'    => add_query_arg(
+				'skipUrl'        => add_query_arg(
 					array(
 						'action' => 'power_coupons_onboarding_skipped',
 						'nonce'  => wp_create_nonce( 'power_coupons_onboarding_skip_nonce' ),
 					),
 					admin_url( 'admin-ajax.php' )
 				),
-				'defaults'   => $this->get_onboarding_defaults(),
+				'installUrl'     => add_query_arg(
+					array(
+						'action' => 'power_coupons_install_plugin',
+						'nonce'  => wp_create_nonce( 'power_coupons_install_plugin_nonce' ),
+					),
+					admin_url( 'admin-ajax.php' )
+				),
+				'defaults'       => $this->get_onboarding_defaults(),
+				'plugins_status' => $this->get_recommended_plugins_status(),
+				'links'          => self::get_onboarding_links(),
+				'couponCount'    => self::get_coupon_count(),
 			),
 		);
 
@@ -522,63 +573,71 @@ class Power_Coupons_Admin_Settings {
 	 */
 	private function get_general_fields() {
 		$fields = array(
-			// Core Settings.
+			// Plugin Status — the master switch, on its own so it does not read
+			// as one more cosmetic toggle in a list of seven.
 			array(
-				'name'          => 'general[enable_plugin]',
-				'label'         => __( 'Enable Plugin', 'power-coupons' ),
-				'description'   => __( 'Enable or disable Power Coupons functionality globally', 'power-coupons' ),
-				'type'          => 'toggle',
-				'section'       => 'core',
-				'section_title' => __( 'Core Settings', 'power-coupons' ),
+				'name'            => 'general[enable_plugin]',
+				'label'           => __( 'Enable Plugin', 'power-coupons' ),
+				'description'     => __( 'Turn Power Coupons on or off across your whole store. With this off, no coupons are shown or applied anywhere.', 'power-coupons' ),
+				'type'            => 'toggle',
+				'section'         => 'core',
+				'section_title'   => __( 'Plugin Status', 'power-coupons' ),
+				'confirm_off'     => true,
+				'confirm_title'   => __( 'Turn off Power Coupons?', 'power-coupons' ),
+				'confirm_message' => __( 'Coupons will stop being shown and applied across your store immediately, including for customers currently checking out.', 'power-coupons' ),
+				'confirm_label'   => __( 'Turn Off', 'power-coupons' ),
 			),
+			// Where Coupons Appear.
 			array(
-				'name'        => 'general[show_on_cart]',
-				'label'       => __( 'Show on Cart', 'power-coupons' ),
-				'description' => __( 'Display available coupons on cart page', 'power-coupons' ),
-				'type'        => 'toggle',
-				'section'     => 'core',
+				'name'          => 'general[show_on_cart]',
+				'label'         => __( 'Show on Cart', 'power-coupons' ),
+				'description'   => __( 'Display available coupons on the cart page.', 'power-coupons' ),
+				'type'          => 'toggle',
+				'section'       => 'visibility',
+				'section_title' => __( 'Where Coupons Appear', 'power-coupons' ),
 			),
 			array(
 				'name'        => 'general[show_on_checkout]',
 				'label'       => __( 'Show on Checkout', 'power-coupons' ),
-				'description' => __( 'Display available coupons on checkout page', 'power-coupons' ),
+				'description' => __( 'Display available coupons on the checkout page.', 'power-coupons' ),
 				'type'        => 'toggle',
-				'section'     => 'core',
+				'section'     => 'visibility',
 			),
-			// Display Locations.
 			array(
 				'name'        => 'general[enable_for_guests]',
 				'label'       => __( 'Enable for Guests', 'power-coupons' ),
-				'description' => __( 'Allow guest users to see and use coupons', 'power-coupons' ),
+				'description' => __( 'Let shoppers who are not logged in see and use coupons.', 'power-coupons' ),
 				'type'        => 'toggle',
-				'section'     => 'core',
+				'section'     => 'visibility',
 			),
-			// Basic Behavior..
+			// What Customers See.
 			array(
-				'name'        => 'general[show_applied_coupons]',
-				'label'       => __( 'Show Applied Coupons', 'power-coupons' ),
-				'description' => __( 'Display list of currently applied coupons', 'power-coupons' ),
-				'type'        => 'toggle',
-				'section'     => 'behavior',
+				'name'          => 'general[show_applied_coupons]',
+				'label'         => __( 'Show Applied Coupons', 'power-coupons' ),
+				'description'   => __( 'List the coupons already applied to the current cart.', 'power-coupons' ),
+				'type'          => 'toggle',
+				'section'       => 'display',
+				'section_title' => __( 'What Customers See', 'power-coupons' ),
 			),
 			array(
 				'name'        => 'general[show_expiry_info]',
 				'label'       => __( 'Show Expiry Info', 'power-coupons' ),
-				'description' => __( 'Show expiry date/countdown for coupons', 'power-coupons' ),
+				'description' => __( 'Show each coupon\'s expiry date and countdown.', 'power-coupons' ),
 				'type'        => 'toggle',
-				'section'     => 'behavior',
+				'section'     => 'display',
 			),
 			array(
-				'name'        => 'general[enable_usage_tracking]',
-				'label'       => __( 'Help Us Improve Your Experience', 'power-coupons' ),
-				'description' => sprintf(
+				'name'          => 'general[enable_usage_tracking]',
+				'label'         => __( 'Help Us Improve Your Experience', 'power-coupons' ),
+				'description'   => sprintf(
 					/* translators: %1$s: link html start, %2$s: link html end. */
 					__( 'Allow Power Coupons and our other products to track non-sensitive usage tracking data. %1$sLearn More%2$s', 'power-coupons' ),
 					'<a href="https://store.brainstormforce.com/usage-tracking/?utm_source=dashboard&utm_medium=power-coupons&utm_campaign=docs" class="text-wpcolor hover:text-wphovercolor no-underline" target="_blank" rel="noopener noreferrer">',
 					'</a>'
 				),
-				'type'        => 'toggle',
-				'section'     => 'behavior',
+				'type'          => 'toggle',
+				'section'       => 'privacy',
+				'section_title' => __( 'Privacy', 'power-coupons' ),
 			),
 		);
 
@@ -592,14 +651,11 @@ class Power_Coupons_Admin_Settings {
 	 */
 	private function get_coupon_styling_fields() {
 		return array(
-			// Section Headings.
 			array(
-				'name'          => 'coupon_styling[coupon_style]',
-				'label'         => __( 'Choose Coupon Styling', 'power-coupons' ),
-				'description'   => __( 'Select a visual style template for how your coupons will be displayed to customers.', 'power-coupons' ),
-				'type'          => 'coupon_template_picker',
-				'section'       => 'headings',
-				'section_title' => __( 'Section Headings', 'power-coupons' ),
+				'name'        => 'coupon_styling[coupon_style]',
+				'label'       => __( 'Choose Coupon Styling', 'power-coupons' ),
+				'description' => __( 'Select a visual style template for how your coupons will be displayed to customers.', 'power-coupons' ),
+				'type'        => 'coupon_template_picker',
 			),
 		);
 	}
@@ -613,46 +669,54 @@ class Power_Coupons_Admin_Settings {
 	private function get_text_fields() {
 		return array(
 			array(
-				'name'        => 'text[drawer_heading]',
-				'label'       => __( 'Drawer Heading', 'power-coupons' ),
-				'description' => __( 'Drawer heading text', 'power-coupons' ),
-				'type'        => 'text',
-				'subtab'      => 'general',
+				'name'          => 'text[drawer_heading]',
+				'label'         => __( 'Drawer Heading', 'power-coupons' ),
+				'description'   => __( 'Title shown at the top of the coupon drawer.', 'power-coupons' ),
+				'type'          => 'text',
+				'subtab'        => 'general',
+				'section'       => 'drawer',
+				'section_title' => __( 'Coupon Drawer', 'power-coupons' ),
 			),
 			array(
 				'name'        => 'text[trigger_button_label]',
 				'label'       => __( 'Drawer Trigger Button Label', 'power-coupons' ),
-				'description' => __( 'Text label for the drawer trigger button', 'power-coupons' ),
+				'description' => __( 'Label on the button customers click to open the drawer.', 'power-coupons' ),
 				'type'        => 'text',
 				'subtab'      => 'general',
-			),
-			array(
-				'name'        => 'text[coupon_applying_text]',
-				'label'       => __( 'Coupon Applying Text', 'power-coupons' ),
-				'description' => __( 'Text to display when coupon is applying.', 'power-coupons' ),
-				'type'        => 'text',
-				'subtab'      => 'general',
-			),
-			array(
-				'name'        => 'text[coupon_applied_text]',
-				'label'       => __( 'Coupon Applied Text', 'power-coupons' ),
-				'description' => __( 'Text to display when coupon is successfully applied.', 'power-coupons' ),
-				'type'        => 'text',
-				'subtab'      => 'general',
-			),
-			array(
-				'name'        => 'text[no_coupons_text]',
-				'label'       => __( 'No Coupons Text', 'power-coupons' ),
-				'description' => __( 'Text to display when no valid coupons are available.', 'power-coupons' ),
-				'type'        => 'text',
-				'subtab'      => 'general',
+				'section'     => 'drawer',
 			),
 			array(
 				'name'        => 'text[coupons_loading_text]',
 				'label'       => __( 'Coupons Loading Text', 'power-coupons' ),
-				'description' => __( 'Text to display when coupons are loading in the drawer.', 'power-coupons' ),
+				'description' => __( 'Shown while the drawer is still fetching coupons.', 'power-coupons' ),
 				'type'        => 'text',
 				'subtab'      => 'general',
+				'section'     => 'drawer',
+			),
+			array(
+				'name'          => 'text[coupon_applying_text]',
+				'label'         => __( 'Coupon Applying Text', 'power-coupons' ),
+				'description'   => __( 'Shown while a coupon is being applied to the cart.', 'power-coupons' ),
+				'type'          => 'text',
+				'subtab'        => 'general',
+				'section'       => 'feedback',
+				'section_title' => __( 'Coupon Feedback', 'power-coupons' ),
+			),
+			array(
+				'name'        => 'text[coupon_applied_text]',
+				'label'       => __( 'Coupon Applied Text', 'power-coupons' ),
+				'description' => __( 'Shown once a coupon has been applied successfully.', 'power-coupons' ),
+				'type'        => 'text',
+				'subtab'      => 'general',
+				'section'     => 'feedback',
+			),
+			array(
+				'name'        => 'text[no_coupons_text]',
+				'label'       => __( 'No Coupons Text', 'power-coupons' ),
+				'description' => __( 'Shown when no coupons are available for the current cart.', 'power-coupons' ),
+				'type'        => 'text',
+				'subtab'      => 'general',
+				'section'     => 'feedback',
 			),
 		);
 	}
@@ -729,6 +793,35 @@ class Power_Coupons_Admin_Settings {
 			'text'              => $this->sanitize_text_settings( $settings['text'] ?? array() ),
 			'cart_progress_bar' => $this->sanitize_cart_progress_bar_settings( $settings['cart_progress_bar'] ?? array() ),
 		);
+
+		/**
+		 * Filter the sanitized settings immediately before they are stored.
+		 *
+		 * This handler knows only the four sections the free plugin owns, and it
+		 * writes `power_coupons_settings` as a whole rather than merging. An
+		 * add-on that contributes fields through
+		 * `power_coupons_filter_settings_fields` receives its values in the
+		 * request but has no way to persist them without this hook.
+		 *
+		 * Pro does not need it — each Pro module owns its own option and hooks
+		 * this same AJAX action at priority 5 — but nothing else has that option
+		 * available, so a merge on its own would not be enough anyway.
+		 *
+		 * Whatever a callback adds here is written to the database as-is, so it
+		 * must sanitize its own section.
+		 *
+		 * @since 1.0.7
+		 *
+		 * @param array<string, mixed> $sanitized Sanitized settings about to be saved.
+		 * @param array<string, mixed> $settings  Raw decoded settings from the request.
+		 */
+		$filtered = apply_filters( 'power_coupons_filter_sanitized_settings', $sanitized, $settings );
+
+		// A callback that returns the wrong shape must not be able to wipe the
+		// option; fall back to what this handler sanitized itself.
+		if ( is_array( $filtered ) ) {
+			$sanitized = $filtered;
+		}
 
 		update_option( self::OPTION_KEY, $sanitized );
 
@@ -870,6 +963,118 @@ class Power_Coupons_Admin_Settings {
 	}
 
 	/**
+	 * Build the URL that opens the guided setup wizard.
+	 *
+	 * The nonce is bound to the current user's session, so this has to be built
+	 * per request rather than stored.
+	 *
+	 * @since 1.0.8
+	 * @return string
+	 */
+	public static function get_onboarding_url() {
+		return add_query_arg(
+			array(
+				'page'       => 'power_coupons_settings',
+				'nonce'      => wp_create_nonce( 'power_coupons_onboarding_nonce' ),
+				'onboarding' => 1,
+			),
+			admin_url( 'admin.php' )
+		);
+	}
+
+	/**
+	 * How many coupons this store already has.
+	 *
+	 * The success screen used to offer "Create your first coupon" and "Review
+	 * your existing coupons" side by side, which cannot both be the next thing
+	 * to do. Drafts count: a merchant who started one has not got a first
+	 * coupon left to create.
+	 *
+	 * @since 1.0.8
+	 * @return int
+	 */
+	public static function get_coupon_count() {
+		$counts = wp_count_posts( 'shop_coupon' );
+
+		if ( ! is_object( $counts ) ) {
+			return 0;
+		}
+
+		$total = 0;
+
+		foreach ( array( 'publish', 'draft', 'pending', 'private', 'future' ) as $status ) {
+			$total += (int) ( $counts->{$status} ?? 0 );
+		}
+
+		return $total;
+	}
+
+	/**
+	 * Destinations the wizard links to.
+	 *
+	 * Resolved server-side so the React app never has to guess an admin slug or
+	 * a store URL.
+	 *
+	 * @since 1.0.8
+	 * @return array<string, string>
+	 */
+	public static function get_onboarding_links() {
+		return array(
+			'newCoupon'  => admin_url( 'post-new.php?post_type=shop_coupon' ),
+			'allCoupons' => admin_url( 'edit.php?post_type=shop_coupon' ),
+			'settings'   => admin_url( 'admin.php?page=power_coupons_settings&path=settings' ),
+			'textLabels' => admin_url( 'admin.php?page=power_coupons_settings&path=settings&tab=power_coupons_text' ),
+			'dashboard'  => admin_url( 'admin.php?page=power_coupons_settings' ),
+			'docs'       => 'https://cartflows.com/docs-category/power-coupons-for-woocommerce/',
+		);
+	}
+
+	/**
+	 * Open the wizard on the first admin load after activation.
+	 *
+	 * The activation transient has been set since 1.0.0 but nothing ever read
+	 * it, so the wizard only opened for anyone who happened to build the URL by
+	 * hand.
+	 *
+	 * @since 1.0.8
+	 * @return void
+	 */
+	public function maybe_redirect_to_onboarding() {
+		if ( wp_doing_ajax() || wp_doing_cron() || is_network_admin() ) {
+			return;
+		}
+
+		if ( ! get_transient( 'power_coupons_redirect_to_onboarding' ) ) {
+			return;
+		}
+
+		// One shot, whether or not the redirect below actually happens.
+		delete_transient( 'power_coupons_redirect_to_onboarding' );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+
+		// Never interrupt a bulk plugin action — the merchant is mid-task.
+		if ( isset( $_GET['activate-multi'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			return;
+		}
+
+		if ( 'yes' === get_option( 'power_coupons_is_onboarding_complete', 'no' ) ) {
+			return;
+		}
+
+		// Exiting the wizard does not complete it — the merchant can still resume from
+		// the submenu — but it does mean they have said no once already.
+		if ( 'yes' === get_option( 'power_coupons_onboarding_dismissed', 'no' ) ) {
+			return;
+		}
+
+		wp_safe_redirect( self::get_onboarding_url() );
+		exit;
+	}
+
+	/**
 	 * Get onboarding default values.
 	 *
 	 * @since 1.0.3
@@ -891,6 +1096,8 @@ class Power_Coupons_Admin_Settings {
 				'user_detail_email'     => $current_user->user_email,
 				'optin_usage_tracking'  => false,
 			),
+			// Recommended add-ons are pre-selected; the merchant unticks what
+			// they don't want on the add-ons step.
 			3 => array(
 				'cartflows'                     => true,
 				'modern-cart'                   => true,
@@ -899,6 +1106,36 @@ class Power_Coupons_Admin_Settings {
 				'surerank'                      => true,
 			),
 		);
+	}
+
+	/**
+	 * Get install/active status for the recommended onboarding plugins.
+	 *
+	 * @since 1.0.7
+	 * @return array<string, string> Map of plugin slug to 'active', 'inactive', or 'not-installed'.
+	 */
+	private function get_recommended_plugins_status() {
+		if ( ! function_exists( 'get_plugins' ) ) {
+			require_once ABSPATH . 'wp-admin/includes/plugin.php';
+		}
+
+		$installed_plugins = get_plugins();
+		$statuses          = array();
+
+		foreach ( array_keys( $this->get_onboarding_defaults()[3] ?? array() ) as $slug ) {
+			$status = 'not-installed';
+
+			foreach ( $installed_plugins as $plugin_file => $plugin_data ) {
+				if ( 0 === strpos( $plugin_file, $slug . '/' ) ) {
+					$status = is_plugin_active( $plugin_file ) ? 'active' : 'inactive';
+					break;
+				}
+			}
+
+			$statuses[ $slug ] = $status;
+		}
+
+		return $statuses;
 	}
 
 	/**
@@ -1039,6 +1276,13 @@ class Power_Coupons_Admin_Settings {
 		// Mark onboarding as complete.
 		update_option( 'power_coupons_is_onboarding_complete', 'yes' );
 
+		// A merchant who exited and then came back and finished is a completion, not a
+		// skip. Analytics reads `onboarding_completed` as "complete and never skipped",
+		// so leaving this behind would report them as skipped for good and never as
+		// completed at all.
+		delete_option( 'power_coupons_onboarding_skipped' );
+		delete_option( 'power_coupons_onboarding_dismissed' );
+
 		wp_send_json_success();
 	}
 
@@ -1068,10 +1312,67 @@ class Power_Coupons_Admin_Settings {
 			array( 'exit_step' => $exit_step )
 		);
 
-		// Mark onboarding as complete so the wizard doesn't re-appear on re-activation.
-		update_option( 'power_coupons_is_onboarding_complete', 'yes' );
+		// Exiting pauses the wizard, it does not finish it. Marking onboarding
+		// complete here meant a single stray click ended setup permanently with
+		// no way back. Completion is only recorded by complete_onboarding().
+		//
+		// It does have to be remembered, though: the activation redirect is armed
+		// whenever onboarding is incomplete, so without this every reactivation
+		// would reopen the wizard for someone who had already left it. The Resume
+		// Setup submenu stays, so nothing is lost.
+		update_option( 'power_coupons_onboarding_dismissed', 'yes' );
 
 		wp_send_json_success();
+	}
+
+	/**
+	 * AJAX handler for installing one recommended plugin.
+	 *
+	 * The wizard installs the plugins it was given one at a time so the merchant
+	 * can watch each row change state, instead of staring at a disabled button
+	 * while a single request works through the whole list.
+	 *
+	 * @since 1.0.8
+	 * @return void
+	 */
+	public function ajax_install_plugin() {
+		if ( ! isset( $_GET['nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['nonce'] ) ), 'power_coupons_install_plugin_nonce' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Nonce verification failed.', 'power-coupons' ) ) );
+		}
+
+		if ( ! current_user_can( 'install_plugins' ) || ! current_user_can( 'activate_plugins' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'power-coupons' ) ) );
+		}
+
+		$raw_input = file_get_contents( 'php://input' );
+		$payload   = is_string( $raw_input ) ? json_decode( $raw_input, true ) : null;
+		$slug      = is_array( $payload ) && isset( $payload['slug'] ) && is_string( $payload['slug'] ) ? sanitize_key( $payload['slug'] ) : '';
+
+		// Only the plugins this wizard recommends may be installed through it —
+		// the slug arrives from the browser and reaches plugins_api().
+		$allowed_slugs = array_keys( $this->get_onboarding_defaults()[3] ?? array() );
+
+		if ( '' === $slug || ! in_array( $slug, $allowed_slugs, true ) ) {
+			wp_send_json_error( array( 'message' => __( 'That plugin is not part of the guided setup.', 'power-coupons' ) ) );
+		}
+
+		$installed = self::install_wordpress_plugin( $slug );
+
+		if ( is_wp_error( $installed ) ) {
+			wp_send_json_error(
+				array(
+					'slug'    => $slug,
+					'message' => $installed->get_error_message(),
+				)
+			);
+		}
+
+		wp_send_json_success(
+			array(
+				'slug'   => $slug,
+				'status' => 'active',
+			)
+		);
 	}
 
 	/**
@@ -1086,35 +1387,36 @@ class Power_Coupons_Admin_Settings {
 			return;
 		}
 
+		foreach ( $plugin_slugs as $slug ) {
+			self::install_wordpress_plugin( is_string( $slug ) ? $slug : '' );
+		}
+	}
+
+	/**
+	 * Install and activate a single plugin from the WordPress.org repository.
+	 *
+	 * Already-installed plugins are activated rather than downloaded again, and
+	 * an already-active plugin is a no-op success.
+	 *
+	 * @since 1.0.8
+	 * @param string $slug Plugin directory slug.
+	 * @return true|WP_Error True once the plugin is active, WP_Error describing the failure.
+	 */
+	public static function install_wordpress_plugin( $slug ) {
+		$slug = sanitize_key( $slug );
+
+		if ( '' === $slug ) {
+			return new WP_Error( 'power_coupons_invalid_slug', __( 'No plugin was named.', 'power-coupons' ) );
+		}
+
 		require_once ABSPATH . 'wp-admin/includes/plugin.php';
 		require_once ABSPATH . 'wp-admin/includes/plugin-install.php';
 		require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
 		require_once ABSPATH . 'wp-admin/includes/class-plugin-upgrader.php';
 
-		foreach ( $plugin_slugs as $slug ) {
-			$slug = sanitize_key( $slug );
+		$plugin_file = self::find_installed_plugin_file( $slug );
 
-			// Check if already installed.
-			$installed_plugins = get_plugins();
-			$is_installed      = false;
-			foreach ( $installed_plugins as $plugin_file => $plugin_data ) {
-				if ( strpos( $plugin_file, $slug . '/' ) === 0 ) {
-					$is_installed = true;
-					// Activate normally so the plugin's activation hooks run (DB tables, default
-					// options, cron schedules). The post-activation redirect those plugins queue is
-					// neutralised separately by maybe_reclaim_post_onboarding_redirect().
-					if ( ! is_plugin_active( $plugin_file ) ) {
-						activate_plugin( $plugin_file );
-						self::guard_post_onboarding_redirect();
-					}
-					break;
-				}
-			}
-
-			if ( $is_installed ) {
-				continue;
-			}
-
+		if ( '' === $plugin_file ) {
 			// Fetch plugin info from WordPress.org.
 			$api = plugins_api(
 				'plugin_information',
@@ -1125,27 +1427,60 @@ class Power_Coupons_Admin_Settings {
 			);
 
 			if ( is_wp_error( $api ) ) {
-				continue;
+				return $api;
 			}
 
 			// Install the plugin silently.
 			$upgrader = new \Plugin_Upgrader( new \Automatic_Upgrader_Skin() );
 			$result   = $upgrader->install( $api->download_link );
 
-			if ( true === $result ) {
-				// Activate after install.
-				$installed_plugins = get_plugins();
-				foreach ( $installed_plugins as $plugin_file => $plugin_data ) {
-					if ( strpos( $plugin_file, $slug . '/' ) === 0 ) {
-						// Activate normally so the plugin initialises itself fully; the queued
-						// activation redirect is reclaimed by maybe_reclaim_post_onboarding_redirect().
-						activate_plugin( $plugin_file );
-						self::guard_post_onboarding_redirect();
-						break;
-					}
-				}
+			if ( is_wp_error( $result ) ) {
+				return $result;
+			}
+
+			if ( true !== $result ) {
+				return new WP_Error( 'power_coupons_install_failed', __( 'The plugin could not be downloaded.', 'power-coupons' ) );
+			}
+
+			$plugin_file = self::find_installed_plugin_file( $slug );
+
+			if ( '' === $plugin_file ) {
+				return new WP_Error( 'power_coupons_install_failed', __( 'The plugin installed but could not be found.', 'power-coupons' ) );
 			}
 		}
+
+		if ( is_plugin_active( $plugin_file ) ) {
+			return true;
+		}
+
+		// Activate normally so the plugin's activation hooks run (DB tables, default
+		// options, cron schedules). The post-activation redirect those plugins queue is
+		// neutralised separately by maybe_reclaim_post_onboarding_redirect().
+		$activated = activate_plugin( $plugin_file );
+		self::guard_post_onboarding_redirect();
+
+		if ( is_wp_error( $activated ) ) {
+			return $activated;
+		}
+
+		return true;
+	}
+
+	/**
+	 * Find the plugin file for an installed plugin slug.
+	 *
+	 * @since 1.0.8
+	 * @param string $slug Plugin directory slug.
+	 * @return string Plugin file relative to the plugins directory, or an empty string.
+	 */
+	private static function find_installed_plugin_file( $slug ) {
+		foreach ( array_keys( get_plugins() ) as $plugin_file ) {
+			if ( 0 === strpos( $plugin_file, $slug . '/' ) ) {
+				return $plugin_file;
+			}
+		}
+
+		return '';
 	}
 
 	/**

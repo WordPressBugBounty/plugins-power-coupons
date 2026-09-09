@@ -13,7 +13,7 @@ function StylingSettings() {
 				size="md"
 				tag="h2"
 				title={ __( 'Styling', 'power-coupons' ) }
-				className="mb-6 [&_h2]:text-gray-900 text-xl"
+				className="mb-6 [&_h2]:text-text-primary text-xl"
 			/>
 			<SectionRenderer fields={ fields } />
 		</>

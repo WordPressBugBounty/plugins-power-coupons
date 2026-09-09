@@ -44,7 +44,9 @@ const SPEND_X_TYPES = [
 
 const SectionHeading = ( { label } ) => (
 	<div className="mb-2">
-		<span className="text-xs font-semibold uppercase tracking-wider text-text-tertiary">
+		{ /* text-text-tertiary here was #9CA3AF on white — 2.5:1, under the
+		     4.5:1 floor for text this small. */ }
+		<span className="text-xs font-semibold uppercase tracking-wider text-text-secondary">
 			{ label }
 		</span>
 	</div>
@@ -55,11 +57,11 @@ const DetailRow = ( { label, value } ) => {
 		return null;
 	}
 	return (
-		<div className="flex flex-row items-center justify-between py-2.5">
+		<div className="flex flex-row items-start justify-between gap-4 py-2.5 border-0 border-t border-solid border-border-subtle first:border-t-0">
 			<span className="text-sm font-medium text-text-primary">
 				{ label }
 			</span>
-			<span className="text-sm text-text-secondary text-right">
+			<span className="text-sm text-text-secondary text-right min-w-0 break-words">
 				{ value }
 			</span>
 		</div>
@@ -156,14 +158,14 @@ const ModalPreviewOffer = ( { offer, onClose } ) => {
 			aria-labelledby="bogo-preview-title"
 		>
 			<div
-				className="absolute inset-0 bg-black/50 backdrop-blur-[1px]"
+				className="absolute inset-0 bg-misc-overlay backdrop-blur-[1px]"
 				onClick={ onClose }
 			/>
 
 			{ /* Modal panel */ }
 			<div className="relative bg-background-primary rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden border border-solid border-border-subtle">
 				{ /* ── Header ── */ }
-				<div className="flex items-center justify-between px-6 py-5">
+				<div className="flex items-center justify-between gap-4 px-6 py-5 border-0 border-b border-solid border-border-subtle">
 					<h2
 						id="bogo-preview-title"
 						className="m-0 text-base font-semibold text-text-primary"
@@ -311,7 +313,7 @@ const ModalPreviewOffer = ( { offer, onClose } ) => {
 				</div>
 
 				{ /* ── Footer ── */ }
-				<div className="px-6 py-4 bg-background-primary flex items-center justify-between">
+				<div className="px-6 py-4 bg-background-primary flex flex-wrap items-center justify-between gap-3 border-0 border-t border-solid border-border-subtle">
 					<div className="flex items-center gap-2">
 						<Badge
 							label={

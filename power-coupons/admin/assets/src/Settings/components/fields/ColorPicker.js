@@ -11,7 +11,13 @@ import { ArrowPathIcon, GlobeAltIcon } from '@heroicons/react/24/outline';
 import { parseFieldName, getNestedValue, setNestedValue } from './fieldUtils';
 
 function ColorPicker( props ) {
-	const { name, defaultColor } = props;
+	const {
+		name,
+		defaultColor,
+		disabled = false,
+		triggerId,
+		labelledBy,
+	} = props;
 	const [ data, dispatch ] = useStateValue();
 	const parts = parseFieldName( name );
 	const initialValue = getNestedValue( data, parts );
@@ -66,8 +72,12 @@ function ColorPicker( props ) {
 
 	// Generate a unique ID for this color picker for better accessibility
 	const colorPickerId = `colorpicker-${ name.replace( /[\[\]]/g, '-' ) }`;
+	const buttonId = triggerId || `${ colorPickerId }-trigger`;
 
 	const handleClick = () => {
+		if ( disabled ) {
+			return;
+		}
 		setdisplayColorPicker( ( prevValue ) => ! prevValue );
 	};
 
@@ -76,6 +86,9 @@ function ColorPicker( props ) {
 	};
 
 	const handleResetColor = () => {
+		if ( disabled ) {
+			return;
+		}
 		if ( color !== defaultColor ) {
 			handleChange( defaultColor );
 			setRotate( true );
@@ -90,18 +103,6 @@ function ColorPicker( props ) {
 		if ( newcolor ) {
 			setColor( newcolor );
 		}
-
-		// Trigger change
-		const changeEvent = new CustomEvent( 'powercoupons:color:change', {
-			bubbles: true,
-			detail: {
-				e: 'color',
-				name: props.name,
-				value: colorValue,
-			},
-		} );
-
-		document.dispatchEvent( changeEvent );
 
 		const currentValue = getNestedValue( data, parts );
 		if ( currentValue !== colorValue ) {
@@ -145,7 +146,7 @@ function ColorPicker( props ) {
 			<div className="power_coupons-field-data-content">
 				<div className="power_coupons-colorpicker-selector sm:justify-end">
 					<div
-						className="power_coupons-colorpicker-swatch-wrap focus-visible:ring-1 focus-visible:ring-toggle-on"
+						className="power_coupons-colorpicker-swatch-wrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-wpcolor focus-visible:ring-offset-2"
 						onClick={ handleClick }
 						onKeyDown={ ( e ) => {
 							// Handle keyboard events for accessibility
@@ -155,11 +156,13 @@ function ColorPicker( props ) {
 							}
 						} }
 						role="button"
-						tabIndex="0"
+						tabIndex={ disabled ? -1 : 0 }
 						aria-haspopup="true"
 						aria-expanded={ displayColorPicker }
 						aria-controls={ colorPickerId }
-						id={ `${ colorPickerId }-trigger` }
+						aria-labelledby={ labelledBy }
+						aria-disabled={ disabled ? 'true' : undefined }
+						id={ buttonId }
 					>
 						<span
 							className="power_coupons-colorpicker-swatch flex justify-center items-center"
@@ -181,11 +184,11 @@ function ColorPicker( props ) {
 							type="hidden"
 							name={ name }
 							value={ color }
-							aria-labelledby={ `${ colorPickerId }-trigger` }
+							aria-labelledby={ buttonId }
 						/>
 					</div>
 					<span
-						className={ `power_coupons-colorpicker-reset focus-visible:ring-1 ${
+						className={ `power_coupons-colorpicker-reset focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-wpcolor focus-visible:ring-offset-2 ${
 							color === defaultColor ? 'opacity-40' : ''
 						}` }
 						onClick={ handleResetColor }
@@ -198,7 +201,7 @@ function ColorPicker( props ) {
 							'power-coupons'
 						) }
 						type="button"
-						tabIndex="0"
+						tabIndex={ disabled ? -1 : 0 }
 					>
 						<ArrowPathIcon
 							className={ `h-5 w-5 stroke-2 transform ${

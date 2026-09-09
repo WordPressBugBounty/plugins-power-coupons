@@ -15,6 +15,11 @@ import { useEffect, useState, useRef } from 'react';
  * @param {number}   props.value       Currently selected page ID (0 = none).
  * @param {Function} props.onChange    Called with the selected page ID (or 0).
  * @param {string}   props.portalId    DOM id the dropdown portal renders into.
+ * @param {string}   props.inputId     DOM id for the search input, so a caption
+ *                                     outside this component can point a
+ *                                     `<label for>` at it.
+ * @param {string}   props.labelledBy  Id of the element naming this field.
+ * @param {boolean}  props.disabled    Whether the control is disabled.
  * @return {JSX.Element} The page selector.
  */
 const PageSelector = ( {
@@ -22,6 +27,9 @@ const PageSelector = ( {
 	value = 0,
 	onChange,
 	portalId = 'power-coupons-settings',
+	inputId,
+	labelledBy,
+	disabled = false,
 } ) => {
 	const [ selectedPage, setSelectedPage ] = useState( null );
 	const [ searchTerm, setSearchTerm ] = useState( '' );
@@ -122,6 +130,9 @@ const PageSelector = ( {
 	};
 
 	const clearPage = () => {
+		if ( disabled ) {
+			return;
+		}
 		setSelectedPage( null );
 		setSearchTerm( '' );
 		setPages( [] );
@@ -138,12 +149,23 @@ const PageSelector = ( {
 				loading={ loading }
 				setOpen={ setOpen }
 				// While a page is selected the field is read-only, so keep the
-				// dropdown forced closed regardless of focus.
-				open={ hasSelection ? false : open }
+				// dropdown forced closed regardless of focus. Same when disabled:
+				// the row is `inert`, which older browsers ignore, so the control
+				// carries its own disabled state too.
+				open={ hasSelection || disabled ? false : open }
 				size="md"
 			>
 				<SearchBox.Input
-					className="w-[98%] [&_span]:hidden" // Hides the search icon and shortcut key icon — no prop exists for that.
+					disabled={ disabled }
+					// [&_span]:hidden removes the search icon and shortcut hint,
+					// which the component exposes no prop for. The disabled
+					// background is added by hand because the secondary variant
+					// only recolours text and outline.
+					className={ `w-[98%] [&_span]:hidden${
+						disabled ? ' bg-field-background-disabled' : ''
+					}` }
+					id={ inputId }
+					aria-labelledby={ labelledBy }
 					placeholder={ placeholder }
 					value={ hasSelection ? selectedPage.name : searchTerm }
 					onChange={ setSearchTerm }
@@ -189,7 +211,8 @@ const PageSelector = ( {
 					type="button"
 					aria-label={ __( 'Clear selected page', 'power-coupons' ) }
 					onClick={ clearPage }
-					className="absolute inset-y-0 right-3 z-20 my-auto flex h-5 w-5 items-center justify-center rounded-full border-0 bg-transparent p-0 text-text-secondary cursor-pointer hover:text-text-primary"
+					disabled={ disabled }
+					className="absolute inset-y-0 right-3 z-20 my-auto flex h-5 w-5 items-center justify-center rounded-full border-0 bg-transparent p-0 text-text-secondary cursor-pointer hover:text-text-primary disabled:cursor-not-allowed disabled:text-text-tertiary"
 				>
 					<svg
 						xmlns="http://www.w3.org/2000/svg"

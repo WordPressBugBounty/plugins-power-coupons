@@ -52,6 +52,27 @@ const evaluateConditions = ( conditions, data ) => {
 	} );
 };
 
+/**
+ * Whether a field will render anything at all.
+ *
+ * Callers that need to know before rendering — a section heading that must not
+ * appear above an empty card, say — ask this instead of invoking the component
+ * and testing the result. `FieldRenderer` is a component with hooks in it, so
+ * calling it as a plain function to probe its output breaks the rules of hooks
+ * and mis-orders the hook table on the next real render.
+ *
+ * @param {Object} field Field definition.
+ * @param {Object} data  Current settings state.
+ * @return {boolean} True when the field has a component and passes conditions.
+ */
+export function isFieldVisible( field, data ) {
+	if ( ! componentMap[ field.type ] ) {
+		return false;
+	}
+
+	return evaluateConditions( field.conditions, data );
+}
+
 function FieldRenderer( { field, disabled = false } ) {
 	const stateValue = useStateValue();
 	const [ data ] = stateValue;
@@ -79,6 +100,15 @@ function FieldRenderer( { field, disabled = false } ) {
 		max: field.max,
 		disabled: disabled || isConditionDisabled,
 	};
+
+	// Opt-in confirmation for switches whose "off" position has consequences
+	// beyond this screen.
+	if ( field.confirm_off ) {
+		props.confirmOff = true;
+		props.confirmTitle = field.confirm_title;
+		props.confirmMessage = field.confirm_message;
+		props.confirmLabel = field.confirm_label;
+	}
 
 	props.value = getValueFromName( field.name, data );
 

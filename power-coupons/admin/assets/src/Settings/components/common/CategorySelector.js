@@ -2,7 +2,15 @@ import { Badge, SearchBox } from '@bsf/force-ui';
 import { __ } from '@wordpress/i18n';
 import { useEffect, useState, useRef } from 'react';
 
-const CategorySelector = ( { label, placeholder, value = [], onChange } ) => {
+const CategorySelector = ( {
+	label,
+	placeholder,
+	value = [],
+	onChange,
+	inputId,
+	labelledBy,
+	disabled = false,
+} ) => {
 	const [ selectedCategories, setSelectedCategories ] = useState( [] );
 	const [ searchTerm, setSearchTerm ] = useState( '' );
 	const [ categories, setCategories ] = useState( [] );
@@ -106,6 +114,9 @@ const CategorySelector = ( { label, placeholder, value = [], onChange } ) => {
 	};
 
 	const removeCategory = ( categoryId ) => {
+		if ( disabled ) {
+			return;
+		}
 		const newSelected = selectedCategories.filter(
 			( c ) => c.id !== categoryId
 		);
@@ -116,8 +127,9 @@ const CategorySelector = ( { label, placeholder, value = [], onChange } ) => {
 	return (
 		<div className="flex flex-col gap-2">
 			{ label && (
-				/* eslint-disable-next-line jsx-a11y/label-has-associated-control */
-				<label className="text-sm font-medium">{ label }</label>
+				<label className="text-sm font-medium" htmlFor={ inputId }>
+					{ label }
+				</label>
 			) }
 
 			<SearchBox
@@ -125,11 +137,20 @@ const CategorySelector = ( { label, placeholder, value = [], onChange } ) => {
 				closeAfterSelect={ false }
 				loading={ loading }
 				setOpen={ setOpen }
-				open={ open }
+				// A disabled row is `inert`, which older browsers ignore; the
+				// control carries its own disabled state so it holds there too.
+				open={ disabled ? false : open }
 				size="md"
 			>
 				<SearchBox.Input
-					className="w-[98%] [&_span]:hidden"
+					disabled={ disabled }
+					// The secondary variant only recolours text and outline when
+					// disabled; the field background is what reads as "off".
+					className={ `w-[98%] [&_span]:hidden${
+						disabled ? ' bg-field-background-disabled' : ''
+					}` }
+					id={ inputId }
+					aria-labelledby={ labelledBy }
 					placeholder={ placeholder }
 					value={ searchTerm }
 					onChange={ setSearchTerm }
@@ -187,6 +208,7 @@ const CategorySelector = ( { label, placeholder, value = [], onChange } ) => {
 					{ selectedCategories.map( ( category ) => (
 						<Badge
 							closable
+							disabled={ disabled }
 							onClose={ () => removeCategory( category.id ) }
 							key={ category.id }
 							label={ category.name }

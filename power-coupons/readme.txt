@@ -3,9 +3,9 @@
 Contributors: brainstormforce
 Tags: discount rules, dynamic discounts, woocommerce discounts, woocommerce coupons, auto apply coupons
 Requires at least: 6.0
-Tested up to: 6.9
+Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.0.6
+Stable tag: 1.0.7
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -170,6 +170,11 @@ React / JavaScript source code:
 The files in `admin/assets/build/` are generated from the corresponding source files in `admin/assets/src/` using standard JavaScript build tools such as `wp-scripts`.
 
 == Changelog ==
+
+= 1.0.7 - Wednesday, 9th September 2026 =
+* Improvement: Improved the admin UX/UI across onboarding, Settings, BOGO, and Loyalty Rewards.
+* Fix: Applying a coupon or redeeming credits no longer reloads the page, so CartFlows checkouts no longer restart at step one.
+* Fix: BOGO's variation picker modal no longer nests its form inside the checkout form.
 
 = 1.0.6 - Wednesday, 17th June 2026 =
 * Improvement: Onboarding now keeps you on the Power Coupons dashboard after activating sibling plugins, instead of being redirected away.

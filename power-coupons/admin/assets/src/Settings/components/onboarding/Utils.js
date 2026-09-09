@@ -4,7 +4,6 @@ import UserDetails from './Screens/UserDetails';
 import RecommendPlugins from './Screens/RecommendPlugins';
 import FinalStep from './Screens/FinalStep';
 import { __ } from '@wordpress/i18n';
-import parse from 'html-react-parser';
 
 import CartFlowsLogo from '../../../../images/logos/cartflows.gif';
 import ModernCartLogo from '../../../../images/logos/modern-cart.svg';
@@ -12,12 +11,59 @@ import WCARLogo from '../../../../images/logos/wcar.gif';
 import SureFormsLogo from '../../../../images/logos/sureforms.gif';
 import SureRankLogo from '../../../../images/logos/surerank.jpg';
 
+/**
+ * The wizard, in order.
+ *
+ * `slug` drives the `?step=` query param so reload and browser Back work.
+ * `label` names the step in the progress bar — bare numbers tell the merchant
+ * nothing about what is coming.
+ * `width` lets each step size itself to its own content instead of every step
+ * sharing one 718px card.
+ * `analyticsSlug` is the name reported as `exit_step`. It is deliberately not
+ * `slug`: those names are already in the analytics dashboard from earlier
+ * releases, so renaming them would split every exit funnel in two. Changing a
+ * URL is free; changing a tracked value is not.
+ *
+ * The array index is also the key the answers are stored under, and the server
+ * reads those same indices in `complete_onboarding()` — do not reorder without
+ * updating `get_onboarding_defaults()`.
+ */
 const Screens = [
-	Welcome,
-	ConfigureCoupons,
-	UserDetails,
-	RecommendPlugins,
-	FinalStep,
+	{
+		slug: 'welcome',
+		analyticsSlug: 'welcome',
+		label: __( 'Welcome', 'power-coupons' ),
+		component: Welcome,
+		width: 'md:w-[40rem]',
+	},
+	{
+		slug: 'configure',
+		analyticsSlug: 'configure',
+		label: __( 'Coupons', 'power-coupons' ),
+		component: ConfigureCoupons,
+		width: 'md:w-[44rem]',
+	},
+	{
+		slug: 'details',
+		analyticsSlug: 'user-details',
+		label: __( 'Updates', 'power-coupons' ),
+		component: UserDetails,
+		width: 'md:w-[47rem]',
+	},
+	{
+		slug: 'add-ons',
+		analyticsSlug: 'recommend-plugins',
+		label: __( 'Plugins', 'power-coupons' ),
+		component: RecommendPlugins,
+		width: 'md:w-[44rem]',
+	},
+	{
+		slug: 'done',
+		analyticsSlug: 'final',
+		label: __( 'Done', 'power-coupons' ),
+		component: FinalStep,
+		width: 'md:w-[40rem]',
+	},
 ];
 
 const RecommendedPlugins = [
@@ -68,27 +114,58 @@ const RecommendedPlugins = [
 	},
 ];
 
-const IconList = {
-	check: '<svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10 3.00098L4.5 8.50098L2 6.00098" stroke="#566A86" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"/></svg>',
-	close: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 4L4 12" stroke="#111827" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" /><path d="M4 4L12 12" stroke="#111827" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" /></svg>',
-	chevronLeft:
-		'<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12.5 15.001L7.5 10.001L12.5 5.00098" stroke="#111827" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"/></svg>',
-	chevronRight:
-		'<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7.5 15.001L12.5 10.001L7.5 5.00098" stroke="white" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+/**
+ * Human-readable install state for a recommended plugin.
+ *
+ * The server already distinguishes all three states; the wizard used to render
+ * `inactive` and `not-installed` as the same bare checkbox.
+ */
+const PluginStatusDisplay = {
+	'not-installed': {
+		label: __( 'Not installed', 'power-coupons' ),
+		dot: '',
+		text: 'text-text-secondary',
+	},
+	inactive: {
+		label: __( 'Not activated', 'power-coupons' ),
+		dot: 'bg-support-warning',
+		text: 'text-text-secondary',
+	},
+	installing: {
+		label: __( 'Installing…', 'power-coupons' ),
+		dot: '',
+		text: 'text-wpcolor',
+	},
+	failed: {
+		label: __( 'Install failed', 'power-coupons' ),
+		dot: 'bg-support-error',
+		text: 'text-support-error',
+	},
+	active: {
+		label: __( 'Active', 'power-coupons' ),
+		dot: 'bg-support-success',
+		text: 'text-support-success',
+	},
 };
 
-const RenderIcon = ( icon ) => {
-	return parse( IconList[ icon ] );
-};
+/**
+ * Force UI's primary button is the platform purple; this plugin's brand is the
+ * WordPress admin orange. Applied wherever the wizard renders a primary action.
+ */
+const PRIMARY_BUTTON_CLASS =
+	'bg-wpcolor hover:bg-wphovercolor outline-wpcolor hover:outline-wphovercolor';
+
+const adminUrl = ( path ) => `admin.php?page=power_coupons_settings${ path }`;
 
 const RedirectToDashboard = () => {
-	window.location.href = 'admin.php?page=power_coupons_settings';
+	window.location.href = adminUrl( '' );
 };
 
 export {
 	Screens,
-	IconList,
-	RenderIcon,
 	RecommendedPlugins,
+	PluginStatusDisplay,
+	PRIMARY_BUTTON_CLASS,
 	RedirectToDashboard,
+	adminUrl,
 };

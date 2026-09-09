@@ -1,6 +1,5 @@
-import { Fragment, useState, useRef, useEffect } from 'react';
-import { Listbox, Transition } from '@headlessui/react';
-import { ChevronDownIcon } from '@heroicons/react/24/outline';
+import { useState, useRef, useEffect } from 'react';
+import { Select } from '@bsf/force-ui';
 
 import { useStateValue } from '../Data';
 import { debounce } from 'lodash';
@@ -33,6 +32,9 @@ function DropdownField( props ) {
 	const [ selected, setSelected ] = useState( optionsArray[ dbValue ] );
 
 	function handleOnChange( selectedValue ) {
+		if ( disabled ) {
+			return;
+		}
 		const currentStoredValue = getNestedValue( data, parts );
 		if ( currentStoredValue !== selectedValue ) {
 			const newData = setNestedValue( data, parts, selectedValue );
@@ -51,92 +53,51 @@ function DropdownField( props ) {
 			title={ title }
 			description={ description }
 			disabled={ disabled }
+			controlId={ dropdownId }
 		>
-			<div className="flex-grow w-[25%]">
-				<Listbox
-					name={ name }
-					value={ selected }
-					onChange={ ( newSelected ) => {
-						setSelected( newSelected );
-						handleOnChange( newSelected.id );
-					} }
-					as="div"
-					id={ dropdownId }
-				>
-					<Listbox.Label className="sr-only">{ title }</Listbox.Label>
-					<div className="relative mt-1 w-full min-w-32">
-						<Listbox.Button
-							className="relative w-full py-2 pl-3 pr-10 text-left bg-white rounded-md cursor-pointer border border-solid border-border-subtle active:border-wpcolor active:outline-none sm:text-sm focus:outline-none focus:ring-2 focus:ring-wpcolor focus:border-wpcolor"
-							aria-labelledby={ `${ dropdownId }-label` }
-						>
-							<span
-								className="block truncate"
-								id={ `${ dropdownId }-label` }
-							>
-								{ selected.name }
-							</span>
-							<span className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-								<ChevronDownIcon
-									className="w-5 h-5 text-gray-400"
-									aria-hidden="true"
-								/>
-							</span>
-						</Listbox.Button>
-						<Transition
-							as={ Fragment }
-							leave="transition ease-in duration-100"
-							leaveFrom="opacity-100"
-							leaveTo="opacity-0"
-						>
-							<Listbox.Options className="absolute min-w-full w-auto py-1 mt-1 z-40 overflow-auto text-base bg-white rounded-md shadow-lg max-h-60 ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
-								{ optionsArray.map( ( options, id ) => (
-									<Listbox.Option
-										key={ id }
-										className={ ( { active } ) =>
-											`${
-												active
-													? ' text-white bg-wpcolor'
-													: 'text-gray-900'
-											}
-									cursor-default select-none relative py-1 px-3 whitespace-nowrap`
-										}
-										value={ options }
-									>
-										{ ( {
-											active,
-											selected: isSelected,
-										} ) => (
-											<>
-												<span
-													className={ `${
-														isSelected
-															? 'font-medium'
-															: 'font-normal'
-													} block` }
-												>
-													{ options.name }
-												</span>
-												{ isSelected ? (
-													<span
-														className={ `${
-															active
-																? 'text-wpcolor'
-																: 'text-wpcolor20'
-														}
-											absolute inset-y-0 left-0 flex items-center pl-3` }
-														aria-hidden="true"
-													>
-														{ /* Selected indicator */ }
-													</span>
-												) : null }
-											</>
-										) }
-									</Listbox.Option>
-								) ) }
-							</Listbox.Options>
-						</Transition>
-					</div>
-				</Listbox>
+			{ /* Wide enough for the longest option label — at 25% the value
+			itself was being truncated to "Drawer (Slid…". */ }
+			<div className="flex-grow w-full sm:w-auto sm:min-w-[16rem]">
+				<div className="relative mt-1 w-full">
+					<Select
+						id={ dropdownId }
+						size="md"
+						value={ selected }
+						by="id"
+						disabled={ disabled }
+						onChange={ ( option ) => {
+							// Guard the visible selection too, not just the
+							// write: repainting the label while
+							// `handleOnChange` bails would leave the field
+							// showing a value it never saved.
+							if ( disabled ) {
+								return;
+							}
+							setSelected( option );
+							handleOnChange( option.id );
+						} }
+					>
+						{ /* The settings app is wrapped in a form, so an
+						untyped button would submit it. */ }
+						<Select.Button
+							type="button"
+							className="w-full"
+							aria-label={ title }
+							disabled={ disabled }
+							render={ ( option ) => option?.name }
+						/>
+						<Select.Options>
+							{ optionsArray.map( ( option ) => (
+								<Select.Option
+									key={ option.id }
+									value={ option }
+								>
+									{ option.name }
+								</Select.Option>
+							) ) }
+						</Select.Options>
+					</Select>
+				</div>
 				<input
 					type="hidden"
 					name={ name }

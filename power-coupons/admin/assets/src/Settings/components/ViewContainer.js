@@ -1,4 +1,4 @@
-import { Container, Toaster, toast, Table, Switch } from '@bsf/force-ui';
+import { Container, Input, Toaster, toast, Table, Switch } from '@bsf/force-ui';
 import React, { useEffect, useRef, useState } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 import { __ } from '@wordpress/i18n';
@@ -18,14 +18,15 @@ import Points from './path/Points';
 import LicenseNotice from './tabs/LicenseNotice';
 import ProUpsell from './tabs/ProUpsell';
 import DummyPointsTable from './tabs/PointsUpsell'; // Campaigns-only upsell placeholder
+import { RenderIcon } from './common/Utils';
 const DUMMY_OFFERS = [
 	{
-		name: 'Buy 2 Get 1 Free — T-Shirts',
+		name: 'Buy 2 Get 1 Free: T-Shirts',
 		description: 'Buy any 2 t-shirts and get the 3rd free',
 		type: 'Buy X Get X',
 	},
 	{
-		name: 'BOGO 50% Off — Accessories',
+		name: 'BOGO 50% Off: Accessories',
 		description: 'Buy one accessory, get another at 50% off',
 		type: 'Buy X Get Y',
 	},
@@ -35,37 +36,37 @@ const DUMMY_OFFERS = [
 		type: 'Spend X Get Y',
 	},
 	{
-		name: 'Buy 3 Get 1 Free — Socks',
+		name: 'Buy 3 Get 1 Free: Socks',
 		description: 'Stock up and save on socks',
 		type: 'Buy X Get X',
 	},
 	{
-		name: 'Holiday BOGO — All Products',
+		name: 'Holiday BOGO: All Products',
 		description: 'Holiday season buy one get one on everything',
 		type: 'Buy X Get Y',
 	},
 	{
-		name: 'Summer Sale — Buy 2 Get 30% Off',
+		name: 'Summer Sale: Buy 2 Get 30% Off',
 		description: 'Summer clearance percentage discount',
 		type: 'Buy X Get X',
 	},
 	{
-		name: 'Flash Sale — Free Shipping Item',
+		name: 'Flash Sale: Free Shipping Item',
 		description: 'Limited time free shipping product offer',
 		type: 'Spend X Get Y',
 	},
 	{
-		name: 'VIP Members — Extra 20% Off',
+		name: 'VIP Members: Extra 20% Off',
 		description: 'Exclusive member discount on second item',
 		type: 'Buy X Get Y',
 	},
 	{
-		name: 'Back to School — Buy 2 Get 1 Free',
+		name: 'Back to School: Buy 2 Get 1 Free',
 		description: 'Stock up on school supplies with BOGO savings',
 		type: 'Buy X Get X',
 	},
 	{
-		name: 'Clearance BOGO — Winter Collection',
+		name: 'Clearance BOGO: Winter Collection',
 		description: 'Buy one winter item, get another free',
 		type: 'Buy X Get Y',
 	},
@@ -75,7 +76,7 @@ const DUMMY_OFFERS = [
 		type: 'Spend X Get Y',
 	},
 	{
-		name: 'Bundle Deal — Buy 4 Pay for 3',
+		name: 'Bundle Deal: Buy 4 Pay for 3',
 		description: 'Mix and match any 4 items, cheapest is free',
 		type: 'Buy X Get X',
 	},
@@ -89,21 +90,26 @@ function DummyBOGOTable() {
 					{ __( 'BOGO Offers', 'power-coupons' ) }
 				</h2>
 				<div className="flex items-center gap-3 sm:gap-4 w-full sm:w-auto">
-					<div className="relative flex-1 sm:flex-none">
-						<input
-							type="text"
-							className="block w-full sm:w-64 pl-10 pr-3 py-2 border border-border-subtle rounded-md text-sm placeholder-text-tertiary"
+					<div className="flex-1 sm:flex-none sm:w-64">
+						<Input
+							type="search"
+							size="sm"
 							placeholder={ __(
 								'Search offers…',
 								'power-coupons'
 							) }
+							prefix={
+								<span className="flex text-field-placeholder">
+									{ RenderIcon( 'search' ) }
+								</span>
+							}
 							readOnly
 							tabIndex={ -1 }
 						/>
 					</div>
 					<button
 						type="button"
-						className="flex items-center gap-2 px-4 py-2 text-white bg-orange-500 rounded-md border-none cursor-default whitespace-nowrap"
+						className="flex items-center gap-2 px-4 py-2 text-white bg-wpcolor rounded-md border-none cursor-default whitespace-nowrap"
 						tabIndex={ -1 }
 					>
 						<span>
@@ -207,7 +213,7 @@ function ViewContainer() {
 			body: formData,
 		} )
 			.then( () => {
-				toast.success( 'Successfully Saved!', {
+				toast.success( __( 'Successfully Saved!', 'power-coupons' ), {
 					description: '',
 				} );
 			} )
@@ -245,11 +251,17 @@ function ViewContainer() {
 		? query.get( 'tab' )
 		: getSettingsTab();
 
-	function navigate( navigateTab ) {
+	// Sub-pages are addressable too, so a sidebar sub-item can be linked to,
+	// bookmarked, and survives a reload instead of snapping back to the first.
+	const subtab = query.get( 'subtab' ) || '';
+
+	function navigate( navigateTab, navigateSubtab = '' ) {
 		setSettingsTab( navigateTab );
-		history.push(
+		const url =
 			'admin.php?page=power_coupons_settings&path=settings&tab=' +
-				navigateTab
+			navigateTab;
+		history.push(
+			navigateSubtab ? `${ url }&subtab=${ navigateSubtab }` : url
 		);
 	}
 
@@ -261,13 +273,23 @@ function ViewContainer() {
 		!! data?.pro_version && 'Activated' !== data.license_status;
 
 	return (
+		// This screen saves over AJAX on every change, so the form is only ever
+		// a container — it has no submit route. Without this, any descendant
+		// button that forgets `type="button"` becomes the form's default
+		// button, and Enter in any field POSTs the page and reloads it,
+		// throwing away whatever is still inside the fields' debounce window.
 		<form
 			className="powerCouponsSettings"
 			id="powerCouponsSettings"
 			method="post"
+			onSubmit={ ( event ) => event.preventDefault() }
 		>
+			{ /* `flex-1 min-h-0` rather than relying on `h-full`: a percentage
+			height does not resolve against a parent whose own height came from
+			the flex algorithm, so the column collapsed to its content and the
+			settings row never inherited the app's full height. */ }
 			<Container
-				className="h-full"
+				className="h-full flex-1 min-h-0"
 				containerType="flex"
 				direction="column"
 				gap={ 0 }
@@ -279,8 +301,12 @@ function ViewContainer() {
 						activePath={ activePath }
 					/>
 				</Container.Item>
+				{ /* The settings row grows into whatever height the app was
+				given, so the sidebar rail has a container taller than itself to
+				stick within. The old `max-h-[calc(100%_-_6rem)]` hard-coded the
+				topbar offset that the flex chain now derives. */ }
 				{ 'settings' === activePath && (
-					<Container.Item className="flex gap-4 bg-background-secondary max-h-[calc(100%_-_6rem)]">
+					<Container.Item className="flex gap-4 bg-background-secondary flex-1 min-h-0">
 						<Toaster
 							position="top-right"
 							design="stack"
@@ -292,6 +318,7 @@ function ViewContainer() {
 						<Settings
 							navigation={ navigation }
 							tab={ tab }
+							subtab={ subtab }
 							navigate={ navigate }
 						/>
 					</Container.Item>
