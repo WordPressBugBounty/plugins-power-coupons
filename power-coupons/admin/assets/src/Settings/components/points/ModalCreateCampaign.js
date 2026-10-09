@@ -68,9 +68,69 @@ const toDisplay = ( date ) => {
 	return format( date, 'MMM d, yyyy' );
 };
 
+// Campaigns are matched against the store's calendar, which can be a day
+// apart from the admin's browser clock. Pro localizes the store's date.
+const getStoreDate = () => window.powerCouponsSettings?.points_store_date || {};
+
+// wp_timezone_string() returns a bare offset ("+00:00") for stores set to a
+// UTC offset rather than a city; name it so the hint reads as a timezone.
+const formatTimezone = ( timezone ) =>
+	/^[+-]\d{2}:\d{2}$/.test( timezone || '' ) ? `UTC${ timezone }` : timezone;
+
+/**
+ * Why the campaign dates cannot be saved, or '' when they can.
+ *
+ * Checked as the dates change, not only on save: the dates are picked one at
+ * a time, and a merchant moving a campaign later sets the new start before the
+ * new end. Days are not disabled in the pickers for that reason — a greyed-out
+ * day gave no hint why it could not be picked.
+ *
+ * @param {Object} formData Campaign form state.
+ * @return {string} Message naming both dates, empty when the order is valid.
+ */
+const getDateOrderError = ( formData ) => {
+	// Y-m-d strings sort chronologically.
+	const start = String( formData.start_date || '' ).slice( 0, 10 );
+	const end = String( formData.end_date || '' ).slice( 0, 10 );
+	if ( ! start || ! end || start <= end ) {
+		return '';
+	}
+	return sprintf(
+		/* translators: 1: start date, 2: end date, both like "Oct 15, 2026". */
+		__(
+			'The start date (%1$s) is after the end date (%2$s). Choose an end date on or after the start date, or an earlier start date.',
+			'power-coupons'
+		),
+		toDisplay( parseDate( start ) ),
+		toDisplay( parseDate( end ) )
+	);
+};
+
 // ─── DateField component ──────────────────────────────────────────────────────
 
-const DateField = ( { id, label, value, placeholder, onChange, helper } ) => {
+/**
+ * Date input with a single-date picker popup.
+ *
+ * @param {Object}         props
+ * @param {string}         props.id          Button id; the message id is derived from it.
+ * @param {string}         props.label       Field label.
+ * @param {string}         props.value       Selected date as Y-m-d, empty when unset.
+ * @param {string}         props.placeholder Text shown when no date is set.
+ * @param {Function}       props.onChange    Receives the new Y-m-d value, or '' when cleared.
+ * @param {string}         props.helper      One line on what the date does.
+ * @param {string}         props.errorId     Id of the message explaining why the date is invalid, empty when valid.
+ * @param {Date|undefined} props.today       Day the picker marks as today.
+ */
+const DateField = ( {
+	id,
+	label,
+	value,
+	placeholder,
+	onChange,
+	helper,
+	errorId,
+	today,
+} ) => {
 	const [ open, setOpen ] = useState( false );
 	const [ dropUp, setDropUp ] = useState( false );
 	const ref = useRef( null );
@@ -127,7 +187,15 @@ const DateField = ( { id, label, value, placeholder, onChange, helper } ) => {
 					id={ id }
 					type="button"
 					onClick={ handleToggle }
-					className="w-full h-10 px-3.5 flex items-center gap-2 bg-white text-text-primary outline outline-1 outline-border-subtle border-none transition-[color,box-shadow,outline] duration-200 rounded text-sm text-left cursor-pointer hover:outline-border-strong focus:outline-focus-border focus:ring-2 focus:ring-toggle-on focus:ring-offset-2"
+					{ ...( errorId && {
+						'aria-invalid': 'true',
+						'aria-describedby': errorId,
+					} ) }
+					className={ `w-full h-10 px-3.5 flex items-center gap-2 bg-white text-text-primary outline outline-1 ${
+						errorId
+							? 'outline-field-required'
+							: 'outline-border-subtle'
+					} border-none transition-[color,box-shadow,outline] duration-200 rounded text-sm text-left cursor-pointer hover:outline-border-strong focus:outline-focus-border focus:ring-2 focus:ring-toggle-on focus:ring-offset-2` }
 				>
 					<CalendarIcon className="w-4 h-4 text-text-tertiary flex-shrink-0" />
 					<span
@@ -150,8 +218,13 @@ const DateField = ( { id, label, value, placeholder, onChange, helper } ) => {
 							selectionType="single"
 							variant="normal"
 							selected={ selected }
+							today={ today }
 							onApply={ ( date ) => {
-								onChange( toYMD( date ) );
+								// Apply with no day picked used to throw in toYMD()
+								// and leave the popup stuck open; keep the value.
+								if ( date instanceof Date && ! isNaN( date ) ) {
+									onChange( toYMD( date ) );
+								}
 								setOpen( false );
 							} }
 							onCancel={ () => {
@@ -307,6 +380,10 @@ const validateStep2 = ( formData ) => {
 			'power-coupons'
 		);
 	}
+	const dateOrderError = getDateOrderError( formData );
+	if ( dateOrderError ) {
+		errors.date_order = dateOrderError;
+	}
 	return errors;
 };
 
@@ -460,6 +537,13 @@ const FormTabs = [
 			formError,
 		} ) => {
 			const isOrderEarn = formData.action_type === 'order_earn';
+			// Live, so the problem shows the moment the second date is picked.
+			const dateOrderError = getDateOrderError( formData );
+			const dateErrorId = dateOrderError
+				? 'campaign-input-dates-error'
+				: '';
+			const storeDate = getStoreDate();
+			const storeToday = parseDate( storeDate.today );
 
 			const getEarnValueLabel = () => {
 				if ( ! isOrderEarn ) {
@@ -498,6 +582,13 @@ const FormTabs = [
 				const tabErrors = validateStep2( formData );
 				if ( Object.keys( tabErrors ).length > 0 ) {
 					setErrors( tabErrors );
+					// The date message is already on screen; move focus to it
+					// so the blocked save is explained, not silent.
+					if ( tabErrors.date_order && ! tabErrors.earn_value ) {
+						document
+							.getElementById( 'campaign-input-end-date' )
+							?.focus();
+					}
 					return;
 				}
 				setErrors( {} );
@@ -663,39 +754,67 @@ const FormTabs = [
 						</div>
 
 						{ /* Row 3: Date fields */ }
-						<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-							<DateField
-								id="campaign-input-start-date"
-								label={ __( 'Start Date', 'power-coupons' ) }
-								value={ formData.start_date ?? '' }
-								placeholder={ __(
-									'Select start date',
-									'power-coupons'
-								) }
-								onChange={ ( value ) =>
-									setFormData( 'start_date', value )
-								}
-								helper={ __(
-									'Leave blank to start immediately.',
-									'power-coupons'
-								) }
+						<div className="flex flex-col gap-2">
+							<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+								<DateField
+									id="campaign-input-start-date"
+									label={ __(
+										'Start Date',
+										'power-coupons'
+									) }
+									value={ formData.start_date ?? '' }
+									placeholder={ __(
+										'Select start date',
+										'power-coupons'
+									) }
+									onChange={ ( value ) => {
+										setFormData( 'start_date', value );
+										clearError( 'date_order' );
+									} }
+									helper={ __(
+										'Leave blank to start immediately.',
+										'power-coupons'
+									) }
+									errorId={ dateErrorId }
+									today={ storeToday }
+								/>
+								<DateField
+									id="campaign-input-end-date"
+									label={ __( 'End Date', 'power-coupons' ) }
+									value={ formData.end_date ?? '' }
+									placeholder={ __(
+										'Select end date',
+										'power-coupons'
+									) }
+									onChange={ ( value ) => {
+										setFormData( 'end_date', value );
+										clearError( 'date_order' );
+									} }
+									helper={ __(
+										'The campaign runs through the end of this day. Leave blank to never expire.',
+										'power-coupons'
+									) }
+									errorId={ dateErrorId }
+									today={ storeToday }
+								/>
+							</div>
+							<FieldError
+								id="campaign-input-dates-error"
+								message={ dateOrderError }
 							/>
-							<DateField
-								id="campaign-input-end-date"
-								label={ __( 'End Date', 'power-coupons' ) }
-								value={ formData.end_date ?? '' }
-								placeholder={ __(
-									'Select end date',
-									'power-coupons'
-								) }
-								onChange={ ( value ) =>
-									setFormData( 'end_date', value )
-								}
-								helper={ __(
-									'Leave blank to never expire.',
-									'power-coupons'
-								) }
-							/>
+							{ storeToday && (
+								<HelperText>
+									{ sprintf(
+										/* translators: 1: store timezone, e.g. "UTC" or "Asia/Kolkata", 2: today's date in the store, e.g. "Oct 5, 2026". */
+										__(
+											'Dates follow the store timezone (%1$s). Today in the store is %2$s.',
+											'power-coupons'
+										),
+										formatTimezone( storeDate.timezone ),
+										toDisplay( storeToday )
+									) }
+								</HelperText>
+							) }
 						</div>
 					</div>
 
@@ -820,7 +939,12 @@ const stepLabelClasses = ( state ) => {
 
 // ─── Form card ───────────────────────────────────────────────────────────────
 
-const _ModalContentForm = ( { toggleModalOpen, formData, setFormData } ) => {
+const _ModalContentForm = ( {
+	toggleModalOpen,
+	refreshList,
+	formData,
+	setFormData,
+} ) => {
 	const [ activeTab, setActiveTabInternal ] = useState( FormTabs[ 0 ].slug );
 	const [ errors, setErrors ] = useState( {} );
 	const [ formError, setFormError ] = useState( '' );
@@ -875,8 +999,9 @@ const _ModalContentForm = ( { toggleModalOpen, formData, setFormData } ) => {
 				min_order_total: formData.min_order_total || '0',
 				max_points: formData.max_points_cap || '0',
 				priority: formData.priority || '10',
-				start_date: formData.start_date || '',
-				end_date: formData.end_date || '',
+				// An untouched date still holds the stored DATETIME; send the day only.
+				start_date: String( formData.start_date || '' ).slice( 0, 10 ),
+				end_date: String( formData.end_date || '' ).slice( 0, 10 ),
 				status: formData.status || 'active',
 				verified_purchase_only:
 					'review' === actionType && formData.verified_purchase_only
@@ -902,6 +1027,9 @@ const _ModalContentForm = ( { toggleModalOpen, formData, setFormData } ) => {
 				// returned, so a save read as the dialog vanishing. Mark the
 				// last step done, let the check land, then close.
 				setSaved( true );
+				// Refresh the list now, under the hold, so the row is there
+				// when the modal closes and the toast says it was saved.
+				refreshList?.();
 				closeTimer.current = setTimeout( () => {
 					toggleModalOpen( true );
 				}, SUCCESS_HOLD_MS );
@@ -1041,7 +1169,7 @@ const _ModalContentForm = ( { toggleModalOpen, formData, setFormData } ) => {
 
 // ─── Modal root (full-screen overlay — same as BOGO) ─────────────────────────
 
-export default ( { toggleModalOpen, editingCampaign } ) => {
+export default ( { toggleModalOpen, refreshList, editingCampaign } ) => {
 	const [ formData, setFormDataState ] = useState(
 		editingCampaign
 			? ( () => {
@@ -1148,6 +1276,7 @@ export default ( { toggleModalOpen, editingCampaign } ) => {
 			<div className="flex items-start justify-center text-center px-4 sm:px-6 lg:px-0 pt-[88px] pb-12 min-h-full box-border">
 				<_ModalContentForm
 					toggleModalOpen={ toggleModalOpen }
+					refreshList={ refreshList }
 					formData={ formData }
 					setFormData={ handleFormData }
 				/>

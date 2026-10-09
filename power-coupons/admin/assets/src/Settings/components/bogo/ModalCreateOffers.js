@@ -88,9 +88,59 @@ const toDisplay = ( date ) => {
 	return format( date, 'MMM d, yyyy' );
 };
 
+const DATES_ERROR_ID = 'bogo-input-dates-error';
+
+/**
+ * Why the offer dates cannot be saved, or '' when they can.
+ *
+ * Checked as the dates change, not only on save: the server refused a start
+ * after the end, but its message was never rendered, so Update Offer did
+ * nothing visible.
+ *
+ * @param {Object} formData Offer form state.
+ * @return {string} Message naming both dates, empty when the order is valid.
+ */
+const getDateOrderError = ( formData ) => {
+	// Y-m-d strings sort chronologically.
+	const start = String( formData.start_date || '' ).slice( 0, 10 );
+	const end = String( formData.end_date || '' ).slice( 0, 10 );
+	if ( ! start || ! end || start <= end ) {
+		return '';
+	}
+	return sprintf(
+		/* translators: 1: start date, 2: end date, both like "Oct 15, 2026". */
+		__(
+			'The start date (%1$s) is after the end date (%2$s). Choose an end date on or after the start date, or an earlier start date.',
+			'power-coupons'
+		),
+		toDisplay( parseDate( start ) ),
+		toDisplay( parseDate( end ) )
+	);
+};
+
 // ─── DateField component ─────────────────────────────────────────────────────
 
-const DateField = ( { id, label, value, placeholder, onChange, helper } ) => {
+/**
+ * Date input with a single-date picker popup.
+ *
+ * @param {Object}   props
+ * @param {string}   props.id          Button id.
+ * @param {string}   props.label       Field label.
+ * @param {string}   props.value       Selected date as Y-m-d, empty when unset.
+ * @param {string}   props.placeholder Text shown when no date is set.
+ * @param {Function} props.onChange    Receives the new Y-m-d value, or '' when cleared.
+ * @param {string}   props.helper      One line on what the date does.
+ * @param {string}   props.errorId     Id of the message explaining why the date is invalid, empty when valid.
+ */
+const DateField = ( {
+	id,
+	label,
+	value,
+	placeholder,
+	onChange,
+	helper,
+	errorId,
+} ) => {
 	const [ open, setOpen ] = useState( false );
 	const [ dropUp, setDropUp ] = useState( false );
 	const dateRef = useRef( null );
@@ -147,7 +197,15 @@ const DateField = ( { id, label, value, placeholder, onChange, helper } ) => {
 					id={ id }
 					type="button"
 					onClick={ handleToggle }
-					className="w-full h-10 px-3.5 flex items-center gap-2 bg-white text-text-primary outline outline-1 outline-border-subtle border-none transition-[color,box-shadow,outline] duration-200 rounded text-sm text-left cursor-pointer hover:outline-border-strong focus:outline-focus-border focus:ring-2 focus:ring-toggle-on focus:ring-offset-2"
+					{ ...( errorId && {
+						'aria-invalid': 'true',
+						'aria-describedby': errorId,
+					} ) }
+					className={ `w-full h-10 px-3.5 flex items-center gap-2 bg-white text-text-primary outline outline-1 ${
+						errorId
+							? 'outline-field-required'
+							: 'outline-border-subtle'
+					} border-none transition-[color,box-shadow,outline] duration-200 rounded text-sm text-left cursor-pointer hover:outline-border-strong focus:outline-focus-border focus:ring-2 focus:ring-toggle-on focus:ring-offset-2` }
 				>
 					<CalendarIcon className="w-4 h-4 text-text-tertiary flex-shrink-0" />
 					<span
@@ -171,7 +229,11 @@ const DateField = ( { id, label, value, placeholder, onChange, helper } ) => {
 							variant="normal"
 							selected={ selected }
 							onApply={ ( date ) => {
-								onChange( toYMD( date ) );
+								// Apply with no day picked used to throw in toYMD()
+								// and leave the popup stuck open; keep the value.
+								if ( date instanceof Date && ! isNaN( date ) ) {
+									onChange( toYMD( date ) );
+								}
 								setOpen( false );
 							} }
 							onCancel={ () => {
@@ -292,6 +354,12 @@ const validateTab2 = ( formData ) => {
 				'power-coupons'
 			);
 		}
+	}
+
+	// Same key the server uses, so either source routes the admin back here.
+	const dateOrderError = getDateOrderError( formData );
+	if ( dateOrderError ) {
+		errors.end_date = dateOrderError;
 	}
 
 	return errors;
@@ -568,11 +636,25 @@ const FormTabs = [
 				const tabErrors = validateTab2( formData );
 				if ( Object.keys( tabErrors ).length > 0 ) {
 					setErrors( tabErrors );
+					// The date message is already on screen; move focus to it
+					// so the blocked step is explained, not silent.
+					if (
+						tabErrors.end_date &&
+						1 === Object.keys( tabErrors ).length
+					) {
+						document
+							.getElementById( 'bogo-input-end-date' )
+							?.focus();
+					}
 					return;
 				}
 				setErrors( {} );
 				setActiveTab( FormTabs[ 2 ].slug );
 			};
+
+			// Live, so the problem shows the moment the second date is picked.
+			const dateOrderError = getDateOrderError( formData );
+			const dateErrorId = dateOrderError ? DATES_ERROR_ID : '';
 
 			return (
 				<>
@@ -767,38 +849,51 @@ const FormTabs = [
 						) }
 
 						{ /* Schedule — Start & End Dates */ }
-						<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-							<DateField
-								id="bogo-input-start-date"
-								label={ __( 'Start Date', 'power-coupons' ) }
-								value={ formData.start_date ?? '' }
-								placeholder={ __(
-									'Select start date',
-									'power-coupons'
-								) }
-								onChange={ ( value ) =>
-									setFormData( 'start_date', value )
-								}
-								helper={ __(
-									'Leave blank to start immediately.',
-									'power-coupons'
-								) }
-							/>
-							<DateField
-								id="bogo-input-end-date"
-								label={ __( 'End Date', 'power-coupons' ) }
-								value={ formData.end_date ?? '' }
-								placeholder={ __(
-									'Select end date',
-									'power-coupons'
-								) }
-								onChange={ ( value ) =>
-									setFormData( 'end_date', value )
-								}
-								helper={ __(
-									'Leave blank to never expire.',
-									'power-coupons'
-								) }
+						<div className="flex flex-col gap-2">
+							<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+								<DateField
+									id="bogo-input-start-date"
+									label={ __(
+										'Start Date',
+										'power-coupons'
+									) }
+									value={ formData.start_date ?? '' }
+									placeholder={ __(
+										'Select start date',
+										'power-coupons'
+									) }
+									onChange={ ( value ) => {
+										setFormData( 'start_date', value );
+										clearError( 'end_date' );
+									} }
+									helper={ __(
+										'Leave blank to start immediately.',
+										'power-coupons'
+									) }
+									errorId={ dateErrorId }
+								/>
+								<DateField
+									id="bogo-input-end-date"
+									label={ __( 'End Date', 'power-coupons' ) }
+									value={ formData.end_date ?? '' }
+									placeholder={ __(
+										'Select end date',
+										'power-coupons'
+									) }
+									onChange={ ( value ) => {
+										setFormData( 'end_date', value );
+										clearError( 'end_date' );
+									} }
+									helper={ __(
+										'Leave blank to never expire.',
+										'power-coupons'
+									) }
+									errorId={ dateErrorId }
+								/>
+							</div>
+							<FieldError
+								id={ DATES_ERROR_ID }
+								message={ dateOrderError }
 							/>
 						</div>
 
@@ -1577,7 +1672,10 @@ const _ModalContentForm = ( {
 					serverErrors.get_quantity ||
 					serverErrors.spend_amount ||
 					serverErrors.discount_percent ||
-					serverErrors.discount_amount
+					serverErrors.discount_amount ||
+					// The dates live on step 2. Without this the server's
+					// refusal left Update Offer doing nothing visible.
+					serverErrors.end_date
 				) {
 					setActiveTabInternal( FormTabs[ 1 ].slug );
 				}
@@ -1817,7 +1915,7 @@ const ModalContent = ( { toggleModalOpen, editingOffer, saved, onSaved } ) => {
 	);
 };
 
-export default ( { toggleModalOpen, editingOffer } ) => {
+export default ( { toggleModalOpen, refreshList, editingOffer } ) => {
 	// Set once the offer has saved and the wizard is holding its last step on
 	// screen before closing itself. Owned here so the topbar's close button and
 	// Escape close with the same confirmation the timer would have given,
@@ -1885,7 +1983,12 @@ export default ( { toggleModalOpen, editingOffer } ) => {
 				toggleModalOpen={ toggleModalOpen }
 				editingOffer={ editingOffer }
 				saved={ saved }
-				onSaved={ () => setSaved( true ) }
+				onSaved={ () => {
+					setSaved( true );
+					// Refresh the list under the success hold, so the offer is
+					// listed by the time the modal closes and the toast shows.
+					refreshList?.();
+				} }
 			/>
 		</div>
 	);

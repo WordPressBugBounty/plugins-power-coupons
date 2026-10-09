@@ -8,7 +8,6 @@
 
 namespace Power_Coupons\Controllers;
 
-use Power_Coupons\Public_Folder\Power_Coupons_Frontend_Rules;
 use Power_Coupons\Includes\Power_Coupons_Settings_Helper;
 use Power_Coupons\Includes\Power_Coupons_Utilities;
 use Power_Coupons\Includes\Traits\Power_Coupons_Singleton;
@@ -194,7 +193,7 @@ class Display_Controller {
 			return;
 		}
 
-		$coupons = $this->get_available_coupons( $coupon_id );
+		$coupons = Power_Coupons_Utilities::get_available_coupons( $coupon_id, 'coupon_list' );
 
 		if ( empty( $coupons ) ) {
 			return;
@@ -224,165 +223,5 @@ class Display_Controller {
 		$coupon_styling_settings = $this->settings_helper->get_coupon_styling_settings();
 
 		include \POWER_COUPONS_DIR . 'views/coupon-list.php';
-	}
-
-	/**
-	 * Get available coupons
-	 *
-	 * @param int $coupon_id Optional specific coupon ID.
-	 * @return array<int, array<string, mixed>>
-	 */
-	private function get_available_coupons( $coupon_id = 0 ) {
-		static $caches = array();
-
-		// Check cache first.
-		$cache_key = 'pc_available_coupons_' . $coupon_id;
-		$cached    = ! empty( $caches[ $cache_key ] ) ? $caches[ $cache_key ] : false;
-
-		if ( false !== $cached && is_array( $cached ) ) {
-			return $cached;
-		}
-
-		$args = array(
-			'post_type'      => 'shop_coupon',
-			'post_status'    => 'publish',
-			'posts_per_page' => 50,
-			'fields'         => 'ids',
-			'meta_query'     => array(
-				array(
-					'key'     => 'discount_type',
-					'value'   => 'power_coupons_bogo',
-					'compare' => '!=',
-				),
-				// Exclude gift card coupons — they are personal, recipient-specific codes.
-				array(
-					'key'     => '_power_coupon_gift_card',
-					'compare' => 'NOT EXISTS',
-				),
-			),
-		);
-
-		if ( $coupon_id ) {
-			$args['p']              = $coupon_id;
-			$args['posts_per_page'] = 1;
-		}
-
-		$coupon_ids = get_posts( $args );
-
-		if ( empty( $coupon_ids ) ) {
-			return array();
-		}
-
-		$general_settings = $this->settings_helper->get_general_settings();
-
-		$show_applied_coupons = ! empty( $general_settings['show_applied_coupons'] );
-
-		// Bulk fetch all meta at once to avoid N+1 queries.
-		update_meta_cache( 'post', $coupon_ids );
-
-		$coupons = array();
-
-		// Get the rules validator instance.
-		$rules_validator = Power_Coupons_Frontend_Rules::get_instance();
-
-		foreach ( $coupon_ids as $id ) {
-			$coupon = new \WC_Coupon( $id );
-
-			$code = $coupon->get_code();
-
-			$is_applied = $this->is_coupon_applied( $code );
-
-			if ( ! $show_applied_coupons && $is_applied ) {
-				// Hide the applied coupons if show applied coupons setting is disabled.
-				continue;
-			}
-
-			// Only show coupons explicitly enabled for slideout display.
-			if ( 'yes' !== get_post_meta( $id, '_power_coupon_show_in_slideout', true ) ) {
-				continue;
-			}
-
-			// Check if coupon meets conditional rules (if enabled).
-			// Invalid coupons are hidden from display.
-			if ( ! $rules_validator->is_coupon_valid( $id ) ) {
-				continue; // Skip this coupon - it doesn't meet the rules.
-			}
-
-			$code          = $coupon->get_code();
-			$coupon_type   = $coupon->get_discount_type();
-			$coupon_expiry = $coupon->get_date_expires();
-
-			$coupons[] = array(
-				'id'          => $id,
-				'code'        => $code,
-				'description' => $coupon->get_description(),
-				'amount'      => $coupon->get_amount(),
-				'type'        => $coupon_type,
-				'type_text'   => $this->get_coupon_type_text( $coupon_type ),
-				'expiry_date' => ! empty( $coupon_expiry ) ? $coupon_expiry : __( 'NA', 'power-coupons' ),
-				'auto_apply'  => get_post_meta( $id, '_power_coupon_auto_apply', true ),
-				'start_date'  => get_post_meta( $id, '_power_coupon_start_date', true ),
-				'is_applied'  => $is_applied,
-			);
-		}
-
-		/**
-		 * Filter the available coupons before display.
-		 *
-		 * @since 1.0.1
-		 *
-		 * @param array  $coupons Array of coupon data arrays.
-		 * @param string $context Display context — 'coupon_list'.
-		 */
-		$coupons = apply_filters( 'power_coupons_available_coupons', $coupons, 'coupon_list' );
-
-		$caches[ $cache_key ] = $coupons;
-
-		return $coupons;
-	}
-
-	/**
-	 * Check if coupon is applied
-	 *
-	 * @param string $coupon_code Coupon code.
-	 * @return bool
-	 */
-	private function is_coupon_applied( $coupon_code ) {
-		$cart = WC()->cart;
-		return $cart instanceof \WC_Cart && $cart->has_discount( $coupon_code );
-	}
-
-	/**
-	 * Get human-readable text for coupon type.
-	 *
-	 * @param string $type Coupon discount type (e.g., 'percent', 'fixed_cart', 'fixed_product').
-	 * @return string Localized type description, or empty string if unknown.
-	 */
-	private function get_coupon_type_text( $type = '' ) {
-		$type_text = '';
-
-		if ( empty( $type ) ) {
-			return $type_text;
-		}
-
-		switch ( $type ) {
-			case 'percent':
-				$type_text = __( 'Percent Discount', 'power-coupons' );
-				break;
-
-			case 'fixed_cart':
-				$type_text = __( 'Cart Discount', 'power-coupons' );
-				break;
-
-			case 'fixed_product':
-				$type_text = __( 'Product Discount', 'power-coupons' );
-				break;
-
-			default:
-				$type_text = '';
-				break;
-		}
-
-		return $type_text;
 	}
 }

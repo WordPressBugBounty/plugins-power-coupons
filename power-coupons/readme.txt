@@ -5,7 +5,7 @@ Tags: discount rules, dynamic discounts, woocommerce discounts, woocommerce coup
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.0.7
+Stable tag: 1.0.8
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -170,6 +170,11 @@ React / JavaScript source code:
 The files in `admin/assets/build/` are generated from the corresponding source files in `admin/assets/src/` using standard JavaScript build tools such as `wp-scripts`.
 
 == Changelog ==
+
+= 1.0.8 - Thursday, 8th October 2026 =
+* Improvement: Improved the UI/UX and accessibility of the Settings, BOGO Offers and Loyalty Rewards admin screens.
+* Improvement: The campaign and BOGO offer modals now explain why a start date later than the end date is not allowed.
+* Improvement: The BOGO offer box now updates to "Offer Applied" right after the offer is applied, without a page reload.
 
 = 1.0.7 - Wednesday, 9th September 2026 =
 * Improvement: Improved the admin UX/UI across onboarding, Settings, BOGO, and Loyalty Rewards.

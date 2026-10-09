@@ -20,6 +20,13 @@
 		notificationsRefreshTimer: null,
 
 		/**
+		 * In-flight notifications request, aborted when a newer one starts.
+		 *
+		 * @type {?Object}
+		 */
+		notificationsRequest: null,
+
+		/**
 		 * Sync the cart UI after BOGO changed the server-side cart.
 		 *
 		 * Never fires `wc_update_cart` directly: that is a cart-page-only
@@ -49,22 +56,41 @@
 		 * @return {Promise} Resolves once the notifications are replaced.
 		 */
 		refreshNotifications() {
-			const $container = $( '.power-coupons-bogo-notifications' );
-
-			if ( ! $container.length ) {
+			if ( ! $( '.power-coupons-bogo-notifications' ).length ) {
 				return Promise.resolve( false );
 			}
 
-			return $.ajax( {
+			// A stale reply landing after a newer one would delete the fresh box.
+			if ( this.notificationsRequest ) {
+				this.notificationsRequest.abort();
+			}
+
+			const request = $.ajax( {
 				url: powerCouponsBogoData.ajaxUrl,
 				type: 'GET',
 				data: {
 					action: 'power_coupons_get_bogo_notifications',
 					nonce: powerCouponsBogoData.nonce,
 				},
-			} )
+				complete: () => {
+					if ( this.notificationsRequest === request ) {
+						this.notificationsRequest = null;
+					}
+				},
+			} );
+
+			this.notificationsRequest = request;
+
+			return request
 				.then( function ( response ) {
 					if ( ! response || ! response.success ) {
+						return false;
+					}
+
+					// Query now, not at send time: the box may have been replaced meanwhile.
+					const $container = $( '.power-coupons-bogo-notifications' );
+
+					if ( ! $container.length ) {
 						return false;
 					}
 
@@ -93,7 +119,7 @@
 					return true;
 				} )
 				.catch( function () {
-					// A failed fragment refresh must not reload the page.
+					// A failed or superseded refresh must not reload the page.
 					return false;
 				} );
 		},
@@ -445,7 +471,39 @@
 				this.onCartUpdate.bind( this )
 			);
 
-			// WooCommerce Blocks: reload page when coupons change so BOGO notifications refresh.
+			// Any Power Coupons cart change (coupon list, drawer, points) can
+			// flip an offer's state, and the box is server-rendered, so
+			// re-fetch it once the cart UI has settled.
+			$( document.body ).on(
+				'power_coupons_cart_refreshed',
+				( e, detail ) => {
+					// BOGO's own flows already refresh after syncCartUi().
+					if ( detail && 'bogo' === detail.source ) {
+						return;
+					}
+					this.scheduleNotificationsRefresh();
+				}
+			);
+
+			// WooCommerce's own coupon form and Remove link on the classic
+			// checkout bypass PowerCouponsCartRefresh, so listen for its
+			// native coupon events directly — same pattern as
+			// ajaxRefreshCouponsHTML() in frontend.js. No need to wait for
+			// `update_checkout` to settle first: WC_Cart hooks
+			// calculate_totals() to woocommerce_applied_coupon /
+			// woocommerce_removed_coupon, so the cart (and BOGO eligibility)
+			// is already current by the time these events fire. (The classic
+			// cart needs nothing: the box sits inside `.cart_totals`, which
+			// WooCommerce re-renders.)
+			$( document.body ).on(
+				'applied_coupon_in_checkout removed_coupon_in_checkout',
+				() => {
+					this.scheduleNotificationsRefresh();
+				}
+			);
+
+			// WooCommerce Blocks: re-render the BOGO notifications in place
+			// when a coupon is applied or removed through the block UI.
 			this.bindBlockEvents();
 		},
 
@@ -454,7 +512,8 @@
 		 *
 		 * Block cart/checkout handles coupon apply/remove via React — classic
 		 * jQuery events don't fire. Use registerCheckoutFilters to detect
-		 * coupon changes and reload the page for fresh server-rendered HTML.
+		 * coupon changes and re-render the server-rendered notifications in
+		 * place.
 		 */
 		bindBlockEvents() {
 			if (
@@ -485,6 +544,12 @@
 			window.wc.blocksCheckout.registerCheckoutFilters(
 				'powerCouponsBogoRefresh',
 				{
+					showApplyCouponNotice: ( defaultValue ) => {
+						// Coupon applied through the block coupon field: the
+						// offer may now be claimed, so re-render the box too.
+						this.scheduleNotificationsRefresh();
+						return defaultValue;
+					},
 					showRemoveCouponNotice: ( defaultValue ) => {
 						// Coupon removed in block cart/checkout: re-render the
 						// BOGO notifications in place rather than reloading.
@@ -498,10 +563,17 @@
 		/**
 		 * Queue a notifications refresh to run after the current task.
 		 *
+		 * Skipped off cart/checkout: the endpoint only renders the cart box,
+		 * so it would overwrite the single product page teaser.
+		 *
 		 * @since 1.0.7
 		 * @return {void}
 		 */
 		scheduleNotificationsRefresh() {
+			if ( ! this.isCartOrCheckoutPage() ) {
+				return;
+			}
+
 			if ( null !== this.notificationsRefreshTimer ) {
 				return;
 			}
@@ -510,6 +582,33 @@
 				this.notificationsRefreshTimer = null;
 				this.refreshNotifications();
 			}, 0 );
+		},
+
+		/**
+		 * Whether this page shows the cart/checkout offer box.
+		 *
+		 * Uses WooCommerce's body classes, not `form.checkout`: CartFlows
+		 * Instant Checkout prints a hidden checkout form on product pages.
+		 *
+		 * @since x.x.x
+		 * @return {boolean} True on a classic or block cart/checkout.
+		 */
+		isCartOrCheckoutPage() {
+			const body = document.body.classList;
+
+			// wc_body_class() adds these for is_cart() / is_checkout(), never on product pages.
+			if (
+				body.contains( 'woocommerce-cart' ) ||
+				body.contains( 'woocommerce-checkout' )
+			) {
+				return true;
+			}
+
+			// A cart/checkout block on a page that is not WooCommerce's own cart/checkout page.
+			return (
+				null !== document.querySelector( '.wc-block-cart' ) ||
+				null !== document.querySelector( '.wc-block-checkout' )
+			);
 		},
 
 		/**

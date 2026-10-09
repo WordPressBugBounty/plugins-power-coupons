@@ -11,6 +11,8 @@
 
 namespace Power_Coupons\Includes;
 
+use Power_Coupons\Public_Folder\Power_Coupons_Frontend_Rules;
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
@@ -558,5 +560,197 @@ class Power_Coupons_Utilities {
 		 * @param bool $reload Whether to reload. Default false.
 		 */
 		return (bool) apply_filters( 'power_coupons_reload_page_after_coupon_is_applied', false );
+	}
+
+	/**
+	 * Get the coupons available for display in the current request.
+	 *
+	 * Single source of truth for "which coupons may a shopper see". Both the
+	 * coupon list (`Display_Controller`) and the checkout drawer
+	 * (`Checkout_Drawer_Controller`) call this so the two can never disagree
+	 * about which coupons are eligible.
+	 *
+	 * The underlying query and eligibility pass are cached per request and
+	 * shared across contexts; only the `power_coupons_available_coupons` filter
+	 * runs per call, so each context still gets its own filter pass.
+	 *
+	 * @since x.x.x
+	 *
+	 * @param int    $coupon_id Optional specific coupon ID. 0 for all coupons.
+	 * @param string $context   Display context — 'coupon_list' or 'checkout_drawer'.
+	 * @return array<int, array<string, mixed>>
+	 */
+	public static function get_available_coupons( $coupon_id = 0, $context = 'coupon_list' ) {
+		$coupons = self::query_available_coupons( (int) $coupon_id );
+
+		/**
+		 * Filter the available coupons before display.
+		 *
+		 * @since x.x.x
+		 *
+		 * @param array  $coupons Array of coupon data arrays.
+		 * @param string $context Display context — 'coupon_list' or 'checkout_drawer'.
+		 */
+		return apply_filters( 'power_coupons_available_coupons', $coupons, $context );
+	}
+
+	/**
+	 * Query and validate the displayable coupons, cached per request.
+	 *
+	 * @since x.x.x
+	 *
+	 * @param int $coupon_id Optional specific coupon ID. 0 for all coupons.
+	 * @return array<int, array<string, mixed>>
+	 */
+	private static function query_available_coupons( $coupon_id = 0 ) {
+		static $caches = array();
+
+		$cache_key = 'pc_available_coupons_' . $coupon_id;
+
+		if ( isset( $caches[ $cache_key ] ) ) {
+			return $caches[ $cache_key ];
+		}
+
+		$args = array(
+			'post_type'      => 'shop_coupon',
+			'post_status'    => 'publish',
+			'posts_per_page' => 50,
+			'fields'         => 'ids',
+			'meta_query'     => array(
+				array(
+					'key'     => 'discount_type',
+					'value'   => 'power_coupons_bogo',
+					'compare' => '!=',
+				),
+				// Exclude gift card coupons — they are personal, recipient-specific codes.
+				array(
+					'key'     => '_power_coupon_gift_card',
+					'compare' => 'NOT EXISTS',
+				),
+			),
+		);
+
+		if ( $coupon_id ) {
+			$args['p']              = $coupon_id;
+			$args['posts_per_page'] = 1;
+		}
+
+		$coupon_ids = get_posts( $args );
+
+		if ( empty( $coupon_ids ) ) {
+			$caches[ $cache_key ] = array();
+			return array();
+		}
+
+		$general_settings = Power_Coupons_Settings_Helper::get_instance()->get_general_settings();
+
+		$show_applied_coupons = ! empty( $general_settings['show_applied_coupons'] );
+
+		// Bulk fetch all meta at once to avoid N+1 queries.
+		update_meta_cache( 'post', $coupon_ids );
+
+		$coupons = array();
+
+		// Get the rules validator instance.
+		$rules_validator = Power_Coupons_Frontend_Rules::get_instance();
+
+		foreach ( $coupon_ids as $id ) {
+			$id = (int) $id;
+
+			$coupon = new \WC_Coupon( $id );
+
+			$code = $coupon->get_code();
+
+			$is_applied = self::is_coupon_applied( $code );
+
+			if ( ! $show_applied_coupons && $is_applied ) {
+				// Hide the applied coupons if show applied coupons setting is disabled.
+				continue;
+			}
+
+			// Only show coupons explicitly enabled for slideout display.
+			if ( 'yes' !== get_post_meta( $id, '_power_coupon_show_in_slideout', true ) ) {
+				continue;
+			}
+
+			// Check if coupon meets conditional rules (if enabled).
+			// Invalid coupons are hidden from display.
+			if ( ! $rules_validator->is_coupon_valid( $id ) ) {
+				continue; // Skip this coupon - it doesn't meet the rules.
+			}
+
+			$start_date    = get_post_meta( $id, '_power_coupon_start_date', true );
+			$coupon_expiry = $coupon->get_date_expires();
+
+			// Skip coupons that have not started yet, or that have already expired.
+			if ( self::is_coupon_not_started( array( 'start_date' => $start_date ) ) ) {
+				continue;
+			}
+
+			if ( self::is_coupon_expired( array( 'expiry_date' => $coupon_expiry ) ) ) {
+				continue;
+			}
+
+			$coupon_type = $coupon->get_discount_type();
+
+			$coupons[] = array(
+				'id'          => $id,
+				'code'        => $code,
+				'description' => $coupon->get_description(),
+				'amount'      => $coupon->get_amount(),
+				'type'        => $coupon_type,
+				'type_text'   => self::get_coupon_type_text( $coupon_type ),
+				'expiry_date' => ! empty( $coupon_expiry ) ? $coupon_expiry : __( 'NA', 'power-coupons' ),
+				'auto_apply'  => get_post_meta( $id, '_power_coupon_auto_apply', true ),
+				'start_date'  => $start_date,
+				'is_applied'  => $is_applied,
+			);
+		}
+
+		$caches[ $cache_key ] = $coupons;
+
+		return $coupons;
+	}
+
+	/**
+	 * Check if a coupon is currently applied to the cart.
+	 *
+	 * @since x.x.x
+	 *
+	 * @param string $coupon_code Coupon code.
+	 * @return bool
+	 */
+	public static function is_coupon_applied( $coupon_code ) {
+		if ( ! self::is_woocommerce_active() ) {
+			return false;
+		}
+
+		$cart = WC()->cart;
+
+		return $cart instanceof \WC_Cart && $cart->has_discount( $coupon_code );
+	}
+
+	/**
+	 * Get human-readable text for a coupon discount type.
+	 *
+	 * @since x.x.x
+	 *
+	 * @param string $type Coupon discount type (e.g., 'percent', 'fixed_cart', 'fixed_product').
+	 * @return string Localized type description, or empty string if unknown.
+	 */
+	public static function get_coupon_type_text( $type = '' ) {
+		switch ( $type ) {
+			case 'percent':
+				return __( 'Percent Discount', 'power-coupons' );
+
+			case 'fixed_cart':
+				return __( 'Cart Discount', 'power-coupons' );
+
+			case 'fixed_product':
+				return __( 'Product Discount', 'power-coupons' );
+
+			default:
+				return '';
+		}
 	}
 }

@@ -98,6 +98,7 @@ function CampaignsList( { toast, tabSelector } ) {
 	} );
 
 	const debounceRef = useRef( null );
+	const latestLoad = useRef( 0 );
 	const isFirstRender = useRef( true );
 	const portalRootRef = useRef(
 		document.getElementById( 'power-coupons-settings' )
@@ -131,8 +132,13 @@ function CampaignsList( { toast, tabSelector } ) {
 				: __( 'Campaign created successfully!', 'power-coupons' );
 			toast.success( toastMessage, { description: '' } );
 		}
-		loadCampaigns( true, searchQuery );
+		// No reload here: opening or cancelling changes nothing, and a save
+		// already refreshed the list through refreshList while its success
+		// check was showing. Reloading only on close put the "created" toast
+		// up before the new row arrived.
 	};
+
+	const refreshList = () => loadCampaigns( true, searchQuery );
 
 	// Initial load on mount.
 	useEffect( () => {
@@ -175,6 +181,11 @@ function CampaignsList( { toast, tabSelector } ) {
 			setLoading( true );
 		}
 
+		// A save, a search and a delete can each start a reload; only the
+		// latest may write the list, or a slow older response would undo it.
+		const requestId = ++latestLoad.current;
+		let loaded = false;
+
 		try {
 			const body = {
 				action: 'power_coupons_get_points_campaigns',
@@ -193,11 +204,31 @@ function CampaignsList( { toast, tabSelector } ) {
 				body: new URLSearchParams( body ),
 			} );
 			const result = await response.json();
+			if ( requestId !== latestLoad.current ) {
+				return;
+			}
 			if ( result.success ) {
 				setCampaigns( result.data?.campaigns || [] );
+				loaded = true;
 			}
 		} catch ( error ) {
 			console.error( 'Error loading campaigns:', error );
+		}
+
+		if ( requestId !== latestLoad.current ) {
+			return;
+		}
+
+		// The list kept showing stale rows with nothing but a console line
+		// when this failed.
+		if ( ! loaded ) {
+			toast.error(
+				__(
+					'Could not load the latest campaigns. Reload the page to see your changes.',
+					'power-coupons'
+				),
+				{ description: '' }
+			);
 		}
 
 		setLoading( false );
@@ -372,6 +403,7 @@ function CampaignsList( { toast, tabSelector } ) {
 				{ openModal && (
 					<ModalCreateCampaign
 						toggleModalOpen={ toggleModalOpen }
+						refreshList={ refreshList }
 						editingCampaign={ editingCampaign }
 					/>
 				) }
@@ -457,6 +489,7 @@ function CampaignsList( { toast, tabSelector } ) {
 			{ openModal && (
 				<ModalCreateCampaign
 					toggleModalOpen={ toggleModalOpen }
+					refreshList={ refreshList }
 					editingCampaign={ editingCampaign }
 				/>
 			) }

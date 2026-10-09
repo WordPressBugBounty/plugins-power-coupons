@@ -1,5 +1,6 @@
 import { Tooltip } from '@bsf/force-ui';
 import { useState, useRef, useEffect, cloneElement } from '@wordpress/element';
+import { flushSync } from 'react-dom';
 
 // The most recent trigger to mount because it was focused. Shared across every
 // instance so that only the trigger the keyboard is actually on may reclaim
@@ -43,12 +44,35 @@ const LazyTooltip = ( {
 	const triggerRef = useRef( null );
 	const openedByPointer = useRef( false );
 	const focusClaim = useRef( 0 );
+	const pressed = useRef( false );
 
 	const show = () => {
 		setMounted( true );
 		setOpen( true );
 	};
 	const hide = () => setOpen( false );
+
+	/*
+	 * Mounting replaces the trigger's DOM node (see below), and a browser only
+	 * fires click when mousedown and mouseup land on the same node. An ordinary
+	 * render commits a frame or more after the hover, so a click that followed
+	 * the pointer in quickly — or on a busy page — pressed the old node and
+	 * released on the new one, and the first click on Edit did nothing.
+	 *
+	 * So on hover the swap commits synchronously: the event loop cannot hand
+	 * out the mousedown until it is done. A press that arrives without a
+	 * hover first (the trigger rendered under a still pointer) focuses the
+	 * trigger mid-click; that focus does not mount at all, because swapping
+	 * there would split the click. Keyboard focus still mounts.
+	 */
+	const showFromPointer = () => {
+		openedByPointer.current = true;
+		if ( mounted ) {
+			setOpen( true );
+			return;
+		}
+		flushSync( show );
+	};
 
 	/*
 	 * Force UI clones the trigger with Floating UI's handlers spread last, so
@@ -119,17 +143,27 @@ const LazyTooltip = ( {
 
 	const trigger = cloneElement( children, {
 		ref: triggerRef,
-		onMouseEnter: compose( () => {
-			openedByPointer.current = true;
-			show();
-		}, children.props.onMouseEnter ),
+		onMouseEnter: compose( showFromPointer, children.props.onMouseEnter ),
 		onMouseLeave: compose( hide, children.props.onMouseLeave ),
+		// Fires before the focus a press causes, so onFocus can tell the two apart.
+		onMouseDown: compose( () => {
+			pressed.current = true;
+		}, children.props.onMouseDown ),
+		onMouseUp: compose( () => {
+			pressed.current = false;
+		}, children.props.onMouseUp ),
 		onFocus: compose( () => {
+			if ( pressed.current ) {
+				return;
+			}
 			openedByPointer.current = false;
 			focusClaim.current = ++latestFocusClaim;
 			show();
 		}, children.props.onFocus ),
-		onBlur: compose( hide, children.props.onBlur ),
+		onBlur: compose( () => {
+			pressed.current = false;
+			hide();
+		}, children.props.onBlur ),
 	} );
 
 	if ( ! mounted ) {
