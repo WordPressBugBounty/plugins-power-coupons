@@ -1,6 +1,7 @@
 import { Badge, SearchBox } from '@bsf/force-ui';
-import { __ } from '@wordpress/i18n';
+import { __, sprintf } from '@wordpress/i18n';
 import { useEffect, useState, useRef } from 'react';
+import { fetchCategoriesByIds } from './categoryLookup';
 
 const CategorySelector = ( {
 	label,
@@ -10,20 +11,86 @@ const CategorySelector = ( {
 	inputId,
 	labelledBy,
 	disabled = false,
+	// Inside a modal the list must portal into the modal, or it opens behind it.
+	portalId = 'power-coupons-settings',
+	error = false,
+	describedBy,
 } ) => {
-	const [ selectedCategories, setSelectedCategories ] = useState( [] );
+	// Names known so far, by term ID. The selection itself always comes from
+	// `value`, so a slow or failed name lookup can never drop a saved category,
+	// and the merchant's order is kept.
+	const [ categoryNames, setCategoryNames ] = useState( {} );
+	const [ lookupFailed, setLookupFailed ] = useState( false );
+	// IDs a lookup answered without (a deleted category, for example).
+	const [ unresolvedIds, setUnresolvedIds ] = useState( {} );
 	const [ searchTerm, setSearchTerm ] = useState( '' );
 	const [ categories, setCategories ] = useState( [] );
 	const [ loading, setLoading ] = useState( false );
+	const [ searchFailed, setSearchFailed ] = useState( false );
 	const [ open, setOpen ] = useState( false );
 	const debounceRef = useRef( null );
+	const latestSearch = useRef( 0 );
+	const requestedIds = useRef( new Set() );
 
-	// Pre-populate selected categories when editing existing values.
+	// A malformed value must not white-screen the settings app.
+	const selectedIds = ( Array.isArray( value ) ? value : [] )
+		.map( Number )
+		.filter( Boolean );
+
+	const rememberNames = ( list ) => {
+		setCategoryNames( ( previous ) => {
+			const next = { ...previous };
+			list.forEach( ( category ) => {
+				next[ Number( category.id ) ] = category.name;
+			} );
+			return next;
+		} );
+	};
+
+	// Look up names for selected IDs we have not seen yet (pre-filled values on edit).
+	const missingIds = selectedIds.filter(
+		( id ) => ! requestedIds.current.has( id )
+	);
+	const missingKey = missingIds.join( ',' );
+
 	useEffect( () => {
-		if ( value.length > 0 ) {
-			fetchCategoriesByIds( value );
+		if ( ! missingIds.length ) {
+			return;
 		}
-	}, [] ); // eslint-disable-line react-hooks/exhaustive-deps
+
+		missingIds.forEach( ( id ) => requestedIds.current.add( id ) );
+
+		const requested = [ ...missingIds ];
+
+		fetchCategoriesByIds( requested )
+			.then( ( list ) => {
+				rememberNames( list );
+
+				const found = new Set(
+					list.map( ( category ) => Number( category.id ) )
+				);
+				const notFound = requested.filter(
+					( id ) => ! found.has( id )
+				);
+
+				if ( notFound.length ) {
+					setUnresolvedIds( ( previous ) => {
+						const next = { ...previous };
+						notFound.forEach( ( id ) => {
+							next[ id ] = true;
+						} );
+						return next;
+					} );
+				}
+			} )
+			.catch( ( lookupError ) => {
+				console.error(
+					'Error fetching categories by IDs:',
+					lookupError
+				);
+				setLookupFailed( true );
+			} );
+	}, [ missingKey ] ); // eslint-disable-line react-hooks/exhaustive-deps
 
 	useEffect( () => {
 		if ( debounceRef.current ) {
@@ -37,6 +104,10 @@ const CategorySelector = ( {
 				setOpen( true );
 			}, 400 );
 		} else {
+			// Anything still in flight belongs to a term that is gone.
+			latestSearch.current += 1;
+			setLoading( false );
+			setSearchFailed( false );
 			setCategories( [] );
 			setOpen( false );
 		}
@@ -48,34 +119,15 @@ const CategorySelector = ( {
 		};
 	}, [ searchTerm ] ); // eslint-disable-line react-hooks/exhaustive-deps
 
-	const fetchCategoriesByIds = async ( ids ) => {
-		try {
-			const formData = new FormData();
-			formData.append( 'action', 'power_coupons_get_categories_by_ids' );
-			formData.append(
-				'_wpnonce',
-				window.powerCouponsSettings?.update_nonce || ''
-			);
-			ids.forEach( ( id, index ) =>
-				formData.append( `ids[${ index }]`, id )
-			);
-
-			const response = await fetch( ajaxurl, {
-				method: 'POST',
-				body: formData,
-			} );
-			const result = await response.json();
-
-			if ( result.success && result.data.length > 0 ) {
-				setSelectedCategories( result.data );
-			}
-		} catch ( error ) {
-			console.error( 'Error fetching categories by IDs:', error );
-		}
-	};
-
 	const searchCategories = async ( term ) => {
+		// Only the newest request may update the list; an older, slower reply is ignored.
+		const requestId = ++latestSearch.current;
 		setLoading( true );
+		setSearchFailed( false );
+
+		let results = [];
+		let failed = false;
+
 		try {
 			const nonce = window.powerCouponsSettings?.update_nonce;
 
@@ -90,39 +142,75 @@ const CategorySelector = ( {
 			} );
 			const result = await response.json();
 
-			if ( result.success ) {
-				setCategories( result.data );
+			if ( result.success && Array.isArray( result.data ) ) {
+				results = result.data;
 			} else {
 				console.error( 'Search failed:', result );
-				setCategories( [] );
+				failed = true;
 			}
-		} catch ( error ) {
-			console.error( 'Error searching categories:', error );
-			setCategories( [] );
+		} catch ( searchError ) {
+			console.error( 'Error searching categories:', searchError );
+			failed = true;
 		}
+
+		if ( requestId !== latestSearch.current ) {
+			return;
+		}
+
+		setCategories( results );
+		setSearchFailed( failed );
 		setLoading( false );
 	};
 
 	const addCategory = ( category ) => {
-		if ( ! selectedCategories.find( ( c ) => c.id === category.id ) ) {
-			const newSelected = [ ...selectedCategories, category ];
-			setSelectedCategories( newSelected );
-			onChange( newSelected.map( ( c ) => c.id ) );
-			setSearchTerm( '' );
-			setOpen( false );
+		const id = Number( category.id );
+
+		if ( selectedIds.includes( id ) ) {
+			return;
 		}
+
+		// The search result already carries the name, so the lookup effect must not fetch it again.
+		requestedIds.current.add( id );
+		rememberNames( [ category ] );
+		onChange( [ ...selectedIds, id ] );
+		setSearchTerm( '' );
+		setOpen( false );
 	};
 
 	const removeCategory = ( categoryId ) => {
 		if ( disabled ) {
 			return;
 		}
-		const newSelected = selectedCategories.filter(
-			( c ) => c.id !== categoryId
-		);
-		setSelectedCategories( newSelected );
-		onChange( newSelected.map( ( c ) => c.id ) );
+		onChange( selectedIds.filter( ( id ) => id !== categoryId ) );
 	};
+
+	const getCategoryLabel = ( id ) => {
+		if ( categoryNames[ id ] ) {
+			return categoryNames[ id ];
+		}
+
+		return lookupFailed || unresolvedIds[ id ]
+			? sprintf(
+					/* translators: %d: category ID. */
+					__( 'Category #%d', 'power-coupons' ),
+					id
+			  )
+			: `#${ id }`;
+	};
+
+	/* eslint-disable no-nested-ternary */
+	const emptyMessage =
+		searchTerm.length < 2
+			? __( 'Type at least 2 letters to search', 'power-coupons' )
+			: loading
+			? __( 'Searching…', 'power-coupons' )
+			: searchFailed
+			? __(
+					'Could not load categories. Please try again.',
+					'power-coupons'
+			  )
+			: __( 'No categories found', 'power-coupons' );
+	/* eslint-enable no-nested-ternary */
 
 	return (
 		<div className="flex flex-col gap-2">
@@ -146,22 +234,28 @@ const CategorySelector = ( {
 					disabled={ disabled }
 					// The secondary variant only recolours text and outline when
 					// disabled; the field background is what reads as "off".
-					className={ `w-[98%] [&_span]:hidden${
-						disabled ? ' bg-field-background-disabled' : ''
-					}` }
+					// The error colour is repeated for hover and focus-within so the
+					// variant's own focus outline does not replace it, as in ProductSelector.
+					className={ `w-full box-border [&_input]:min-w-0 [&_span]:hidden${
+						error
+							? ' outline-support-error hover:outline-support-error focus-within:outline-support-error focus-within:hover:outline-support-error'
+							: ''
+					}${ disabled ? ' bg-field-background-disabled' : '' }` }
 					id={ inputId }
 					aria-labelledby={ labelledBy }
+					aria-invalid={ error ? 'true' : undefined }
+					aria-describedby={ describedBy }
 					placeholder={ placeholder }
 					value={ searchTerm }
 					onChange={ setSearchTerm }
 				/>
-				<SearchBox.Portal id="power-coupons-settings">
+				<SearchBox.Portal id={ portalId }>
 					<SearchBox.Content>
-						<SearchBox.List>
+						<SearchBox.List className="max-h-56 overflow-y-auto">
 							{ categories.length > 0 ? (
 								categories.map( ( category ) => {
-									const isSelected = selectedCategories.find(
-										( c ) => c.id === category.id
+									const isSelected = selectedIds.includes(
+										Number( category.id )
 									);
 									return (
 										<SearchBox.Item
@@ -183,19 +277,7 @@ const CategorySelector = ( {
 								} )
 							) : (
 								<SearchBox.Empty>
-									{ /* eslint-disable no-nested-ternary */ }
-									{ searchTerm.length < 2
-										? __(
-												'Type at least 2 letters to search',
-												'power-coupons'
-										  )
-										: loading
-										? __( 'Searching…', 'power-coupons' )
-										: __(
-												'No categories found',
-												'power-coupons'
-										  ) }
-									{ /* eslint-enable no-nested-ternary */ }
+									{ emptyMessage }
 								</SearchBox.Empty>
 							) }
 						</SearchBox.List>
@@ -203,15 +285,15 @@ const CategorySelector = ( {
 				</SearchBox.Portal>
 			</SearchBox>
 
-			{ selectedCategories.length > 0 && (
+			{ selectedIds.length > 0 && (
 				<div className="flex flex-wrap gap-2 mt-2">
-					{ selectedCategories.map( ( category ) => (
+					{ selectedIds.map( ( id ) => (
 						<Badge
 							closable
 							disabled={ disabled }
-							onClose={ () => removeCategory( category.id ) }
-							key={ category.id }
-							label={ category.name }
+							onClose={ () => removeCategory( id ) }
+							key={ id }
+							label={ getCategoryLabel( id ) }
 							size="sm"
 							type="pill"
 							variant="neutral"

@@ -16,6 +16,11 @@ import { BOGOPresets, getBOGOPresetData, RenderIcon } from '../common/Utils';
 import { CalendarIcon, CheckIcon } from '@heroicons/react/24/outline';
 import { format } from 'date-fns';
 import ProductSelector from './ProductSelector';
+import CategorySelector from '../common/CategorySelector';
+import {
+	supportsCategorySelection,
+	categoryAwareText,
+} from './categorySupport';
 import FieldError from '../common/FieldError';
 import SaveStatus from '../common/SaveStatus';
 import useModalFocus from '../common/hooks/useModalFocus';
@@ -367,27 +372,34 @@ const validateTab2 = ( formData ) => {
 
 const validateTab3 = ( formData ) => {
 	const errors = {};
-	const { key, trigger_type, buy_product_ids, get_product_ids } = formData;
+	const {
+		key,
+		trigger_type,
+		buy_product_ids,
+		get_product_ids,
+		buy_category_ids,
+		get_category_ids,
+	} = formData;
+	const withCategories = supportsCategorySelection();
+
+	// Products, categories, or both satisfy each side.
+	const hasBuySelection =
+		buy_product_ids?.length > 0 ||
+		( withCategories && buy_category_ids?.length > 0 );
+	const hasGetSelection =
+		get_product_ids?.length > 0 ||
+		( withCategories && get_category_ids?.length > 0 );
 
 	if (
 		BUY_X_TYPES.includes( key ) &&
-		( trigger_type || 'any_product' ) === 'specific_products'
+		( trigger_type || 'any_product' ) === 'specific_products' &&
+		! hasBuySelection
 	) {
-		if ( ! buy_product_ids || buy_product_ids.length === 0 ) {
-			errors.buy_product_ids = __(
-				'Please select at least one product to buy.',
-				'power-coupons'
-			);
-		}
+		errors.buy_product_ids = categoryAwareText( 'buyRequired' );
 	}
 
-	if ( TYPES_REQUIRING_GET_PRODUCTS.includes( key ) ) {
-		if ( ! get_product_ids || get_product_ids.length === 0 ) {
-			errors.get_product_ids = __(
-				'Please select at least one product to get.',
-				'power-coupons'
-			);
-		}
+	if ( TYPES_REQUIRING_GET_PRODUCTS.includes( key ) && ! hasGetSelection ) {
+		errors.get_product_ids = categoryAwareText( 'getRequired' );
 	}
 
 	return errors;
@@ -958,6 +970,13 @@ const FormTabs = [
 			const triggerType = formData.trigger_type || 'any_product';
 			const showProductsToBuy =
 				! isBuyXType || triggerType === 'specific_products';
+			const withCategories = supportsCategorySelection();
+			// Spend offers ignore the buy side, so categories are only offered
+			// where they take effect.
+			const showCategoriesToBuy =
+				withCategories &&
+				isBuyXType &&
+				triggerType === 'specific_products';
 
 			return (
 				<>
@@ -1006,14 +1025,14 @@ const FormTabs = [
 									/>
 									<RadioButton.Button
 										label={ {
-											heading: __(
-												'Specific Products',
-												'power-coupons'
-											),
-											description: __(
-												'Trigger only for selected products.',
-												'power-coupons'
-											),
+											heading:
+												categoryAwareText(
+													'triggerHeading'
+												),
+											description:
+												categoryAwareText(
+													'triggerDescription'
+												),
 										} }
 										value="specific_products"
 										checked={
@@ -1052,6 +1071,58 @@ const FormTabs = [
 										clearError( 'buy_product_ids' );
 									} }
 								/>
+								{ showCategoriesToBuy && (
+									<div className="mt-3">
+										<CategorySelector
+											inputId="bogo-buy-category-ids"
+											portalId="power-coupons-bogo-modal"
+											label={ __(
+												'Categories to Buy',
+												'power-coupons'
+											) }
+											placeholder={ __(
+												'Search for categories…',
+												'power-coupons'
+											) }
+											value={
+												formData.buy_category_ids || []
+											}
+											error={ !! errors.buy_product_ids }
+											describedBy={
+												[
+													errors.buy_product_ids
+														? 'bogo-buy-product-ids-error'
+														: '',
+													formData.key ===
+													'buy-x-get-x-free'
+														? 'bogo-buy-category-ids-hint'
+														: '',
+												]
+													.filter( Boolean )
+													.join( ' ' ) || undefined
+											}
+											onChange={ ( categoryIds ) => {
+												setFormData(
+													'buy_category_ids',
+													categoryIds
+												);
+												clearError( 'buy_product_ids' );
+											} }
+										/>
+										{ formData.key ===
+											'buy-x-get-x-free' && (
+											<p
+												id="bogo-buy-category-ids-hint"
+												className="m-0 mt-1 text-xs text-text-secondary"
+											>
+												{ __(
+													'Each product counts on its own: the customer must buy the quantity above of one product from these categories to get the same product free.',
+													'power-coupons'
+												) }
+											</p>
+										) }
+									</div>
+								) }
 								<FieldError
 									id="bogo-buy-product-ids-error"
 									message={ errors.buy_product_ids }
@@ -1087,6 +1158,43 @@ const FormTabs = [
 											clearError( 'get_product_ids' );
 										} }
 									/>
+									{ withCategories && (
+										<div className="mt-3">
+											<CategorySelector
+												inputId="bogo-get-category-ids"
+												portalId="power-coupons-bogo-modal"
+												label={ __(
+													'Categories to Get',
+													'power-coupons'
+												) }
+												placeholder={ __(
+													'Search for categories…',
+													'power-coupons'
+												) }
+												value={
+													formData.get_category_ids ||
+													[]
+												}
+												error={
+													!! errors.get_product_ids
+												}
+												describedBy={
+													errors.get_product_ids
+														? 'bogo-get-product-ids-error'
+														: undefined
+												}
+												onChange={ ( categoryIds ) => {
+													setFormData(
+														'get_category_ids',
+														categoryIds
+													);
+													clearError(
+														'get_product_ids'
+													);
+												} }
+											/>
+										</div>
+									) }
 									<FieldError
 										id="bogo-get-product-ids-error"
 										message={ errors.get_product_ids }
@@ -1618,6 +1726,23 @@ const _ModalContentForm = ( {
 				payload.append( `get_product_ids[${ i }]`, id )
 			);
 
+			// Sent even when empty: a missing key tells Pro to keep the stored
+			// categories, which is what an older free plugin relies on.
+			if ( supportsCategorySelection() ) {
+				[ 'buy_category_ids', 'get_category_ids' ].forEach(
+					( field ) => {
+						const ids = formData[ field ] || [];
+						if ( ! ids.length ) {
+							payload.append( field, '' );
+							return;
+						}
+						ids.forEach( ( id, i ) =>
+							payload.append( `${ field }[${ i }]`, id )
+						);
+					}
+				);
+			}
+
 			// Progress bar fields.
 			payload.append(
 				'progress_bar_enabled',
@@ -1678,8 +1803,14 @@ const _ModalContentForm = ( {
 					serverErrors.end_date
 				) {
 					setActiveTabInternal( FormTabs[ 1 ].slug );
+				} else if (
+					serverErrors.buy_product_ids ||
+					serverErrors.get_product_ids
+				) {
+					// Spend offers save from the progress-bar step, where a
+					// product error would otherwise have no field to show on.
+					setActiveTabInternal( FormTabs[ 2 ].slug );
 				}
-				// Product / Tab 3 errors stay on the current tab.
 			} else {
 				const msg =
 					typeof result.data === 'string'
@@ -1868,6 +1999,8 @@ const ModalContent = ( { toggleModalOpen, editingOffer, saved, onSaved } ) => {
 					free_shipping: editingOffer.free_shipping || false,
 					buy_product_ids: editingOffer.buy_product_ids || [],
 					get_product_ids: editingOffer.get_product_ids || [],
+					buy_category_ids: editingOffer.buy_category_ids || [],
+					get_category_ids: editingOffer.get_category_ids || [],
 					trigger_type: editingOffer.trigger_type || 'any_product',
 					start_date: editingOffer.start_date || '',
 					end_date: editingOffer.end_date || '',

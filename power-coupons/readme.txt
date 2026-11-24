@@ -5,7 +5,7 @@ Tags: discount rules, dynamic discounts, woocommerce discounts, woocommerce coup
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.0.8
+Stable tag: 1.0.9
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -170,6 +170,10 @@ React / JavaScript source code:
 The files in `admin/assets/build/` are generated from the corresponding source files in `admin/assets/src/` using standard JavaScript build tools such as `wp-scripts`.
 
 == Changelog ==
+
+= 1.0.9 - Tuesday, 24th November 2026 =
+* New: BOGO offers can now use one or more product categories for the products customers buy and get.
+* Fix: The cart progress bar showed "You unlocked" for a coupon whose conditional rules excluded the cart.
 
 = 1.0.8 - Thursday, 8th October 2026 =
 * Improvement: Improved the UI/UX and accessibility of the Settings, BOGO Offers and Loyalty Rewards admin screens.

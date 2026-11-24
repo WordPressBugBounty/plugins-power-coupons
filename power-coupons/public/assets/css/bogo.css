@@ -120,6 +120,27 @@ span.power-coupons-bogo-offer-applied-text {
 	font-weight: 500;
 }
 
+/* "Shop <category> →" links on a "Choose Your Item" card (unpicked category reward). */
+p.power-coupons-bogo-offer-pick-links {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px 12px;
+	margin: 0;
+}
+
+.power-coupons-bogo-notifications a.power-coupons-bogo-offer-pick-link {
+	font-size: 13px;
+	line-height: 16px;
+	font-weight: 500;
+	color: #1e40af;
+	text-decoration: none;
+}
+
+.power-coupons-bogo-notifications a.power-coupons-bogo-offer-pick-link:hover,
+.power-coupons-bogo-notifications a.power-coupons-bogo-offer-pick-link:focus {
+	text-decoration: underline;
+}
+
 /* "Change gift options" — a secondary, outlined control shown on an applied
    variable BOGO offer so it reads as "edit" rather than a primary CTA. */
 button.power-coupons-bogo-offer-button.power-coupons-bogo-change-options {

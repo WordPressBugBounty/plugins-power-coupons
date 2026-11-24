@@ -52,6 +52,10 @@ class Power_Coupons_Admin {
 		// Load Admin Notices.
 		require_once POWER_COUPONS_DIR . 'admin/class-power-coupons-admin-notices.php';
 		Power_Coupons_Admin_Notices::get_instance();
+
+		// Load the Black Friday 2026 Dashboard bar, hidden after 5 December 2026.
+		require_once POWER_COUPONS_DIR . 'admin/class-power-coupons-black-friday-nudge.php';
+		Power_Coupons_Black_Friday_Nudge::get_instance();
 	}
 
 	/**

@@ -1,7 +1,9 @@
-import { __ } from '@wordpress/i18n';
+import { __, sprintf } from '@wordpress/i18n';
 import { useState, useEffect } from '@wordpress/element';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import { Badge, Button } from '@bsf/force-ui';
+import { fetchCategoriesByIds } from '../common/categoryLookup';
+import { categoryAwareText } from './categorySupport';
 
 // ─── Static lookup maps ───────────────────────────────────────────────────────
 
@@ -74,6 +76,63 @@ const ModalPreviewOffer = ( { offer, onClose } ) => {
 	const [ buyProductNames, setBuyProductNames ] = useState( [] );
 	const [ getProductNames, setGetProductNames ] = useState( [] );
 	const [ loadingProducts, setLoadingProducts ] = useState( false );
+	// Category names by term ID; empty while loading and after a failed lookup.
+	const [ categoryNames, setCategoryNames ] = useState( {} );
+	const [ loadingCategories, setLoadingCategories ] = useState( false );
+
+	// Fetch category names whenever the offer changes. A category whose name can't
+	// be loaded (deleted, or a failed lookup) is still listed, by ID.
+	useEffect( () => {
+		setCategoryNames( {} );
+
+		if ( ! offer ) {
+			return;
+		}
+
+		const allIds = [
+			...new Set(
+				[
+					...( offer.buy_category_ids || [] ),
+					...( offer.get_category_ids || [] ),
+				]
+					.map( Number )
+					.filter( Boolean )
+			),
+		];
+
+		if ( ! allIds.length ) {
+			setLoadingCategories( false );
+			return;
+		}
+
+		// A reply for an earlier offer must not overwrite this one's names.
+		let current = true;
+		setLoadingCategories( true );
+
+		fetchCategoriesByIds( allIds )
+			.then( ( categories ) => {
+				if ( ! current ) {
+					return;
+				}
+				const nameMap = {};
+				categories.forEach( ( c ) => {
+					nameMap[ c.id ] = c.name;
+				} );
+				setCategoryNames( nameMap );
+			} )
+			.catch( ( error ) => {
+				console.error( 'Error fetching category names:', error );
+			} )
+			.finally( () => {
+				if ( current ) {
+					setLoadingCategories( false );
+				}
+			} );
+
+		return () => {
+			current = false;
+		};
+	}, [ offer ] );
 
 	// Fetch product names whenever the offer changes.
 	useEffect( () => {
@@ -89,8 +148,13 @@ const ModalPreviewOffer = ( { offer, onClose } ) => {
 		setGetProductNames( [] );
 
 		if ( ! allIds.length ) {
+			setLoadingProducts( false );
 			return;
 		}
+
+		let current = true;
+		const fallback = ( ids, nameMap = {} ) =>
+			ids.map( ( id ) => nameMap[ id ] || `#${ id }` );
 
 		setLoadingProducts( true );
 
@@ -107,23 +171,35 @@ const ModalPreviewOffer = ( { offer, onClose } ) => {
 		fetch( ajaxurl, { method: 'POST', body: formData } )
 			.then( ( r ) => r.json() )
 			.then( ( result ) => {
+				if ( ! current ) {
+					return;
+				}
+				const nameMap = {};
 				if ( result.success && Array.isArray( result.data ) ) {
-					const nameMap = {};
 					result.data.forEach( ( p ) => {
 						nameMap[ p.id ] = p.name;
 					} );
-					setBuyProductNames(
-						buyIds.map( ( id ) => nameMap[ id ] || `#${ id }` )
-					);
-					setGetProductNames(
-						getIds.map( ( id ) => nameMap[ id ] || `#${ id }` )
-					);
 				}
+				setBuyProductNames( fallback( buyIds, nameMap ) );
+				setGetProductNames( fallback( getIds, nameMap ) );
 			} )
 			.catch( ( error ) => {
 				console.error( 'Error fetching product names:', error );
+				// Still list the products, by ID, rather than leave the rows empty.
+				if ( current ) {
+					setBuyProductNames( fallback( buyIds ) );
+					setGetProductNames( fallback( getIds ) );
+				}
 			} )
-			.finally( () => setLoadingProducts( false ) );
+			.finally( () => {
+				if ( current ) {
+					setLoadingProducts( false );
+				}
+			} );
+
+		return () => {
+			current = false;
+		};
 	}, [ offer ] ); // eslint-disable-line react-hooks/exhaustive-deps
 
 	if ( ! offer ) {
@@ -137,18 +213,65 @@ const ModalPreviewOffer = ( { offer, onClose } ) => {
 		offer.offer_type !== 'buy-x-get-x-free' &&
 		offer.offer_type !== 'spend-x-get-free-shipping';
 
-	/* eslint-disable no-nested-ternary */
-	const buyNames = loadingProducts
-		? __( 'Loading…', 'power-coupons' )
-		: buyProductNames.length
-		? buyProductNames.join( ', ' )
-		: __( 'Any Products', 'power-coupons' );
-	const getNames = loadingProducts
-		? __( 'Loading…', 'power-coupons' )
-		: getProductNames.length
-		? getProductNames.join( ', ' )
-		: __( 'Any Products', 'power-coupons' );
-	/* eslint-enable no-nested-ternary */
+	// Rows are decided from the offer's IDs, not from the names fetched for
+	// them, so nothing disappears while loading or after a failed lookup.
+	const isSpecificTrigger = offer.trigger_type === 'specific_products';
+	const buyProductIds = ( offer.buy_product_ids || [] ).filter( Boolean );
+	const getProductIds = ( offer.get_product_ids || [] ).filter( Boolean );
+	const buyCategoryIds = ( offer.buy_category_ids || [] )
+		.map( Number )
+		.filter( Boolean );
+	const getCategoryIds = ( offer.get_category_ids || [] )
+		.map( Number )
+		.filter( Boolean );
+	const hasBuyCategories = buyCategoryIds.length > 0;
+	const hasGetCategories = getCategoryIds.length > 0;
+
+	// A category-only side has no products, which is not "any product".
+	const showBuyProducts = buyProductIds.length > 0 || ! hasBuyCategories;
+	const showGetProductRow =
+		showGetProducts && ( getProductIds.length > 0 || ! hasGetCategories );
+
+	const loadingText = __( 'Loading…', 'power-coupons' );
+	const noneText = __( 'None selected', 'power-coupons' );
+
+	const productNamesText = ( ids, names, emptyText ) => {
+		if ( ! ids.length ) {
+			return emptyText;
+		}
+		return loadingProducts || ! names.length
+			? loadingText
+			: names.join( ', ' );
+	};
+
+	const categoryNamesText = ( ids ) =>
+		loadingCategories
+			? loadingText
+			: ids
+					.map(
+						( id ) =>
+							categoryNames[ id ] ||
+							sprintf(
+								/* translators: %d: category ID. */
+								__( 'Category #%d', 'power-coupons' ),
+								id
+							)
+					)
+					.join( ', ' );
+
+	// "Any Products" only holds when the offer triggers on any product.
+	const buyNames = productNamesText(
+		buyProductIds,
+		buyProductNames,
+		isBuyX && isSpecificTrigger
+			? noneText
+			: __( 'Any Products', 'power-coupons' )
+	);
+	const getNames = productNamesText(
+		getProductIds,
+		getProductNames,
+		noneText
+	);
 
 	return (
 		<div
@@ -275,11 +398,8 @@ const ModalPreviewOffer = ( { offer, onClose } ) => {
 							<DetailRow
 								label={ __( 'Trigger', 'power-coupons' ) }
 								value={
-									offer.trigger_type === 'specific_products'
-										? __(
-												'Specific Products',
-												'power-coupons'
-										  )
+									isSpecificTrigger
+										? categoryAwareText( 'triggerHeading' )
 										: __( 'All Products', 'power-coupons' )
 								}
 							/>
@@ -291,21 +411,53 @@ const ModalPreviewOffer = ( { offer, onClose } ) => {
 						<SectionHeading
 							label={ __( 'Products', 'power-coupons' ) }
 						/>
-						<div className="rounded-lg border border-solid border-border-subtle px-4">
-							<DetailRow
-								label={ __(
-									'Products to Buy',
-									'power-coupons'
-								) }
-								value={ buyNames }
-							/>
-							{ showGetProducts && (
+						<div
+							className="rounded-lg border border-solid border-border-subtle px-4"
+							aria-live="polite"
+							aria-busy={
+								loadingProducts || loadingCategories
+									? 'true'
+									: undefined
+							}
+						>
+							{ showBuyProducts && (
+								<DetailRow
+									label={ __(
+										'Products to Buy',
+										'power-coupons'
+									) }
+									value={ buyNames }
+								/>
+							) }
+							{ hasBuyCategories && (
+								<DetailRow
+									label={ __(
+										'Categories to Buy',
+										'power-coupons'
+									) }
+									value={ categoryNamesText(
+										buyCategoryIds
+									) }
+								/>
+							) }
+							{ showGetProductRow && (
 								<DetailRow
 									label={ __(
 										'Products to Get',
 										'power-coupons'
 									) }
 									value={ getNames }
+								/>
+							) }
+							{ showGetProducts && hasGetCategories && (
+								<DetailRow
+									label={ __(
+										'Categories to Get',
+										'power-coupons'
+									) }
+									value={ categoryNamesText(
+										getCategoryIds
+									) }
 								/>
 							) }
 						</div>

@@ -95,7 +95,12 @@
 			}
 
 			this._refreshTimer = setTimeout( () => {
-				$.ajax( {
+				// A reply to an older request describes an older cart, so drop it.
+				if ( this._request ) {
+					this._request.abort();
+				}
+
+				const request = $.ajax( {
 					url: powerCouponsProgressData.ajaxUrl,
 					type: 'POST',
 					data: {
@@ -104,63 +109,135 @@
 					},
 					success: ( response ) => {
 						if (
-							response.success &&
-							response.data &&
-							response.data.sources
+							request !== this._request ||
+							! response.success ||
+							! response.data ||
+							! response.data.sources
 						) {
-							this.updateDOM( response.data.sources );
+							return;
+						}
+
+						this.updateDOM(
+							response.data.sources,
+							response.data.html || ''
+						);
+					},
+					complete: () => {
+						if ( request === this._request ) {
+							this._request = null;
 						}
 					},
 				} );
+
+				this._request = request;
 			}, 300 );
+		},
+
+		/**
+		 * Find a bar by its source key.
+		 *
+		 * Matched by attribute value rather than a built selector, so a key can never be read as selector syntax.
+		 *
+		 * @param {jQuery} $scope Element(s) to search in.
+		 * @param {string} key    Source key.
+		 * @return {jQuery} The matching bar, if any.
+		 */
+		findGoal( $scope, key ) {
+			return $scope
+				.find( '[data-source-key]' )
+				.filter(
+					( index, el ) =>
+						el.getAttribute( 'data-source-key' ) === key
+				)
+				.first();
 		},
 
 		/**
 		 * Update DOM elements with fresh progress data.
 		 *
-		 * @param {Array} sources Array of source progress objects.
+		 * @param {Array}  sources Array of source progress objects, in display order.
+		 * @param {string} html    Rendered bars for these sources. Empty when the server does not send it.
 		 */
-		updateDOM( sources ) {
-			sources.forEach( ( source ) => {
-				const $source = $( '[data-source-key="' + source.key + '"]' );
-				if ( ! $source.length ) {
-					return;
-				}
+		updateDOM( sources, html ) {
+			const self = this;
+			const sourcesByKey = new Map(
+				sources.map( ( source ) => [ source.key, source ] )
+			);
+			const $rendered = html ? $( $.parseHTML( html ) ) : $();
 
-				// Update fill width.
-				$source
-					.find( '.power-coupons-progress-fill' )
-					.css( 'width', source.percentage + '%' );
+			$( '.power-coupons-progress-container' ).each( function () {
+				const $container = $( this );
 
-				// Update message.
-				$source
-					.find( '.power-coupons-progress-text' )
-					.html( source.message );
+				// Add the bars that became eligible after page load, keeping the server's order.
+				let $previous = $();
+				sources.forEach( ( source ) => {
+					let $goal = self.findGoal( $container, source.key );
 
-				// Update aria.
-				$source
-					.find( '.power-coupons-progress-track' )
-					.attr( 'aria-valuenow', Math.round( source.percentage ) );
+					if ( ! $goal.length ) {
+						$goal = self.findGoal( $rendered, source.key ).clone();
+						if ( ! $goal.length ) {
+							return;
+						}
 
-				// Toggle complete class.
-				if ( source.is_complete ) {
-					$source.addClass( 'complete' );
-					$source
-						.find( '.power-coupons-progress-fill' )
-						.addClass( 'complete' );
-					$source
-						.find( '.power-coupons-progress-message' )
-						.addClass( 'success' );
-				} else {
-					$source.removeClass( 'complete' );
-					$source
-						.find( '.power-coupons-progress-fill' )
-						.removeClass( 'complete' );
-					$source
-						.find( '.power-coupons-progress-message' )
-						.removeClass( 'success' );
-				}
+						if ( $previous.length ) {
+							$goal.insertAfter( $previous );
+						} else {
+							$container.prepend( $goal );
+						}
+					}
+
+					$previous = $goal;
+				} );
+
+				// Show and refresh the bars that still apply, hide the ones that no longer do.
+				let hasVisibleGoal = false;
+				$container.find( '[data-source-key]' ).each( function () {
+					const source = sourcesByKey.get(
+						this.getAttribute( 'data-source-key' )
+					);
+
+					$( this ).toggle( !! source );
+					if ( source ) {
+						hasVisibleGoal = true;
+						self.updateGoal( $( this ), source );
+					}
+				} );
+
+				// Hide the wrapper too when none of its bars apply, so no empty box is left behind.
+				$container.toggle( hasVisibleGoal );
 			} );
+		},
+
+		/**
+		 * Update one bar with fresh progress data.
+		 *
+		 * @param {jQuery} $source Bar element.
+		 * @param {Object} source  Source progress object.
+		 */
+		updateGoal( $source, source ) {
+			// Update fill width.
+			$source
+				.find( '.power-coupons-progress-fill' )
+				.css( 'width', source.percentage + '%' );
+
+			// Update message.
+			$source
+				.find( '.power-coupons-progress-text' )
+				.html( source.message );
+
+			// Update aria.
+			$source
+				.find( '.power-coupons-progress-track' )
+				.attr( 'aria-valuenow', Math.round( source.percentage ) );
+
+			// Toggle complete class.
+			$source.toggleClass( 'complete', !! source.is_complete );
+			$source
+				.find( '.power-coupons-progress-fill' )
+				.toggleClass( 'complete', !! source.is_complete );
+			$source
+				.find( '.power-coupons-progress-message' )
+				.toggleClass( 'success', !! source.is_complete );
 		},
 	};
 

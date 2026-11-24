@@ -26,6 +26,12 @@ if ( empty( $notifications ) ) {
 		?>
 		<?php
 		$variable_products = isset( $notification['variable_get_products'] ) && is_array( $notification['variable_get_products'] ) ? $notification['variable_get_products'] : array();
+
+		// Applied, but the customer still has to add the reward item themselves (a category
+		// reward is never auto-added), so the card must not say the offer is done yet.
+		$awaiting_pick = $notification['is_applied'] && ! empty( $notification['awaiting_pick'] );
+		$is_claimed    = $notification['is_applied'] && ! $awaiting_pick;
+		$pick_links    = $awaiting_pick && isset( $notification['pick_links'] ) && is_array( $notification['pick_links'] ) ? $notification['pick_links'] : array();
 		?>
 	<div
 		class="<?php echo esc_attr( $wrapper_class ); ?>"
@@ -34,7 +40,7 @@ if ( empty( $notifications ) ) {
 		<img src="<?php echo esc_url( $notification['product_image_url'] ); ?>" alt="<?php echo esc_attr( $notification['offer_name'] ); ?>">
 
 		<div class="power-coupons-bogo-offer-right">
-			<p class="power-coupons-bogo-offer-badge <?php echo $notification['is_applied'] ? 'power-coupons-bogo-badge-claimed' : 'power-coupons-bogo-badge-available'; ?>">
+			<p class="power-coupons-bogo-offer-badge <?php echo $is_claimed ? 'power-coupons-bogo-badge-claimed' : 'power-coupons-bogo-badge-available'; ?>">
 				<svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
 					<g clip-path="url(#clip0_4111_1698)">
 					<path d="M11.6663 7V12.8333H2.33301V7" stroke="currentColor" stroke-width="0.95" stroke-linecap="round" stroke-linejoin="round"/>
@@ -51,7 +57,9 @@ if ( empty( $notifications ) ) {
 				</svg>
 
 				<?php
-				if ( $notification['is_applied'] ) {
+				if ( $awaiting_pick ) {
+					echo esc_html__( 'Choose Your Item', 'power-coupons' );
+				} elseif ( $notification['is_applied'] ) {
 					echo esc_html__( 'Offer Applied', 'power-coupons' );
 				} else {
 					echo esc_html__( 'Available Offer', 'power-coupons' );
@@ -69,11 +77,30 @@ if ( empty( $notifications ) ) {
 				</p>
 			</div>
 
+			<?php if ( ! empty( $pick_links ) ) : ?>
+			<p class="power-coupons-bogo-offer-pick-links">
+				<?php foreach ( $pick_links as $pick_link ) : ?>
+					<?php
+					if ( empty( $pick_link['url'] ) || empty( $pick_link['name'] ) ) {
+						continue;
+					}
+					?>
+				<a class="power-coupons-bogo-offer-pick-link" href="<?php echo esc_url( $pick_link['url'] ); ?>">
+					<?php
+					/* translators: %s: product category name */
+					echo esc_html( sprintf( __( 'Shop %s', 'power-coupons' ), $pick_link['name'] ) );
+					?>
+					<span aria-hidden="true">&rarr;</span>
+				</a>
+				<?php endforeach; ?>
+			</p>
+			<?php endif; ?>
+
 			<?php if ( ! $notification['is_applied'] && $notification['eligible'] ) : ?>
 			<button class="power-coupons-bogo-offer-button power-coupons-apply-coupon-btn" data-coupon="<?php echo esc_attr( $notification['coupon_code'] ); ?>">
 				<?php esc_html_e( 'Apply Offer', 'power-coupons' ); ?>
 			</button>
-			<?php elseif ( $notification['is_applied'] ) : ?>
+			<?php elseif ( $is_claimed ) : ?>
 			<span class="power-coupons-bogo-offer-applied-text">
 				<?php esc_html_e( 'This offer has been applied to your cart', 'power-coupons' ); ?>
 			</span>

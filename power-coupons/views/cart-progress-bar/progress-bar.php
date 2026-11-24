@@ -16,8 +16,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-if ( empty( $progress_data ) ) {
-	return;
+// An empty container is still printed, hidden, so a bar that becomes eligible after a cart change has a place to appear in.
+if ( ! is_array( $progress_data ) ) {
+	$progress_data = array();
 }
 
 $bar_color     = esc_attr( is_string( $settings['bar_color'] ) ? $settings['bar_color'] : '' );
@@ -28,7 +29,7 @@ $animate       = $settings['animate'];
 <div class="power-coupons-progress-container"
 	role="region"
 	aria-label="<?php esc_attr_e( 'Cart Progress', 'power-coupons' ); ?>"
-	style="--pc-bar-color:<?php echo esc_attr( $bar_color ); ?>; --pc-bar-bg:<?php echo esc_attr( $bar_bg_color ); ?>; --pc-success-color:<?php echo esc_attr( $success_color ); ?>;">
+	style="<?php echo empty( $progress_data ) ? 'display:none; ' : ''; ?>--pc-bar-color:<?php echo esc_attr( $bar_color ); ?>; --pc-bar-bg:<?php echo esc_attr( $bar_bg_color ); ?>; --pc-success-color:<?php echo esc_attr( $success_color ); ?>;">
 
 	<?php foreach ( $progress_data as $source ) : ?>
 		<?php
